@@ -1,5 +1,6 @@
 export type Trip = {
     id: number;
+    numMembers: number;
     image: string | null;
     name: string;
     departureDate: string;
