@@ -2,7 +2,7 @@ import EditScreenInfo from '@/src/components/EditScreenInfo';
 import { Text, View } from '@/src/components/Themed';
 import { StyleSheet } from 'react-native';
 
-export default function TabTwoScreen() {
+export default function joinTrip() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Join Trip</Text>

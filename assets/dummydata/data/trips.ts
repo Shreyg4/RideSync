@@ -24,10 +24,20 @@ const trips: Trip[] = [
         numMembers: 1,
         image: '',
         name: 'A Road Trip',
-        departureDate: '09/2/2025',
+        departureDate: '09/2/2026',
         departureTime: '9:00 AM',
         type: 'multi-day'
+    },
+    {
+        id: 921034,
+        numMembers: 2,
+        image: '',
+        name: 'A Road Trip 2',
+        departureDate: '10/8/2026',
+        departureTime: '2:00 PM',
+        type: 'multi-day'
     }
+
 
 ]
 

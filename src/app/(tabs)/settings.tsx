@@ -2,12 +2,12 @@ import EditScreenInfo from '@/src/components/EditScreenInfo';
 import { Text, View } from '@/src/components/Themed';
 import { StyleSheet } from 'react-native';
 
-export default function savedTrips() {
+export default function settings() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Saved Trips</Text>
+      <Text style={styles.title}>Settings</Text>
       <View style={styles.separator} />
-      <EditScreenInfo path="app/(tabs)/savedTrips.tsx" />
+      <EditScreenInfo path="app/(tabs)/settings.tsx" />
     </View>
   );
 }
