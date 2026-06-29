@@ -1,5 +1,6 @@
 import { Text, View } from '@/src/components/Themed';
 import { Trip } from '@assets/dummydata/types';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, Dot, Users } from 'lucide-react-native';
 import { ImageBackground, StyleSheet } from 'react-native';
 import Colors from '../constants/Colors';
@@ -13,20 +14,23 @@ type TripListItemProps = {
 const TripListItem = ({ trip }: TripListItemProps) => {
   return (
     <ImageBackground source={{ uri: trip.image || defaultTripImage }} style={styles.container}>
-      <View style={styles.infoContainer}>
-        <Calendar color={Colors.light.tint} size='15'/> 
+      <LinearGradient 
+        colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']} locations={[0, 0.5, 0.8]} 
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.infoContainer, { backgroundColor: Colors.theme.background }]}>
+        <Calendar color={Colors.theme.tint} size='15'/> 
         <Text style={styles.date}> { trip.departureDate }</Text>
       </View>
       <Text style={styles.title}>{ trip.name }</Text>
       <View style={styles.infoContainer}>
-        <Users color='gray' size='15'/>
+        <Users {...iconProps}/>
         <Text style={styles.info}> { trip.numMembers } members</Text>
-        <Dot color='gray' size='15'/>
+        <Dot {...iconProps}/>
         <Text style={styles.info}>{ trip.departureTime }</Text>
-        <Dot color='gray' size='15'/>
+        <Dot {...iconProps}/>
         <Text style={styles.info}>{ trip.type }</Text>
       </View>
-      <View lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
     </ImageBackground>
   );
 };
@@ -35,7 +39,9 @@ export default TripListItem;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.theme.background,
+    borderColor: Colors.theme.tint,
+    borderWidth: 1,
     borderRadius: 20,
     padding: 20,
     overflow: 'hidden',
@@ -44,7 +50,7 @@ const styles = StyleSheet.create({
     aspectRatio: 5 / 3
   },
   infoContainer: {
-    backgroundColor: '',
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
@@ -52,18 +58,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   title: {
+    color: Colors.theme.text, 
     fontSize: 25,
     fontWeight: '700',
     marginTop: 10
   },
   date: {
-    backgroundColor: 'black',
-    color: Colors.light.tint,
+    color: Colors.theme.tint,
     fontWeight: 'bold',
     
   },
   info: {
-    color: 'gray',
+    color: Colors.theme.textMutedLight,
     fontWeight: 'bold',
   },
 });
+
+const iconProps = {
+  color: Colors.theme.textMutedLight,
+  size: 15,
+};
