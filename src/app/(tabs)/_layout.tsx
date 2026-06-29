@@ -1,10 +1,10 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import React from 'react';
-import { Pressable } from 'react-native';
-
 import { useClientOnlyValue } from '@/src/components/useClientOnlyValue';
 import Colors from '@/src/constants/Colors';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Tabs } from 'expo-router';
+import { Archive, Route, User } from 'lucide-react-native';
+import React from 'react';
+import { View } from 'react-native';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -13,42 +13,79 @@ function TabBarIcon(props: {
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }
+function TabIcon({ focused, children }: { focused: boolean; children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        width: 130,
+        height: 48,
+        borderRadius: 32,          // half of width/height = circle
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: focused ? Colors.theme.tint : 'transparent',
+      }}>
+      {children}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.theme.tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
+        tabBarInactiveTintColor: Colors.theme.textMutedLight,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 35,
+          height: 48,
+          borderRadius: 32,
+          backgroundColor: Colors.theme.card,
+          paddingTop: 5
+        },
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors.theme.text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
+          title: 'Journeys',
+          headerStyle: [{backgroundColor: Colors.theme.background}, {height: 120}],
+          headerTitleAlign: 'left',
+          headerTintColor: Colors.theme.text,
+          headerTitleStyle: {
+            fontSize: 40,
+            fontWeight: '800',
+            justifyContent: 'flex-start'
+          },
+          headerShadowVisible: false,
+          tabBarIcon: ({ focused, size }) => (
+            <TabIcon focused={focused}>
+              <Route color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={size} />
+            </TabIcon>
+          )
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="joinTrip"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Join Trip',
+          tabBarIcon: ({ focused, size }) => (
+            <TabIcon focused={focused}>
+              <User color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={size} />
+            </TabIcon>
+          )
+        }}
+      />
+      <Tabs.Screen
+        name="savedTrips"
+        options={{
+          title: 'Saved Trips',
+          tabBarIcon: ({ focused, size }) => (
+            <TabIcon focused={focused}>
+              <Archive color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={size} />
+            </TabIcon>
+          )
         }}
       />
     </Tabs>

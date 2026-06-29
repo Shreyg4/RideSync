@@ -1,14 +1,13 @@
-import { StyleSheet } from 'react-native';
-
 import EditScreenInfo from '@/src/components/EditScreenInfo';
 import { Text, View } from '@/src/components/Themed';
+import { StyleSheet } from 'react-native';
 
 export default function TabTwoScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab Two</Text>
+      <Text style={styles.title}>Join Trip</Text>
       <View style={styles.separator} />
-      <EditScreenInfo path="app/(tabs)/two.tsx" />
+      <EditScreenInfo path="app/(tabs)/joinTrip.tsx" />
     </View>
   );
 }

@@ -15,7 +15,7 @@ const TripListItem = ({ trip }: TripListItemProps) => {
   return (
     <ImageBackground source={{ uri: trip.image || defaultTripImage }} style={styles.container}>
       <LinearGradient 
-        colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']} locations={[0, 0.5, 0.8]} 
+        colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']} locations={[0, 0.5, 0.85]} 
         style={StyleSheet.absoluteFill}
       />
       <View style={[styles.infoContainer, { backgroundColor: Colors.theme.background }]}>

@@ -10,7 +10,6 @@ export default function TripsScreen() {
         data={trips} 
         renderItem={({ item }) => <TripListItem trip={item}/> }
         contentContainerStyle={{ gap: 10, padding: 10 }}
-
       />
     </View>
   );
