@@ -1,8 +1,10 @@
 import { Text, View } from '@/src/components/Themed';
 import { Trip } from '@assets/dummydata/types';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { Calendar, Dot, Users } from 'lucide-react-native';
-import { ImageBackground, StyleSheet } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet } from 'react-native';
 import Colors from '../constants/Colors';
 
 //Fallback image used when a trip has no image of its own
@@ -15,28 +17,41 @@ type TripListItemProps = {
 //A single trip card: cover image with trip details overlaid at the bottom
 const TripListItem = ({ trip }: TripListItemProps) => {
   return (
-    <ImageBackground source={{ uri: trip.image || defaultTripImage }} style={styles.container}>
-      {/* Dark gradient over the image bottom so the white text stays readable on any photo. */}
-      <LinearGradient
-        colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']} locations={[0, 0.5, 0.85]}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Date pill */}
-      <View style={[styles.infoContainer, { backgroundColor: Colors.theme.background }]}>
-        <Calendar color={Colors.theme.tint} size='15'/>
-        <Text style={styles.date}> { trip.departureDate }</Text>
-      </View>
-      <Text style={styles.title}>{ trip.name }</Text>
-      {/* Meta row: members | time | type, separated by Dot icons */}
-      <View style={styles.infoContainer}>
-        <Users {...iconProps}/>
-        <Text style={styles.info}> { trip.numMembers } members</Text>
-        <Dot {...iconProps}/>
-        <Text style={styles.info}>{ trip.departureTime }</Text>
-        <Dot {...iconProps}/>
-        <Text style={styles.info}>{ trip.type }</Text>
-      </View>
-    </ImageBackground>
+      <Pressable
+        onPress={() => {
+          //Haptic feedback, then navigate to the trip details screen
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push(`/${trip.id}`);
+        }}
+        style={({ pressed }) => [
+          {
+            transform: [{ scale: pressed ? 0.95 : 1 }],
+            opacity: pressed ? 0.85 : 1,
+          },
+        ]}>
+        <ImageBackground source={{ uri: trip.image || defaultTripImage }} style={styles.container}>
+          {/* Dark gradient over the image bottom so the white text stays readable on any photo. */}
+          <LinearGradient
+            colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']} locations={[0, 0.5, 0.85]}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Date pill */}
+          <View style={[styles.infoContainer, { backgroundColor: Colors.theme.background }]}>
+            <Calendar color={Colors.theme.tint} size='15'/>
+            <Text style={styles.date}> { trip.departureDate }</Text>
+          </View>
+          <Text style={styles.title}>{ trip.name }</Text>
+          {/* Meta row: members | time | type, separated by Dot icons */}
+          <View style={styles.infoContainer}>
+            <Users {...iconProps}/>
+            <Text style={styles.info}> { trip.numMembers } members</Text>
+            <Dot {...iconProps}/>
+            <Text style={styles.info}>{ trip.departureTime }</Text>
+            <Dot {...iconProps}/>
+            <Text style={styles.info}>{ trip.type }</Text>
+          </View>
+        </ImageBackground>
+      </Pressable>
   );
 };
 

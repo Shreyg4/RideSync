@@ -2,7 +2,7 @@ import { Trip } from '../types';
 
 const trips: Trip[] = [
     {
-        id: 245632,
+        id: 1,
         numMembers: 4,
         image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Rainier20200906.jpg/330px-Rainier20200906.jpg',
         name: 'Mount Rainier',
@@ -11,7 +11,7 @@ const trips: Trip[] = [
         type: 'single-day'
     },
     {
-        id: 124356,
+        id: 2,
         numMembers: 3,
         image: 'https://houston.org/_next/image/?url=https%3A%2F%2Fwpb.houston.org%2Fapp%2Fuploads%2F2025%2F12%2FMM5_FIFA_World_Cup_2026_Ball_02Oct2025_ZU2160-scaled.jpg&w=828&q=75',
         name: 'World Cup Trip',
@@ -20,7 +20,7 @@ const trips: Trip[] = [
         type: 'multi-day'
     },
     {
-        id: 732894,
+        id: 3,
         numMembers: 1,
         image: '',
         name: 'A Road Trip',
@@ -29,7 +29,7 @@ const trips: Trip[] = [
         type: 'multi-day'
     },
     {
-        id: 921034,
+        id: 4,
         numMembers: 2,
         image: '',
         name: 'A Road Trip 2',

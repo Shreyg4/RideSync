@@ -7,6 +7,10 @@ import { Tabs, router } from 'expo-router';
 import { Archive, Plus, Route, Settings, User } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+//Icon size of icons in tab bar
+const ICON_SIZE = 20;
 
 //Used to fill the pill behind the icon when tab is slected.
 function TabIcon({ focused, children }: { focused: boolean; children: React.ReactNode }) {
@@ -25,14 +29,17 @@ function TabIcon({ focused, children }: { focused: boolean; children: React.Reac
   );
 }
 
+
 export default function TabLayout() {
+  //Bottom inset = Android system nav bar / iPhone home indicator height
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
         //Custom tab-bar design
         tabBarStyle: {
           position: 'absolute',
-          height: 95,
+          height: 60 + insets.bottom,
           borderRadius: 24,
           borderTopWidth: 0,
           borderColor: Colors.theme.border,
@@ -87,7 +94,7 @@ export default function TabLayout() {
           ),
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <Route color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={20} />
+              <Route color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
             </TabIcon>
           ),
         }}
@@ -99,7 +106,7 @@ export default function TabLayout() {
           title: 'Join Trip',
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <User color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={20} />
+              <User color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
             </TabIcon>
           )
         }}
@@ -109,9 +116,9 @@ export default function TabLayout() {
         name="savedTrips"
         options={{
           title: 'Saved Trips',
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: ({ focused}) => (
             <TabIcon focused={focused}>
-              <Archive color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={20} />
+              <Archive color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
             </TabIcon>
           )
         }}
@@ -123,7 +130,7 @@ export default function TabLayout() {
           title: 'Settings',
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <Settings color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={20} />
+              <Settings color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
             </TabIcon>
           )
         }}
