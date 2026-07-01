@@ -21,8 +21,8 @@ export default function SmallButton({
   onPress,
   color = Colors.theme.tint,
   backgroundColor = Colors.theme.card,
-  size = 24,
-  diameter = 40,
+  size = 32,
+  diameter = 48,
   hapticStyle = Haptics.ImpactFeedbackStyle.Light,
   style,
 }: SmallButtonProps) {

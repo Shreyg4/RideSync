@@ -6,4 +6,5 @@ export type Trip = {
     departureDate: string;
     departureTime: string;
     type: 'multi-day' | 'single-day';
+    form: 'round-trip'| 'one-way';
 };

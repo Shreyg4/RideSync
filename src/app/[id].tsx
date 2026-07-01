@@ -8,8 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { defaultTripImage } from '../components/TripListItem';
 import Colors from '../constants/Colors';
 import SmallButton from '../components/smallButton';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
 import { router } from 'expo-router';
+import LargeButton from '../components/largeButton';
 
 
 const TripDetails = () => {
@@ -25,20 +26,7 @@ const TripDetails = () => {
     <View style={{ flex: 1 }}>
       <StatusBar style="light" />
       <Stack.Screen options={{ 
-        title: '',
-        headerShown: true,
-        headerShadowVisible: false,
-        headerTintColor: Colors.theme.tint,
-        headerBackButtonDisplayMode: 'minimal',
-        headerStyle: { backgroundColor: Colors.theme.background },
-        headerLeft: () => (
-          <SmallButton
-            icon={ChevronLeft}
-            onPress={() => router.back()}
-            size={32}
-            style={{  }}
-          />
-        )
+        headerShown: false,
       }}/>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom }}>
@@ -50,18 +38,59 @@ const TripDetails = () => {
           />
           <Text style={styles.title}>{trip?.name}</Text>
         </ImageBackground>
-        
-        <View>
-          <Text style={{ marginTop: 700, color: 'white' }}>Trip details for id: {id}</Text>
-        </View>
-      </ScrollView>
 
-      {/* Fixed top scrim: stays put while content scrolls, so the status bar /
-          back button remain readable even after the image scrolls away. */}
+        {/* Date, Time, Type, Form are listed here */}
+        <View style={styles.subContainer}>
+          <Text style={styles.subHeading}>Date & Time</Text>
+          <Text style={styles.text}>{trip.departureDate} <Dot {...iconProps}/> {trip.departureTime} </Text>
+          <Text style={[styles.subHeading, {marginTop: 10}]}>Type</Text>
+          <Text style={styles.text}>{trip.type} <Dot {...iconProps}/> {trip.form} </Text>
+        </View>
+        
+        {/* Shows who is a part of the trip */}
+        <View style={styles.subContainer}>
+          <Text style={styles.subHeading}>Members</Text>
+          <Text style={styles.text}>There are {trip?.numMembers} on this trip</Text>
+        </View>
+
+        {/* Where itenerary will be listed */}
+        <View style={styles.subContainer}>
+          <Text style={styles.subHeading}>Itenerary</Text>
+          <Text style={[styles.text, {paddingBottom: 300}]}>Not planned</Text>
+          <LargeButton icon={Pencil} label="Edit itenery" color={Colors.theme.textMutedLight}
+            onPress={() => router.back()}
+            backgroundColor={Colors.theme.card}
+            backgroundColorPressed={Colors.theme.textMuted}
+            style={{
+              width: 350,
+              borderWidth: 1,
+              borderColor: Colors.theme.textMutedLight,
+              borderStyle: 'dashed'
+            }}
+          />
+        </View>
+        {/* The Directions Button */}
+        <LargeButton label="Directions"
+          onPress={() => router.back()}
+          style={{margin: 10,}}
+        />
+        {/* The start trip Button */}
+        <LargeButton label="Start Trip"
+          disabled={true}
+          onPress={() => router.back()}
+          style={{margin: 10}}
+        />
+      </ScrollView>
+      
+      {/* Fixed top gradient so that status bar is always easy to see */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.6)', 'transparent']}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20 }}
         pointerEvents="none"
+        colors={['rgba(0, 0, 0, 1)', 'transparent']} locations={[0, 0.15]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SmallButton icon={ChevronLeft}
+        onPress={() => router.back()}
+        style={{ position: 'absolute', left: 10, top: insets.top - 10, zIndex: 10 }}
       />
     </View>
   )
@@ -84,7 +113,28 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: '800',
     marginTop: 210,
-    marginLeft: 10
-
+    textAlign: 'center'
+  },
+  subContainer: {
+    margin: 10,
+    padding: 20,
+    borderRadius: 25,
+    backgroundColor: Colors.theme.card
+  },
+  subHeading: {
+    color: Colors.theme.text,
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 10
+  },
+  text: {
+    color: Colors.theme.tintSubtle,
+    fontSize: 15,
+    fontWeight: '400'
   }
 })
+
+const iconProps = {
+  color: Colors.theme.tintSubtle,
+  size: 15,
+};

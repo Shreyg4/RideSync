@@ -13,8 +13,6 @@ const palette = {
   gray500: '#47474B', 
   gray300: '#7B7B80',
   white:   '#FFF',
-
-  blur: 'rgba: (0, 0, 0, 0.8)'
 };
 
 export default {
@@ -26,9 +24,9 @@ export default {
 
     // surfaces
     background: palette.black,
-    blur: palette.blur,
     card: palette.gray900,
     border: palette.gray700,
+    disabled: palette.blue2,
 
     // text
     text: palette.white,

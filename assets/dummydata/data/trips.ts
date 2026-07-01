@@ -4,11 +4,12 @@ const trips: Trip[] = [
     {
         id: 1,
         numMembers: 4,
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Rainier20200906.jpg/330px-Rainier20200906.jpg',
+        image: 'https://www.thurstontalk.com/wp-content/uploads/2014/04/Mount-Rainier-Sunset.jpg',
         name: 'Mount Rainier',
         departureDate: '07/10/2026',
         departureTime: '7:00 AM',
-        type: 'single-day'
+        type: 'single-day',
+        form: 'round-trip'
     },
     {
         id: 2,
@@ -17,7 +18,8 @@ const trips: Trip[] = [
         name: 'World Cup Trip',
         departureDate: '07/19/2026',
         departureTime: '7:00 AM',
-        type: 'multi-day'
+        type: 'multi-day',
+        form: 'round-trip'
     },
     {
         id: 3,
@@ -26,7 +28,8 @@ const trips: Trip[] = [
         name: 'A Road Trip',
         departureDate: '09/2/2026',
         departureTime: '9:00 AM',
-        type: 'multi-day'
+        type: 'multi-day',
+        form: 'one-way'
     },
     {
         id: 4,
@@ -35,7 +38,8 @@ const trips: Trip[] = [
         name: 'A Road Trip 2',
         departureDate: '10/8/2026',
         departureTime: '2:00 PM',
-        type: 'multi-day'
+        type: 'multi-day',
+        form: 'one-way'
     }
 
 
