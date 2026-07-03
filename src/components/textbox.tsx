@@ -2,6 +2,7 @@ import Colors from '@/src/constants/Colors';
 import { useState } from 'react';
 import { StyleProp, TextInput, TextStyle, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { DimensionValue } from 'react-native';
 
 //Reusable single-line text field (e.g. trip name, destination).
 //Controlled input: the caller owns the state and passes value + onChangeText.
@@ -12,13 +13,13 @@ type TextBoxProps = {
   placeholderTextColor?: string;
   color?: string;                       //text colour
   backgroundColor?: string;
-  width?: number;
-  height?: number;
+  width?: DimensionValue;
+  height?: DimensionValue;
   borderRadius?: number;
   borderWidth?: number;
   borderColor?: string;
   borderColorSelected?: string;
-  marginBottom?: number,
+  margin?: number,
   fontSize?: number;
   editable?: boolean;
   keyboardType?: TextInput['props']['keyboardType'];
@@ -35,13 +36,13 @@ export default function TextBox({
   placeholderTextColor = Colors.theme.textMuted,
   color = Colors.theme.text,
   backgroundColor = Colors.theme.card,
-  width = 370,
+  width = '95%',
   height = 60,
   borderRadius = 20,
   borderWidth = 1,
   borderColor = Colors.theme.textMutedLight,
   borderColorSelected = Colors.theme.tint,
-  marginBottom = 30,
+  margin = 30,
   fontSize = 18,
   editable = true,
   keyboardType = 'default',
@@ -75,7 +76,7 @@ export default function TextBox({
           borderRadius,
           borderWidth,
           borderColor: focused ? borderColorSelected : borderColor,
-          marginBottom,
+          margin,
           backgroundColor,
           color,
           fontSize,

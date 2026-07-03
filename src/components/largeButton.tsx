@@ -2,6 +2,7 @@ import Colors from '@/src/constants/Colors';
 import * as Haptics from 'expo-haptics';
 import { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleProp, Text, TextStyle, ViewStyle } from 'react-native';
+import { DimensionValue } from 'react-native';
 
 //Reusable wide button (e.g. "Start Trip", "Login").
 //Shows a text label, with an optional leading icon. Centers itself.
@@ -12,8 +13,8 @@ type LargeButtonProps = {
   color?: string;              //text + icon color
   backgroundColor?: string;
   backgroundColorPressed?: string;
-  width?: number;
-  height?: number;
+  width?: DimensionValue;
+  height?: DimensionValue;
   borderRadius?: number;
   fontSize?: number;
   hapticStyle?: Haptics.ImpactFeedbackStyle;
@@ -33,7 +34,7 @@ export default function LargeButton({
   color = Colors.theme.background,
   backgroundColor = Colors.theme.tint,
   backgroundColorPressed = Colors.theme.tintPressed,
-  width = 370,
+  width = '95%',
   height = 60,
   borderRadius = 20,
   borderWidth = 0,

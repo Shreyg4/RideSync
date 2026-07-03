@@ -34,8 +34,8 @@ const trips: Trip[] = [
     {
         id: 4,
         numMembers: 2,
-        image: '',
-        name: 'A Road Trip 2',
+        image: 'https://media.triumphmotorcycles.co.uk/image/upload/f_auto/q_auto:eco/sitecoremedialibrary/media-library/images/motorcycles/usa-disclaimer-heros/classics/scrambler-400-x-my24-family-hero-1-1920x1080-us-disclaimer.jpg',
+        name: 'A Trip',
         departureDate: '10/8/2026',
         departureTime: '2:00 PM',
         type: 'multi-day',

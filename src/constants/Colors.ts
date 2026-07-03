@@ -24,6 +24,7 @@ export default {
 
     // surfaces
     background: palette.black,
+    backgroundLight: palette.gray500,
     card: palette.gray900,
     border: palette.gray700,
     disabled: palette.blue2,

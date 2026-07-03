@@ -62,7 +62,7 @@ const TripDetails = () => {
             backgroundColor={Colors.theme.card}
             backgroundColorPressed={Colors.theme.textMuted}
             style={{
-              width: 350,
+              width: '100%',
               borderWidth: 1,
               borderColor: Colors.theme.textMutedLight,
               borderStyle: 'dashed'
@@ -90,7 +90,7 @@ const TripDetails = () => {
       />
       <SmallButton icon={ChevronLeft}
         onPress={() => router.back()}
-        style={{ position: 'absolute', left: 10, top: insets.top - 10, zIndex: 10 }}
+        style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
       />
     </View>
   )

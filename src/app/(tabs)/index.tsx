@@ -3,6 +3,7 @@ import trips from '@assets/dummydata/data/trips';
 import TripListItem from '@components/TripListItem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlatList, StyleSheet, View } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 
 //Renders list of all of the User's created and joined trips
 export default function TripsScreen() {
@@ -12,7 +13,7 @@ export default function TripsScreen() {
       <FlatList
         data={trips}
         renderItem={({ item }) => <TripListItem trip={item}/> }
-        contentContainerStyle={{ gap: 10, padding: 10, paddingBottom: 100 }}
+        contentContainerStyle={{ gap: 10, padding: 10, paddingBottom: useBottomTabBarHeight() + 10 }}
       />
 
       {/* Gradient header overlay: solid at the top, fading to transparent at the bottom */}

@@ -20,7 +20,7 @@ export default function SmallButton({
   icon: Icon,
   onPress,
   color = Colors.theme.tint,
-  backgroundColor = Colors.theme.card,
+  backgroundColor = Colors.theme.border,
   size = 32,
   diameter = 48,
   hapticStyle = Haptics.ImpactFeedbackStyle.Light,
