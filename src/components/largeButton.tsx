@@ -9,7 +9,7 @@ type LargeButtonProps = {
   label: string;               //button text
   onPress: () => void;
   icon?: LucideIcon;           //optional leading lucide icon
-  color?: string;              //text + icon colour
+  color?: string;              //text + icon color
   backgroundColor?: string;
   backgroundColorPressed?: string;
   width?: number;
@@ -36,19 +36,20 @@ export default function LargeButton({
   width = 370,
   height = 60,
   borderRadius = 20,
+  borderWidth = 0,
+  borderColor = Colors.theme.border,
+  borderStyle = 'solid',
   fontSize = 18,
-  hapticStyle = Haptics.ImpactFeedbackStyle.Light,
+  hapticStyle = Haptics.ImpactFeedbackStyle.Heavy,
   style,
   textStyle,
   disabled = false,
   disabledBackgroundColor = Colors.theme.disabled,
-  borderWidth = 0,
-  borderColor = Colors.theme.border,
-  borderStyle = 'solid'
+
 }: LargeButtonProps) {
   return (
     <Pressable
-      disabled={disabled}  
+      disabled={disabled}
       onPress={() => {
         //Haptic feedback for the button
         Haptics.impactAsync(hapticStyle);
@@ -60,15 +61,15 @@ export default function LargeButton({
           width,
           height,
           borderRadius,
+          borderWidth,
+          borderColor,
+          borderStyle,
           flexDirection: 'row',     //icon + text sit side by side
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: 'center',      //center the button within its parent
           gap: 8,                   //space between icon and text
           backgroundColor: disabled ? disabledBackgroundColor : pressed ?  backgroundColorPressed : backgroundColor,
-          borderWidth,
-          borderColor,
-          borderStyle
         },
         style, //caller overrides come last so they win
       ]}>

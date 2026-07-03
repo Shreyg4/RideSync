@@ -90,7 +90,7 @@ export default function TabLayout() {
           title: 'Journeys',
           //Create-trip FAB 
           headerRight: () => (
-            <SmallButton icon={Plus} onPress={() => router.push('/modal')} style={{ marginRight: 16, marginTop: 5 }} />
+            <SmallButton icon={Plus} onPress={() => router.push('/createTrip')} style={{ marginRight: 16, marginTop: 5 }} />
           ),
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>

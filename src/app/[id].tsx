@@ -72,7 +72,7 @@ const TripDetails = () => {
         {/* The Directions Button */}
         <LargeButton label="Directions"
           onPress={() => router.back()}
-          style={{margin: 10,}}
+          style={{margin: 10}}
         />
         {/* The start trip Button */}
         <LargeButton label="Start Trip"
