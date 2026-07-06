@@ -1,30 +1,20 @@
-import EditScreenInfo from '@/src/components/EditScreenInfo';
-import { Text, View } from '@/src/components/Themed';
-import { StyleSheet } from 'react-native';
+import TextBox from '@/src/components/textbox';
+import LargeButton from '@/src/components/largeButton';
+import { useState } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { router } from 'expo-router';
 
 export default function joinTrip() {
+const [joinCode, setJoinCode] = useState('')
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Join Trip</Text>
-      <View style={styles.separator} />
-      <EditScreenInfo path="app/(tabs)/joinTrip.tsx" />
-    </View>
+    <ScrollView showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag" 
+        keyboardShouldPersistTaps="never">
+      <View style={{flex: 1}}>
+        <TextBox value={joinCode} onChangeText={setJoinCode} placeholder='Enter code' keyboardType='number-pad'/>
+        <LargeButton label='Join Trip' disabled={false} onPress={() => router.back()} />
+      </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});

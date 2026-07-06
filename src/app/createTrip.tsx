@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, Keyboard, Platform, ScrollView} from 'react-native'
+import { View, Text, StyleSheet, Pressable, Platform, ScrollView} from 'react-native'
 import React from 'react'
 import TextBox from '@components/textbox'
 import { useState } from 'react'

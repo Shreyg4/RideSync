@@ -29,7 +29,6 @@ function TabIcon({ focused, children }: { focused: boolean; children: React.Reac
   );
 }
 
-
 export default function TabLayout() {
   //Bottom inset = Android system nav bar / iPhone home indicator height
   const insets = useSafeAreaInsets();
