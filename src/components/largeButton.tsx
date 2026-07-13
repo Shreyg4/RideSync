@@ -15,6 +15,7 @@ type LargeButtonProps = {
   backgroundColorPressed?: string;
   width?: DimensionValue;
   height?: DimensionValue;
+  marginVertical?: number,
   borderRadius?: number;
   fontSize?: number;
   hapticStyle?: Haptics.ImpactFeedbackStyle;
@@ -36,6 +37,7 @@ export default function LargeButton({
   backgroundColorPressed = Colors.theme.tintPressed,
   width = '95%',
   height = 60,
+  marginVertical = 15,
   borderRadius = 20,
   borderWidth = 0,
   borderColor = Colors.theme.border,
@@ -61,6 +63,7 @@ export default function LargeButton({
         {
           width,
           height,
+          marginVertical,
           borderRadius,
           borderWidth,
           borderColor,

@@ -19,7 +19,7 @@ type TextBoxProps = {
   borderWidth?: number;
   borderColor?: string;
   borderColorSelected?: string;
-  margin?: number,
+  marginVertical?: number,
   fontSize?: number;
   editable?: boolean;
   keyboardType?: TextInput['props']['keyboardType'];
@@ -42,7 +42,7 @@ export default function TextBox({
   borderWidth = 1,
   borderColor = Colors.theme.textMutedLight,
   borderColorSelected = Colors.theme.tint,
-  margin = 30,
+  marginVertical = 10,
   fontSize = 18,
   editable = true,
   keyboardType = 'default',
@@ -76,7 +76,7 @@ export default function TextBox({
           borderRadius,
           borderWidth,
           borderColor: focused ? borderColorSelected : borderColor,
-          margin,
+          marginVertical,
           backgroundColor,
           color,
           fontSize,

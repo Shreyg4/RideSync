@@ -28,9 +28,9 @@ const signUp = () => {
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets={true}>
         <Text style={styles.text}>Create Account</Text>
-        <TextBox value={username} onChangeText={setUsername} placeholder='Username' style={{marginBottom: 0}}/>
-        <TextBox value={email} onChangeText={setEmail} placeholder='E-mail' style={{marginBottom: 0}}/>
-        <TextBox value={password} onChangeText={setPassword} placeholder='Password' style={{marginBottom: 0}}/>
+        <TextBox value={username} onChangeText={setUsername} placeholder='Username'/>
+        <TextBox value={email} onChangeText={setEmail} placeholder='E-mail'/>
+        <TextBox value={password} onChangeText={setPassword} placeholder='Password'/>
         <TextBox value={confirmPassword} onChangeText={setConfirmPassword} placeholder='Re-enter password'/>
         <LargeButton label='Create Account' disabled={false} 
           onPress={() => {
@@ -44,8 +44,7 @@ const signUp = () => {
               setError('')
               router.push('/journeys')
             }
-          }} 
-          style={{marginTop: 10}}/>
+          }}/>
 
           {error !== '' && <Text style={styles.errorText}>{error}</Text>}
         </ScrollView>
@@ -60,6 +59,7 @@ const styles = StyleSheet.create({
   text: {
     color: Colors.theme.text,
     fontSize: 40,
+    marginBottom: 15,
     fontWeight: '800',
     textAlign: 'center',
   }, 

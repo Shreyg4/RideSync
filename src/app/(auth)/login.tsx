@@ -21,21 +21,19 @@ const login = () => {
           style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
         />
         <Text style={styles.text}>Login</Text>
-        <TextBox value={email} onChangeText={setEmail} placeholder='E-mail' style={{marginBottom: 0}}/>
+        <TextBox value={email} onChangeText={setEmail} placeholder='E-mail'/>
         <TextBox value={password} onChangeText={setPassword} placeholder='Password'/>
-        <LargeButton label='Login' disabled={false} onPress={() => router.push('/journeys')} style={{marginTop: 10}}/>
+        <LargeButton label='Login' disabled={false} onPress={() => router.push('/journeys')}/>
         <Text style={styles.subText}>or</Text>
         <LargeButton label='Login with Google' disabled={false} onPress={() => router.push('/journeys')} 
           style={{
             backgroundColor: Colors.theme.text,
             borderRadius: 40, 
-            marginTop: 0,
           }}/>
         <LargeButton label='Login with Apple' disabled={false} onPress={() => router.push('/journeys')} 
           style={{
             backgroundColor: Colors.theme.text,
             borderRadius: 40, 
-            marginTop: 20,
           }}/>
       </View>
     </TouchableWithoutFeedback>
@@ -53,12 +51,12 @@ const styles = StyleSheet.create({
   text: {
     color: Colors.theme.text,
     fontSize: 40,
+    marginBottom: 15,
     fontWeight: '800',
     textAlign: 'center',
   }, 
   subText: {
     color: Colors.theme.textMutedLight,
-    margin: 20,
     fontSize: 30,
     fontWeight: '600',
     textAlign: 'center',
