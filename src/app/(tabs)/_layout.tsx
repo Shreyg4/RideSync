@@ -34,6 +34,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   return (
     <Tabs
+      initialRouteName='journeys'
       screenOptions={{
         //Custom tab-bar design
         tabBarStyle: {
@@ -84,7 +85,7 @@ export default function TabLayout() {
 
       <Tabs.Screen
         //Home screen of the app where all of the users created/joined trips will show up
-        name="index"
+        name="journeys"
         options={{
           title: 'Journeys',
           //Create-trip FAB 

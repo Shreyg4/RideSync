@@ -5,9 +5,6 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import Colors from '../constants/Colors';
-import { StyleSheet } from 'react-native';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -51,6 +48,7 @@ function RootLayoutNav() {
     <ThemeProvider value={DarkTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="createTrip" options={{ 
           presentation: 'modal',
           headerShown: false,
