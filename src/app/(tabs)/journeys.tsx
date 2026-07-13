@@ -33,10 +33,6 @@ export default function TripsScreen() {
         locations={[0, 0, 1]}
         style={[styles.header]}
       />
-      <SmallButton icon={ChevronLeft}
-        onPress={() => router.push('/welcome')}
-        style={{ position: 'absolute', left: '50%', top: insets.top + 500, zIndex: 10 }}
-      />
     </View>
   );
 }

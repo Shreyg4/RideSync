@@ -47,7 +47,7 @@ const createTripScreen = () => {
         <TextBox value={tripName} onChangeText={setTripName} placeholder='Enter trip name' style={{marginTop: 0}} />
 
         {/* Select which type of trip this will be */}
-        <View style={[styles.types, {marginBottom: 20}]}>
+        <View style={[styles.types, {margin: 10}]}>
           {tripType.map((tripType) => {
             const Icon = tripType.icon
             return(
@@ -74,7 +74,7 @@ const createTripScreen = () => {
         </View>
 
         {/* Select which form of trip this will be */}
-        <View style={styles.types}>
+        <View style={[styles.types, {margin: 10}]}>
           {tripForm.map((tripForm) => {
             const Icon = tripForm.icon
             return(
@@ -100,7 +100,7 @@ const createTripScreen = () => {
           })}
         </View>
         
-        <TextBox value={tripDate} onChangeText={setTripDate} placeholder='Start date' style={{marginBottom: 0}} />
+        <TextBox value={tripDate} onChangeText={setTripDate} placeholder='Start date' />
         <TextBox value={tripTime} onChangeText={setTripTime} placeholder='Start time' />
         {/* Button for user to include an image */}
         <Pressable
@@ -112,6 +112,7 @@ const createTripScreen = () => {
             {
               transform: [{ scale: pressed ? 0.95 : 1 }],
               opacity: pressed ? 0.85 : 1,
+              margin: 10
             },
           ]}>
           <ImagePlus color={Colors.theme.textMutedLight} style={{marginBottom: 10}}/>
@@ -120,7 +121,6 @@ const createTripScreen = () => {
         <LargeButton 
           label='Create Trip' disabled={false}
           onPress={() => router.back()}
-          style={{marginTop: 30}}
         />
       </ScrollView>
 

@@ -10,9 +10,7 @@ export default function settings() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false} 
-          contentContainerStyle={{ paddingBottom: insets.bottom + 75}} 
-          keyboardDismissMode="on-drag" 
-          keyboardShouldPersistTaps="never">
+          contentContainerStyle={{ paddingBottom: insets.bottom + 75}}>
         <View>
           <Text style={styles.text}>Settings that will come soon</Text>
           <LargeButton 
@@ -28,9 +26,6 @@ export default function settings() {
             color='red'
             backgroundColor={Colors.theme.border}
             backgroundColorPressed={Colors.theme.card}
-            style={{
-              marginTop: 20
-            }}
           />
         </View>
       </ScrollView>
@@ -58,6 +53,6 @@ const styles = StyleSheet.create({
     color: Colors.theme.text,
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 600
+    marginBottom: '140%'
   },
 });

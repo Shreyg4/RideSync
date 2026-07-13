@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import {KeyboardAwareScrollView} from 'react-native-keyboard-controller'
 import React from 'react'
 import { useState } from 'react'
 import SmallButton from '@/src/components/smallButton'
@@ -22,11 +23,11 @@ const signUp = () => {
         onPress={() => router.back()}
         style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
       />
-      <ScrollView showsVerticalScrollIndicator={false} 
-          contentContainerStyle={{paddingTop: insets.top + 100}} 
+      <KeyboardAwareScrollView showsVerticalScrollIndicator={false} 
+          contentContainerStyle={{flexGrow: 1, paddingTop: '50%'}} 
           keyboardDismissMode="on-drag" 
           keyboardShouldPersistTaps="handled"
-          automaticallyAdjustKeyboardInsets={true}>
+          bottomOffset={30}>
         <Text style={styles.text}>Create Account</Text>
         <TextBox value={username} onChangeText={setUsername} placeholder='Username'/>
         <TextBox value={email} onChangeText={setEmail} placeholder='E-mail'/>
@@ -47,7 +48,7 @@ const signUp = () => {
           }}/>
 
           {error !== '' && <Text style={styles.errorText}>{error}</Text>}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </View>
 
   )
