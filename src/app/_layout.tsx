@@ -51,6 +51,7 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(planner)" options={{ headerShown: false }} />
           <Stack.Screen name="createTrip" options={{ 
             presentation: 'modal',
             headerShown: false,

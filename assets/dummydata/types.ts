@@ -8,3 +8,9 @@ export type Trip = {
     type: 'multi-day' | 'single-day';
     form: 'round-trip'| 'one-way';
 };
+
+export type Location = {
+    name: string;
+    address: string;
+    type: string;
+}

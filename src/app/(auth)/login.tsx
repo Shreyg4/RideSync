@@ -24,7 +24,7 @@ const login = () => {
         <TextBox value={email} onChangeText={setEmail} placeholder='E-mail'/>
         <TextBox value={password} onChangeText={setPassword} placeholder='Password'/>
         <LargeButton label='Login' disabled={false} onPress={() => router.push('/journeys')}/>
-        <Text style={styles.subText}>or</Text>
+        <Text style={styles.subText}>-- or --</Text>
         <LargeButton label='Login with Google' disabled={false} onPress={() => router.push('/journeys')} 
           style={{
             backgroundColor: Colors.theme.text,
@@ -57,7 +57,8 @@ const styles = StyleSheet.create({
   }, 
   subText: {
     color: Colors.theme.textMutedLight,
-    fontSize: 30,
+    fontSize: 20,
+    margin: 20,
     fontWeight: '600',
     textAlign: 'center',
   }, 

@@ -120,7 +120,7 @@ const createTripScreen = () => {
         </Pressable>
         <LargeButton 
           label='Create Trip' disabled={false}
-          onPress={() => router.back()}
+          onPress={() => router.replace('/planner')} 
         />
       </ScrollView>
 
@@ -137,7 +137,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '600',
     alignSelf: 'center',
-
   },
   imageBox: {
     backgroundColor: Colors.theme.card,
