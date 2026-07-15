@@ -20,6 +20,7 @@ export default {
     // brand
     tint: palette.blue5,
     tintPressed: palette.blue3,
+    tintmid: palette.blue6,
     tintSubtle: palette.blue7,
 
     // surfaces

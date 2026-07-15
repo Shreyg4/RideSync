@@ -1,20 +1,19 @@
-import { StyleSheet, Text, View, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, ScrollView, FlatList } from 'react-native'
 import { useState } from 'react'
 import { ChevronLeft, Settings } from 'lucide-react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SmallButton from '@/src/components/smallButton'
 import LargeButton from '@/src/components/largeButton'
-import TextBox from '@/src/components/textbox'
 import React from 'react'
 import Colors from '@/src/constants/Colors'
 import { LinearGradient } from 'expo-linear-gradient'
+import StopListItem from '@/src/components/StopListItem'
+import locations from '@/assets/dummydata/data/locations'
 
 const planner = () => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(0)
-  const [tripDate, setTripDate] = useState('')
-  const [tripTime, setTripTime] = useState('')
   return (
     <View style={{flex: 1}}>
       <View>
@@ -40,9 +39,9 @@ const planner = () => {
             keyboardDismissMode="on-drag" 
             keyboardShouldPersistTaps="never">
         <View style={styles.plannerStyle}>
-          <TextBox value={tripDate} onChangeText={setTripDate} placeholder='Start date'/>
-          <TextBox value={tripTime} onChangeText={setTripTime} placeholder='Start time' style={{marginTop: 300}}/>
-          <TextBox value={tripTime} onChangeText={setTripTime} placeholder='Start time' style={{marginTop: 300}}/>
+          {locations.map((location) => (
+            <StopListItem key={location.id} location={location}/>
+          ))}
         </View>
 
         <View style={styles.infoRow}>
@@ -114,6 +113,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: Colors.theme.card,
     margin: 10,
+    paddingVertical: 10,
     borderRadius: 20
   },
   infoRow: {

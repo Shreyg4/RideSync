@@ -4,14 +4,9 @@ import TripListItem from '@components/TripListItem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlatList, StyleSheet, View, Text } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import { ChevronLeft } from 'lucide-react-native';
-import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SmallButton from '@/src/components/smallButton';
 
 //Renders list of all of the User's created and joined trips
 export default function TripsScreen() {
-  const insets = useSafeAreaInsets();
   const isEmpty = trips.length === 0;
 
   return (

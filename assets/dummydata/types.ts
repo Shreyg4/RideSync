@@ -10,6 +10,7 @@ export type Trip = {
 };
 
 export type Location = {
+    id: number;
     name: string;
     address: string;
     type: string;

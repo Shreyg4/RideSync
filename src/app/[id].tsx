@@ -58,7 +58,7 @@ const TripDetails = () => {
           <Text style={styles.subHeading}>Itinerary</Text>
           <Text style={[styles.text, {paddingBottom: 300}]}>Not planned</Text>
           <LargeButton icon={Pencil} label="Edit itinerary" color={Colors.theme.textMutedLight}
-            onPress={() => router.back()}
+            onPress={() => router.push('/planner')}
             backgroundColor={Colors.theme.card}
             backgroundColorPressed={Colors.theme.textMuted}
             style={{
