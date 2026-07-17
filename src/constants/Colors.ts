@@ -19,6 +19,7 @@ export default {
   theme: {
     // brand
     tint: palette.blue5,
+    tintDark: palette.blue2,
     tintPressed: palette.blue3,
     tintmid: palette.blue6,
     tintSubtle: palette.blue7,

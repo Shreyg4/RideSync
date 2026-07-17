@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View, ScrollView, FlatList } from 'react-native'
+import { StyleSheet, Text, View, ScrollView } from 'react-native'
 import { useState } from 'react'
-import { ChevronLeft, Settings } from 'lucide-react-native'
+import { ChevronLeft, Settings, Plus } from 'lucide-react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SmallButton from '@/src/components/smallButton'
@@ -42,12 +42,18 @@ const planner = () => {
           {locations.map((location) => (
             <StopListItem key={location.id} location={location}/>
           ))}
+          <SmallButton icon={Plus} color={Colors.theme.text} size={40} onPress={() => router.push('/enterStop')} style={styles.addButton}/>
         </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.subtext}>Trip Distance</Text>
           <Text style={styles.subtext}>Total Time</Text>
         </View>
+
+        <LargeButton 
+          label='Directions' disabled={false}
+          onPress={() => router.replace('/journeys')} 
+        />
         <LargeButton 
           label='Save Trip' disabled={false}
           onPress={() => router.replace('/journeys')} 
@@ -121,5 +127,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     margin: 15,
     columnGap: 100
-  },  
+  },
+  addButton: {
+    color: Colors.theme.text,
+    backgroundColor: Colors.theme.tintDark,
+    margin: 15,
+    width: 50,
+    height: 50,
+    borderRadius: 50 / 2,
+    alignSelf: 'center'
+  }  
 })
