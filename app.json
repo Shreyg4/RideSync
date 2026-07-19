@@ -14,7 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "infoPlist": {"UIDesignRequiresCompatibility": true},
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shreyg4.RideSync"
     },
     "android": {
       "adaptiveIcon": {
