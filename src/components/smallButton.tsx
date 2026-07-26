@@ -1,7 +1,7 @@
 import Colors from '@/src/constants/Colors';
 import * as Haptics from 'expo-haptics';
 import { LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleProp, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
 
 //Reusable circular icon button (e.g. the header "+" button).
 //All sizing/colours are props so the same component works anywhere.
@@ -46,7 +46,10 @@ export default function SmallButton({
         },
         style, //caller overrides come last so they win
       ]}>
-      <Icon color={color} size={size} />
+      {/* pointerEvents none: keep the lucide/SVG icon from swallowing taps */}
+      <View pointerEvents="none">
+        <Icon color={color} size={size} />
+      </View>
     </Pressable>
   );
 }

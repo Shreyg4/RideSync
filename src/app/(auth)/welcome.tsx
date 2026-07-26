@@ -9,7 +9,7 @@ export default function welcome() {
   const inset = useSafeAreaInsets()
 
   return (
-    <View style={[styles.container, { marginTop: inset.top, marginBottom: inset.bottom}]} onTouchStart={(e) => console.log('container touch', e.nativeEvent.pageY)}>
+    <View style={[styles.container, { marginTop: inset.top, marginBottom: inset.bottom}]}>
       <View style={{flex: 1, marginTop: 30}}>
         <Text style={styles.text}>Welcome to{'\n'}Ride Sync</Text>
       </View>

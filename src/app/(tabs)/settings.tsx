@@ -22,7 +22,7 @@ export default function settings() {
           />
           <LargeButton 
             label='Log Out' 
-            onPress={() => router.back()} 
+            onPress={() => router.replace('/welcome')} 
             color='red'
             backgroundColor={Colors.theme.border}
             backgroundColorPressed={Colors.theme.card}

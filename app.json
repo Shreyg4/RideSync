@@ -9,10 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.shreyg4.RideSync",
-      "infoPlist": {
-        "UIDesignRequiresCompatibility": true
-      }
+      "bundleIdentifier": "com.shreyg4.RideSync"
     },
     "android": {
       "adaptiveIcon": {

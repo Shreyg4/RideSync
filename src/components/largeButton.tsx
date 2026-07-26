@@ -1,7 +1,7 @@
 import Colors from '@/src/constants/Colors';
 import * as Haptics from 'expo-haptics';
 import { LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleProp, Text, TextStyle, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { DimensionValue } from 'react-native';
 
 //Reusable wide button (e.g. "Start Trip", "Login").
@@ -77,7 +77,13 @@ export default function LargeButton({
         },
         style, //caller overrides come last so they win
       ]}>
-      {Icon && <Icon color={color} size={fontSize + 2} />}
+      
+      {/* pointerEvents none: keep the lucide/SVG icon from swallowing taps */}
+      {Icon && (
+        <View pointerEvents="none">
+          <Icon color={color} size={fontSize + 2} />
+        </View>
+      )}
       <Text style={[{ color, fontSize, fontWeight: '700' }, textStyle]}>
         {label}
       </Text>
