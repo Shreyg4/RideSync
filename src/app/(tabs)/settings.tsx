@@ -4,9 +4,20 @@ import LargeButton from '@/src/components/largeButton';
 import Colors from '@/src/constants/Colors';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '@/src/context/AuthProvider';
 
 export default function settings() {
   const insets = useSafeAreaInsets();
+  
+  const{signOut} = useAuth();
+  const handleSignOut=async() => {
+    try{
+      await signOut();
+    }catch(error:any){
+      alert(error.message)
+    }
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false} 
@@ -22,7 +33,7 @@ export default function settings() {
           />
           <LargeButton 
             label='Log Out' 
-            onPress={() => router.replace('/welcome')} 
+            onPress={handleSignOut} 
             color='red'
             backgroundColor={Colors.theme.border}
             backgroundColorPressed={Colors.theme.card}

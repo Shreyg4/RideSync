@@ -9,6 +9,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Colors from '@/src/constants/Colors'
 import TextBox from '@/src/components/textbox'
 import LargeButton from '@/src/components/largeButton'
+import { supabase } from '@/src/lib/supabase'
+import { Alert } from 'react-native'
+import { useAuth } from '@/src/context/AuthProvider'
 
 const signUp = () => {
   const insets = useSafeAreaInsets()
@@ -16,7 +19,31 @@ const signUp = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const{signUp}= useAuth();
+  const handleSignUp=async() => {
+    if(!username || !email || !password || !confirmPassword){
+      Alert.alert("Please Provide all details")
+      return
+    }
+
+    if(password !== confirmPassword){
+      Alert.alert("Passwords do not match")
+      return
+    }
+
+    setLoading(true)
+    try{
+      await signUp(username, email, password)
+      Alert.alert("Account created successfully")
+    }catch (error:any){
+      alert(error.message)
+    }finally{
+      setLoading(false)
+    }
+  }
+
   return (
     <View style={{flex: 1}}>
       <SmallButton icon={ChevronLeft}
@@ -33,23 +60,9 @@ const signUp = () => {
         <TextBox value={email} onChangeText={setEmail} placeholder='E-mail'/>
         <TextBox value={password} onChangeText={setPassword} placeholder='Password'/>
         <TextBox value={confirmPassword} onChangeText={setConfirmPassword} placeholder='Re-enter password'/>
-        <LargeButton label='Create Account' disabled={false} 
-          onPress={() => {
-            if (password === '' || confirmPassword === ''){
-              setError('Form not complete')
-            } 
-            else if (password !== confirmPassword) {
-              setError('Passwords do not match')
-            }
-            else {
-              setError('')
-              router.push('/journeys')
-            }
-          }}/>
-
-          {error !== '' && <Text style={styles.errorText}>{error}</Text>}
-        </KeyboardAwareScrollView>
-      </View>
+        <LargeButton label={loading ? 'Creating Account...' : 'Create Account'} disabled={loading} onPress={handleSignUp}/>
+      </KeyboardAwareScrollView>
+    </View>
 
   )
 }
