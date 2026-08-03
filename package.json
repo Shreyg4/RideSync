@@ -45,6 +45,7 @@
     "@types/aes-js": "^3.1.4",
     "@types/react": "~19.1.0",
     "react-test-renderer": "19.1.0",
+    "supabase": "^2.111.0",
     "typescript": "~5.9.2"
   },
   "expo": {

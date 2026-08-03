@@ -2,12 +2,14 @@ import { supabase } from "@/src/lib/supabase"
 import { Session, User } from "@supabase/supabase-js"
 import { createContext, useContext, useEffect, useState } from "react"
 
+//Single source of truth for auth state. Wraps the whole app in _layout.tsx so screens
+//read the session from context instead of each calling Supabase themselves.
 interface AuthContextType{
   session: Session | null;
   user: User | null;
   loading: boolean;
 
-  signUp:(username:string, email:string, password:string)=>Promise<void>;
+  signUp:(first_name:string, last_name:string, username:string, email:string, password:string)=>Promise<void>;
   signIn:(email:string, password:string)=>Promise<void>;
   signOut:()=>Promise<void>;
 }
@@ -16,7 +18,8 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export const AuthProvider=({children}:{children:React.ReactNode})=>{
   const[session, setSession] = useState<Session | null>(null)
   const[user, setUser] = useState<User | null>(null)
-  const[loading, setLoading] = useState(true)
+  //RootLayoutNav waits on this before redirecting anywhere.
+  const[loading, setLoading] = useState(true)   //Starts true so the app doesn't flash the login screen while still reading the stored session off disk.
 
   useEffect(() =>{
     const InitializeSession = async() => {
@@ -36,13 +39,16 @@ export const AuthProvider=({children}:{children:React.ReactNode})=>{
         setLoading(false)
       }
     )
+    //Without this the listener keeps firing after unmount and leaks.
     return() => {
       subscription.unsubscribe();
     }
   },[])
 
-  const signUp = async(username:string, email:string, password:string) => {
-    const{error}=await supabase.auth.signUp({options: {data: { username }}, email, password})
+  //The profile fields ride along in `options.data`, which lands in auth.users.raw_user_meta_data.
+  //The handle_new_user trigger reads them from there to build the profiles row
+  const signUp = async(first_name:string, last_name:string, username:string, email:string, password:string) => {
+    const{error}=await supabase.auth.signUp({options: {data: { first_name, last_name, username }}, email, password})
     if(error){
       throw error;
     }

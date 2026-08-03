@@ -1,17 +1,19 @@
 import Colors from '@/src/constants/Colors';
 import { useState } from 'react';
-import { StyleProp, TextInput, TextStyle, ViewStyle } from 'react-native';
+import { StyleProp, TextInput, TextStyle, View, ViewStyle, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { DimensionValue } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 //Reusable single-line text field (e.g. trip name, destination).
 //Controlled input: the caller owns the state and passes value + onChangeText.
+//Handles the focus ring (border color when user tap on textbox), the red error border, and the show/hide toggle on password fields.
 type TextBoxProps = {
   value: string;                        //current text (caller-owned state)
   onChangeText: (text: string) => void; //called with the new text on every keystroke
   placeholder?: string;                 //hint shown when empty
   placeholderTextColor?: string;
-  color?: string;                       //text colour
+  color?: string;                       //text color
   backgroundColor?: string;
   width?: DimensionValue;
   height?: DimensionValue;
@@ -27,6 +29,8 @@ type TextBoxProps = {
   secureTextEntry?: boolean;            //mask input for passwords
   maxLength?: number;
   style?: StyleProp<ViewStyle & TextStyle>; //per-use overrides (win over defaults)
+  error?: boolean;
+  borderColorError?: string;
 };
 
 export default function TextBox({
@@ -50,41 +54,69 @@ export default function TextBox({
   secureTextEntry = false,
   maxLength,
   style,
+  error,
+  borderColorError = Colors.theme.error,
 }: TextBoxProps) {
-  const [focused, setFocused] = useState(false); //true while the field is being edited
+  const [focused, setFocused] = useState(false);  //true while the field is being edited
+  const [revealed, setRevealed] = useState(false); //password temporarily shown as plain text
 
+  //Border precedence: an error outranks the focus ring, so a bad field stays red even user is correcting it
+  const activeBorder = error ? borderColorError : focused ? borderColorSelected : borderColor
+
+  //A TextInput can't have children, so the wrapper exists purely to give the eye button something to be absolutely positioned against. 
   return (
-    <TextInput
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      placeholderTextColor={placeholderTextColor}
-      editable={editable}
-      keyboardType={keyboardType}
-      autoCapitalize={autoCapitalize}
-      secureTextEntry={secureTextEntry}
-      maxLength={maxLength}
-      onFocus={() => {
-        setFocused(true) 
-        Haptics.selectionAsync()
-      }}
-      onBlur={() => setFocused(false)}
-      style={[
-        {
-          width,
-          height,
-          borderRadius,
-          borderWidth,
-          borderColor: focused ? borderColorSelected : borderColor,
-          marginVertical,
-          backgroundColor,
-          color,
-          fontSize,
-          alignSelf: 'center',   //center within its parent, like LargeButton
-          paddingHorizontal: 16, //keep text off the border
-        },
-        style, //caller overrides come last so they win
-      ]}
-    />
+    <View style={{ width, alignSelf: 'center', justifyContent: 'center' }}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={placeholderTextColor}
+        editable={editable}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        secureTextEntry={secureTextEntry && !revealed} //The prop says "this is a password field"; `revealed` says "but show it right now".
+        maxLength={maxLength}
+        onFocus={() => {
+          setFocused(true) 
+          Haptics.selectionAsync()
+        }}
+        onBlur={() => setFocused(false)}
+        style={[
+          {
+            width: '100%',
+            height,
+            borderRadius,
+            borderWidth,
+            borderColor: activeBorder,
+            marginVertical,
+            backgroundColor,
+            color,
+            fontSize,
+            alignSelf: 'center',   //center within its parent, like LargeButton
+            paddingHorizontal: 16, //keep text off the border
+            paddingRight: 48       //clear the eye button; the specific edge wins over the shorthand above
+          },
+          style, //caller overrides come last so they win
+        ]}
+      />
+      {/* Show/hide toggle, rendered only for password fields. */}
+      {secureTextEntry ? (
+      <Pressable
+        onPress={() => setRevealed(r => !r)}
+        style={{
+          position: 'absolute',
+          right: 0, top: 0, bottom: 0,
+          width: 56,
+          alignItems: 'center',
+          justifyContent: 'center', }}
+        accessibilityRole="button"
+        accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
+      >
+        {revealed
+          ? <EyeOff size={20} color={Colors.theme.textMutedLight} />
+          : <Eye    size={20} color={Colors.theme.textMutedLight} />}
+      </Pressable>
+    ) : null}
+    </View>
   );
 }

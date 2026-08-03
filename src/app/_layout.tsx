@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
+import { isLoading, useFonts } from 'expo-font';
 import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -42,25 +42,31 @@ function RootLayoutNav() {
   const segments = useSegments();
 
   useEffect(() => {
+    //Wait for the stored session to load, or bounce to /welcome on every cold start.
     if (loading) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!session && !inAuthGroup) {
-      router.replace('/welcome');       // logged out but on a protected screen
+      router.replace('/welcome');       //logged out but on a protected screen
     } else if (session && inAuthGroup) {
-      router.replace('/journeys');      // logged in but still on an auth screen
+      router.replace('/journeys');      //logged in but still on an auth screen
     }
   }, [session, loading, segments]);
   return (
     <KeyboardProvider>
       <ThemeProvider value={DarkTheme}>
         <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(planner)" options={{ headerShown: false }} />
-          <Stack.Screen name="createTrip" options={{ 
-            presentation: 'modal',
-            headerShown: false,
-          }} />
+          <Stack.Protected guard={!!session}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(planner)" options={{ headerShown: false }} />
+            <Stack.Screen name="createTrip" options={{ 
+              presentation: 'modal',
+              headerShown: false,
+            }} />
+          </Stack.Protected>
+
+          <Stack.Protected guard={!session}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          </Stack.Protected>
         </Stack>
       </ThemeProvider>
     </KeyboardProvider>

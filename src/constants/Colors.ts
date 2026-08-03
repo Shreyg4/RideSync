@@ -13,6 +13,8 @@ const palette = {
   gray500: '#47474B', 
   gray300: '#7B7B80',
   white:   '#FFF',
+  red: '#E5484D',
+  green: '#28a745'
 };
 
 export default {
@@ -40,5 +42,7 @@ export default {
     // status
     tabIconDefault: palette.gray500,
     tabIconSelected: palette.blue5,
+    error: palette.red,
+    success: palette.green
   },
 };
