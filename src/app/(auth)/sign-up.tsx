@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import {KeyboardAwareScrollView} from 'react-native-keyboard-controller'
 import React from 'react'
 import { useState, useEffect } from 'react'
@@ -13,6 +13,9 @@ import { Alert } from 'react-native'
 import { useAuth } from '@/src/context/AuthProvider'
 import { supabase } from '@/src/lib/supabase'
 import { LoaderCircle, CircleCheck, CircleX } from 'lucide-react-native'
+import * as ImagePicker from 'expo-image-picker'
+import AvatarImage from '@/src/components/avatarImage'
+import { uploadAvatar } from '@/src/lib/avatarImage'
 
 //Account creation screen.
 //Validation happens in two layers:
@@ -26,6 +29,7 @@ const signUp = () => {
   type Form = { firstName: string, lastName: string, username: string; email: string; }
 
   const insets = useSafeAreaInsets()
+  const [avatarAsset, setAvatarAsset] = useState<ImagePicker.ImagePickerAsset | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [username, setUsername] = useState('')
@@ -36,6 +40,21 @@ const signUp = () => {
   const [errors, setErrors] = useState<FieldErrors>({})
   //Result of the live username lookup. 'idle' also covers "we couldn't check".
   const [usernameState, setUsernameState] = useState<'idle'|'checking'|'free'|'taken'>('idle')
+
+  const pickAvatarImage = async () => {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!granted) return
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true, //gives user crop step
+      aspect: [1, 1], //square crop
+      quality: 0.7 //JPEG compression
+    })
+
+    if (result.canceled) return
+    setAvatarAsset(result.assets[0])
+  }
 
   //Must stay in sync with the check constraint on profiles.username in the create_profiles migration.
   //If you widen one, widen the other, or the DB will reject names the app accepted.
@@ -115,7 +134,14 @@ const signUp = () => {
 
     setLoading(true)
     try{
-      await signUp(clean.firstName, clean.lastName, clean.username, clean.email, password)
+      const user = await signUp(clean.firstName, clean.lastName, clean.username, clean.email, password)
+      if (user && avatarAsset) {
+        try {
+          await uploadAvatar(user.id, avatarAsset.uri, avatarAsset.mimeType)
+        } catch (e) {
+          console.warn('avatar upload failed', e)   // deliberately not rethrown
+        }
+      }
       Alert.alert("Account created successfully")
     }catch (e:any){
       //Two people can claim a name in the same second, so the unique index is the real
@@ -143,8 +169,13 @@ const signUp = () => {
           contentContainerStyle={{flexGrow: 1, paddingTop: '35%', paddingBottom: 50}} 
           keyboardDismissMode="on-drag" 
           keyboardShouldPersistTaps="handled"
-          bottomOffset={80}>
+          bottomOffset={125}>
         <Text style={styles.text}>Create Account</Text>
+        {/* Avater Image Picker */}
+        <Pressable onPress={pickAvatarImage} style={{alignSelf: 'center', marginVertical: 20}}>
+          <AvatarImage uri={avatarAsset?.uri} />
+        </Pressable>
+        <Text style={[styles.subtext, {alignSelf: 'center', marginLeft: 0}]}>Profile Picture (optional)</Text>
         {/* Name */}
         <Text style={styles.subtext}>Name</Text>
         <TextBox value={firstName} onChangeText={updateField('firstName', setFirstName)} error={!!errors.firstName} placeholder='First Name'/>

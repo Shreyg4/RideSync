@@ -9,7 +9,9 @@ interface AuthContextType{
   user: User | null;
   loading: boolean;
 
-  signUp:(first_name:string, last_name:string, username:string, email:string, password:string)=>Promise<void>;
+  //Resolves to the new user so the caller can act on its id (e.g. upload an avatar).
+  //Null when email confirmation is on and the account isn't usable yet.
+  signUp:(first_name:string, last_name:string, username:string, email:string, password:string)=>Promise<User | null>;
   signIn:(email:string, password:string)=>Promise<void>;
   signOut:()=>Promise<void>;
 }
@@ -48,10 +50,13 @@ export const AuthProvider=({children}:{children:React.ReactNode})=>{
   //The profile fields ride along in `options.data`, which lands in auth.users.raw_user_meta_data.
   //The handle_new_user trigger reads them from there to build the profiles row
   const signUp = async(first_name:string, last_name:string, username:string, email:string, password:string) => {
-    const{error}=await supabase.auth.signUp({options: {data: { first_name, last_name, username }}, email, password})
+    const{data, error}=await supabase.auth.signUp({options: {data: { first_name, last_name, username }}, email, password})
     if(error){
       throw error;
     }
+    //With email confirmations off this also stores a session, so the caller's next
+    //Supabase call is already authenticated and auth.uid() is populated for RLS.
+    return data.user;
   }
 
   const signIn = async(email:string, password:string) => {

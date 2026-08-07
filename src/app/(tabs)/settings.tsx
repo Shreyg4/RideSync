@@ -5,10 +5,12 @@ import Colors from '@/src/constants/Colors';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
+import AvatarImage from '@/src/components/avatarImage';
+import { avatarUrl } from '@/src/lib/avatarImage';
 
 export default function settings() {
   const insets = useSafeAreaInsets();
-  
+
   const{signOut} = useAuth();
   const handleSignOut=async() => {
     try{
