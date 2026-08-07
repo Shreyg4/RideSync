@@ -18,7 +18,7 @@ export default function AvatarImage({
   style
 }: AvatarImageProps) {
   return(
-    <View style={[{width: size, height: size, borderRadius: size / 2, borderColor, borderWidth}, styles.base, style]}>
+    <View style={[{width: size, height: size, borderRadius: size / 2, borderColor, borderWidth, pointerEvents: 'none'}, styles.base, style]}>
       {uri
         ? <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover"/>
         : <User size={size * 0.45} color={Colors.theme.textMuted} />

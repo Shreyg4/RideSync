@@ -7,11 +7,32 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
 import AvatarImage from '@/src/components/avatarImage';
 import { avatarUrl } from '@/src/lib/avatarImage';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/src/lib/supabase';
+import { LoaderCircle } from 'lucide-react-native';
 
 export default function settings() {
   const insets = useSafeAreaInsets();
+  const { user, signOut } = useAuth()
+  const [photoPath, setPhotoPath] = useState<string | null>(null)
 
-  const{signOut} = useAuth();
+  useEffect(() => {
+
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('avatar_image')
+        .eq('id', user?.id)
+        .single()
+
+        if (cancelled) return
+        if (!error) setPhotoPath(data.avatar_image)
+    })()
+
+    return () => { cancelled = true }
+  }, [user?.id])
+  
   const handleSignOut=async() => {
     try{
       await signOut();
@@ -25,6 +46,7 @@ export default function settings() {
       <ScrollView showsVerticalScrollIndicator={false} 
           contentContainerStyle={{ paddingBottom: insets.bottom + 75}}>
         <View>
+          <AvatarImage uri={avatarUrl(photoPath)} style={{alignSelf: 'center', marginVertical: 20}} />
           <Text style={styles.text}>Settings that will come soon</Text>
           <LargeButton 
             label='Delete Account' 

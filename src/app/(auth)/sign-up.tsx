@@ -16,6 +16,7 @@ import { LoaderCircle, CircleCheck, CircleX } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
 import AvatarImage from '@/src/components/avatarImage'
 import { uploadAvatar } from '@/src/lib/avatarImage'
+import * as Haptics from 'expo-haptics';
 
 //Account creation screen.
 //Validation happens in two layers:
@@ -42,6 +43,7 @@ const signUp = () => {
   const [usernameState, setUsernameState] = useState<'idle'|'checking'|'free'|'taken'>('idle')
 
   const pickAvatarImage = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!granted) return
 
@@ -172,7 +174,7 @@ const signUp = () => {
           bottomOffset={125}>
         <Text style={styles.text}>Create Account</Text>
         {/* Avater Image Picker */}
-        <Pressable onPress={pickAvatarImage} style={{alignSelf: 'center', marginVertical: 20}}>
+        <Pressable onPress={pickAvatarImage} style={{alignSelf: 'center', marginVertical: 20, pointerEvents: "box-only"}}>
           <AvatarImage uri={avatarAsset?.uri} />
         </Pressable>
         <Text style={[styles.subtext, {alignSelf: 'center', marginLeft: 0}]}>Profile Picture (optional)</Text>

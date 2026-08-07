@@ -23,6 +23,7 @@ function TabIcon({ focused, children }: { focused: boolean; children: React.Reac
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: focused ? Colors.theme.tint : 'transparent',
+        pointerEvents: 'none'
       }}>
       {children}
     </View>

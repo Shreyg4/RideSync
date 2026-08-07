@@ -108,7 +108,8 @@ export default function TextBox({
           right: 0, top: 0, bottom: 0,
           width: 56,
           alignItems: 'center',
-          justifyContent: 'center', }}
+          justifyContent: 'center',
+          pointerEvents: 'box-only' }}
         accessibilityRole="button"
         accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
       >
