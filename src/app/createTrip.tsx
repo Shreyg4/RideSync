@@ -1,28 +1,57 @@
-import { View, Text, StyleSheet, Pressable, Platform, ScrollView} from 'react-native'
+import { View, Text, StyleSheet, Pressable, Platform, ScrollView, Modal} from 'react-native'
 import React from 'react'
 import TextBox from '@components/textbox'
 import { useState } from 'react'
 import Colors from '../constants/Colors'
 import { LinearGradient } from 'expo-linear-gradient'
-import { ImagePlus, Route, Waypoints, MapPin, Repeat, ChevronLeft} from 'lucide-react-native'
+import { ImagePlus, MapPin, Repeat, ChevronLeft, Calendar, Clock} from 'lucide-react-native'
 import * as Haptics from 'expo-haptics';
 import LargeButton from '../components/largeButton'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SmallButton from '../components/smallButton'
+import DateTimePicker, { DateTimePickerAndroid, DateTimePickerEvent } from '@react-native-community/datetimepicker'
+import FieldButton from '../components/fieldButton'
 
-const tripType = [{label: 'Single-day', icon: Route}, {label: 'Multi-day', icon: Waypoints}]
-const tripForm = [{label: 'One-way', icon: MapPin}, {label: 'Round-trip', icon: Repeat}]
+const tripType = [{label: 'One-way', icon: MapPin}, {label: 'Round-trip', icon: Repeat}]
 
 const createTripScreen = () => {
   const insets = useSafeAreaInsets();
 
   const [tripName, setTripName] = useState('')
-  const [tripDate, setTripDate] = useState('')
-  const [tripTime, setTripTime] = useState('')
-  const [selectedType, setSelectedType] = useState<string | null>(null)
-  const [selectedForm, setSelectedForm] = useState<string | null>(null)
 
+  const [when, setWhen] = useState<Date | null>(null)
+  const [mode, setMode] = useState<'date' | 'time' | null>(null)
+  const [selectedType, setSelectedType] = useState<string | null>(null)
+
+  // Mode arrives as an argument instead of being read out of state
+  const onPicked = (which: 'date' | 'time') => (event: DateTimePickerEvent, picked?: Date) => {
+    if (event.type === 'dismissed' || !picked) return
+    setWhen(prev => {
+      // Copy the existing instant so editing one half preserves the other.
+      const next = new Date(prev ?? new Date())
+      if (which === 'date') next.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate())
+      else next.setHours(picked.getHours(), picked.getMinutes(), 0, 0)
+      return next
+    })
+  }
+
+  // Android's picker is a system dialog, not a view, so it's opened imperatively and
+  // dismisses itself. iOS renders inline, so there `mode` drives the Modal below.
+  const open = (which: 'date' | 'time') => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: when ?? new Date(),
+        mode: which,
+        display: which === 'date' ? 'calendar' : 'spinner',
+        onChange: onPicked(which),
+      })
+      return
+    }
+    setMode(which)
+  }
+
+  const onDone = () => {setMode(null)}
   return (
     <View style={{ paddingTop: Platform.select ({ ios: 0, android: insets.top }) }}>
       <LinearGradient
@@ -63,7 +92,7 @@ const createTripScreen = () => {
                   height: 70,
                   borderRadius: 20,
                   justifyContent: 'center',
-                  alignItems: 'center'
+                  alignItems: 'center',
                 }
               ]}>        
                 <Icon color={Colors.theme.text} size={24} style={{alignSelf: 'center'}}/>    
@@ -73,35 +102,19 @@ const createTripScreen = () => {
           })}
         </View>
 
-        {/* Select which form of trip this will be */}
-        <View style={[styles.types, {margin: 10}]}>
-          {tripForm.map((tripForm) => {
-            const Icon = tripForm.icon
-            return(
-              <Pressable key={tripForm.label} onPress={() => {
-                setSelectedForm(tripForm.label)
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              //Styling of selected pill
-              style={() => [
-                {
-                  backgroundColor: selectedForm === tripForm.label ? Colors.theme.tint : 'transparent',
-                  width: '50%',
-                  height: 70,
-                  borderRadius: 20,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }
-              ]}>        
-                <Icon color={Colors.theme.text} size={24} style={{alignSelf: 'center'}}/>    
-                <Text style={styles.typeText}>{tripForm.label}</Text>
-              </Pressable>
-            )
-          })}
-        </View>
-        
-        <TextBox value={tripDate} onChangeText={setTripDate} placeholder='Start date' />
-        <TextBox value={tripTime} onChangeText={setTripTime} placeholder='Start time' />
+        <FieldButton 
+          text={when && when.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} 
+          placeholder='Start Date'
+          icon={Calendar}
+          onPress={() => open('date')}
+        />
+
+        <FieldButton 
+          text={when && when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} 
+          placeholder='Start Time'
+          icon={Clock}
+          onPress={() => open('time')}
+        />
         {/* Button for user to include an image */}
         <Pressable
           onPress={() => {
@@ -118,13 +131,51 @@ const createTripScreen = () => {
           <ImagePlus color={Colors.theme.textMutedLight} style={{marginBottom: 10}}/>
           <Text style={{color: Colors.theme.textMutedLight}}>Add cover image (optional)</Text>
         </Pressable>
+
         <LargeButton 
           label='Create Trip' disabled={false}
           onPress={() => router.replace('/planner')} 
         />
       </ScrollView>
+      {/* iOS only - Android opens its own dialog from open() above. */}
+      {Platform.OS === 'ios' && (
+      <Modal
+        visible={mode !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={onDone}          // Android back button; harmless on iOS, good habit
+      >
+        {/* Backdrop: fills the screen, pushes the card to the bottom, dismisses on tap */}
+        <Pressable style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={onDone}>
+          {/* Swallow taps so pressing the card itself doesn't close it */}
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: Colors.theme.card,
+              borderTopLeftRadius: 20, borderTopRightRadius: 20,
+              paddingBottom: insets.bottom,
+            }}
+          >
+            <DateTimePicker
+              value={when ?? new Date()}
+              mode={mode ?? 'date'}        // required prop; `visible` is false when null anyway
+              display={mode === 'date' ? 'inline' : 'spinner'}
+              themeVariant='dark'
+              onChange={onPicked(mode ?? 'date')}
+              style={{alignSelf: 'center'}}
+            />
 
+            <View style={{ flexDirection: 'row', justifyContent: 'center', padding: 10 }}>
+              <Pressable onPress={onDone} hitSlop={12} style={styles.doneButton}>
+                <Text style={{ color: Colors.theme.background, fontSize: 17, fontWeight: '600' }}>Done</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+      )}
     </View>
+
   )
 }
 
@@ -179,5 +230,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
   },
+  doneButton: {
+    backgroundColor: Colors.theme.tint, 
+    paddingHorizontal: 90,
+    paddingVertical: 10,
+    borderRadius: 20
+  }
 })
 export default createTripScreen
