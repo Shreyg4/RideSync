@@ -1,7 +1,7 @@
 import TextBox from '@/src/components/textbox';
 import LargeButton from '@/src/components/largeButton';
 import { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 
 export default function joinTrip() {

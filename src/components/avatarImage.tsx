@@ -2,6 +2,7 @@ import Colors from '@/src/constants/Colors';
 import { User } from 'lucide-react-native';
 import { StyleProp, View, ViewStyle, Image, StyleSheet } from 'react-native';
 
+// Component to hold avatar image
 type AvatarImageProps = {
   uri?: string | null;
   size?: number;

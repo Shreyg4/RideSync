@@ -7,7 +7,6 @@ import { ChevronLeft } from 'lucide-react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Colors from '@/src/constants/Colors'
-import { Alert } from 'react-native'
 import { useAuth } from '@/src/context/AuthProvider'
 
 //Sign-in screen. Errors come in two tiers:

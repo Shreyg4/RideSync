@@ -3,7 +3,6 @@ import { ChevronLeft, Settings } from 'lucide-react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SmallButton from '@/src/components/smallButton'
-import LargeButton from '@/src/components/largeButton'
 import React from 'react'
 import Colors from '@/src/constants/Colors'
 

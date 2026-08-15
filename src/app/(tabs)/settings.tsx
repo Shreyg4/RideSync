@@ -9,7 +9,6 @@ import AvatarImage from '@/src/components/avatarImage';
 import { avatarUrl } from '@/src/lib/avatarImage';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
-import { LoaderCircle } from 'lucide-react-native';
 
 export default function settings() {
   const insets = useSafeAreaInsets();

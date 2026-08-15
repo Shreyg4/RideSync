@@ -1,4 +1,4 @@
-import { Text, View } from '@/src/components/Themed';
+import { Text, View } from '@/src/components/themed';
 import { Trip } from '@assets/dummydata/types';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';

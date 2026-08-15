@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { defaultTripImage } from '../components/TripListItem';
+import { defaultTripImage } from '../components/tripListItem';
 import Colors from '../constants/Colors';
 import SmallButton from '../components/smallButton';
 import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';

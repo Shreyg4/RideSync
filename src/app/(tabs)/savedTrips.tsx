@@ -1,6 +1,6 @@
 import Colors from '@/src/constants/Colors';
 import archive from '@/assets/dummydata/data/archive';
-import TripListItem from '@components/TripListItem';
+import TripListItem from '@/src/components/tripListItem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlatList, StyleSheet, View, Text } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'

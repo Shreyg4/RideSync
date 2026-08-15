@@ -8,7 +8,7 @@ import LargeButton from '@/src/components/largeButton'
 import React from 'react'
 import Colors from '@/src/constants/Colors'
 import { LinearGradient } from 'expo-linear-gradient'
-import StopListItem from '@/src/components/StopListItem'
+import StopListItem from '@/src/components/stopListItem'
 import locations from '@/assets/dummydata/data/locations'
 
 const planner = () => {

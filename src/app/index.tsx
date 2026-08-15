@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEffect } from 'react';
-import { Redirect, router, SplashScreen } from 'expo-router';
+import { Redirect, SplashScreen } from 'expo-router';
 import { useAuth } from '../context/AuthProvider';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Colors from '../constants/Colors';
