@@ -3,7 +3,7 @@ import SmallButton from '@/src/components/smallButton'
 import { ChevronLeft } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import Colors from '@/src/constants/Colors'
+import Colors from '@/src/constants/colors'
 import { LinearGradient } from 'expo-linear-gradient'
 import React from 'react'
 

@@ -1,11 +1,11 @@
-import { Text, View } from '@/src/components/themed';
+import { Text, View } from 'react-native';
 import { Trip } from '@assets/dummydata/types';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Calendar, Dot, Users } from 'lucide-react-native';
 import { ImageBackground, Pressable, StyleSheet } from 'react-native';
-import Colors from '../constants/Colors';
+import Colors from '@/src/constants/colors';
 
 //Fallback image used when a trip has no image of its own
 export const defaultTripImage = 'https://imageio.forbes.com/specials-images/imageserve//62bdd4a21a6dc599d18bca9b/0x0.jpg?format=jpg&height=900&width=1600&fit=bounds';

@@ -6,7 +6,7 @@ import SmallButton from '@/src/components/smallButton'
 import { ChevronLeft, Icon } from 'lucide-react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '@/src/constants/Colors'
+import Colors from '@/src/constants/colors'
 import TextBox from '@/src/components/textbox'
 import LargeButton from '@/src/components/largeButton'
 import { Alert } from 'react-native'
@@ -15,7 +15,7 @@ import { supabase } from '@/src/lib/supabase'
 import { LoaderCircle, CircleCheck, CircleX } from 'lucide-react-native'
 import * as ImagePicker from 'expo-image-picker'
 import AvatarImage from '@/src/components/avatarImage'
-import { uploadAvatar } from '@/src/lib/avatarImage'
+import { uploadAvatar } from '@/src/lib/avatarStorage'
 import * as Haptics from 'expo-haptics';
 
 //Account creation screen.

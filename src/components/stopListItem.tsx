@@ -3,7 +3,7 @@ import { Text, View, Pressable, StyleSheet } from 'react-native'
 import { Dot } from 'lucide-react-native';
 import { Location } from '@/assets/dummydata/types'
 import * as Haptics from 'expo-haptics';
-import Colors from '../constants/Colors';
+import Colors from '@/src/constants/colors';
 
 type StopListItemProps = {
     location: Location;

@@ -1,12 +1,12 @@
 import { Text, View, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LargeButton from '@/src/components/largeButton';
-import Colors from '@/src/constants/Colors';
+import Colors from '@/src/constants/colors';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
 import AvatarImage from '@/src/components/avatarImage';
-import { avatarUrl } from '@/src/lib/avatarImage';
+import { avatarUrl } from '@/src/lib/avatarStorage';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 

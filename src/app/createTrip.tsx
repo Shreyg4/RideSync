@@ -2,16 +2,16 @@ import { View, Text, StyleSheet, Pressable, Platform, ScrollView, Modal} from 'r
 import React from 'react'
 import TextBox from '@components/textbox'
 import { useState } from 'react'
-import Colors from '../constants/Colors'
+import Colors from '@/src/constants/colors'
 import { LinearGradient } from 'expo-linear-gradient'
 import { ImagePlus, MapPin, Repeat, ChevronLeft, Calendar, Clock} from 'lucide-react-native'
 import * as Haptics from 'expo-haptics';
-import LargeButton from '../components/largeButton'
+import LargeButton from '@/src/components/largeButton'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import SmallButton from '../components/smallButton'
+import SmallButton from '@/src/components/smallButton'
 import DateTimePicker, { DateTimePickerAndroid, DateTimePickerEvent } from '@react-native-community/datetimepicker'
-import FieldButton from '../components/fieldButton'
+import FieldButton from '@/src/components/fieldButton'
 
 const tripType = [{label: 'One-way', icon: MapPin}, {label: 'Round-trip', icon: Repeat}]
 

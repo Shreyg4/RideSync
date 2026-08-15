@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SmallButton from '@/src/components/smallButton'
 import React from 'react'
-import Colors from '@/src/constants/Colors'
+import Colors from '@/src/constants/colors'
 
 const enterStop = () => {
   const insets = useSafeAreaInsets();

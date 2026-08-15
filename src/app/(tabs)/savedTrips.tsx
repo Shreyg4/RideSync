@@ -1,4 +1,4 @@
-import Colors from '@/src/constants/Colors';
+import Colors from '@/src/constants/colors';
 import archive from '@/assets/dummydata/data/archive';
 import TripListItem from '@/src/components/tripListItem';
 import { LinearGradient } from 'expo-linear-gradient';

@@ -1,9 +1,9 @@
 import React from 'react'
 import { useEffect } from 'react';
 import { Redirect, SplashScreen } from 'expo-router';
-import { useAuth } from '../context/AuthProvider';
+import { useAuth } from '@/src/context/AuthProvider';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import Colors from '../constants/Colors';
+import Colors from '@/src/constants/colors';
 
 export default function index() {
   const{loading, session} = useAuth();

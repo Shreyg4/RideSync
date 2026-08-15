@@ -5,12 +5,12 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { defaultTripImage } from '../components/tripListItem';
-import Colors from '../constants/Colors';
-import SmallButton from '../components/smallButton';
+import { defaultTripImage } from '@/src/components/tripListItem';
+import Colors from '@/src/constants/colors';
+import SmallButton from '@/src/components/smallButton';
 import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
 import { router } from 'expo-router';
-import LargeButton from '../components/largeButton';
+import LargeButton from '@/src/components/largeButton';
 
 
 const TripDetails = () => {

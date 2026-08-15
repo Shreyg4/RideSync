@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import React from 'react'
-import Colors from '@/src/constants/Colors';
+import Colors from '@/src/constants/colors';
 import LargeButton from '@/src/components/largeButton';
 
 export default function welcome() {

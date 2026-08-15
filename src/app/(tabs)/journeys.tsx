@@ -1,4 +1,4 @@
-import Colors from '@/src/constants/Colors';
+import Colors from '@/src/constants/colors';
 import trips from '@assets/dummydata/data/trips';
 import TripListItem from '@/src/components/tripListItem';
 import { LinearGradient } from 'expo-linear-gradient';

@@ -1,8 +1,7 @@
-import Colors from '@/src/constants/Colors';
+import Colors from '@/src/constants/colors';
 import * as Haptics from 'expo-haptics';
 import { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native';
-import { DimensionValue } from 'react-native';
 
 type FieldButtonProps = {
   text: string | null

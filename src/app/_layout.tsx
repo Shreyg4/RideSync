@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { AuthProvider, useAuth } from '../context/AuthProvider';
+import { AuthProvider, useAuth } from '@/src/context/AuthProvider';
 
 export {
   // Catch any errors thrown by the Layout component.

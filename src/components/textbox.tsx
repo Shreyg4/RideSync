@@ -1,4 +1,4 @@
-import Colors from '@/src/constants/Colors';
+import Colors from '@/src/constants/colors';
 import { useState } from 'react';
 import { StyleProp, TextInput, TextStyle, View, ViewStyle, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
