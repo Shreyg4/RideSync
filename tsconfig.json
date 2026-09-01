@@ -4,8 +4,9 @@
     "paths": {
       "@/*": ["./*", "./src/*"],
       "@components/*": ["./src/components/*"],
-      "@assets/*": ["./assets/*"]
-    }
+      "@assets/*": ["./assets/*"],
+    },
+    "allowUnreachableCode": true
   },
   "include": [
     "**/*.ts",

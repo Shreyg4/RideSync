@@ -4,6 +4,7 @@
     "source.fixAll": "explicit",
     "source.sortMembers": "explicit"
   },
+  "files.exclude": { "**/.DS_Store": false },
   "json.schemas": [
     {
       "fileMatch": ["app.json", "app.config.json"],
