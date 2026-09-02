@@ -1,26 +1,33 @@
 import Colors from '@/src/constants/colors';
 import * as Haptics from 'expo-haptics';
 import { LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native';
-import { DimensionValue } from 'react-native';
+import {
+  Pressable,
+  StyleProp,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+  DimensionValue,
+} from 'react-native';
 
-//Reusable wide button (e.g. "Start Trip", "Login").
-//Shows a text label, with an optional leading icon. Centers itself.
+// Reusable wide button (e.g. "Start Trip", "Login").
+// Shows a text label, with an optional leading icon. Centers itself.
 type LargeButtonProps = {
-  label: string;               //button text
+  label: string; // button text
   onPress: () => void;
-  icon?: LucideIcon;           //optional leading lucide icon
-  color?: string;              //text + icon color
+  icon?: LucideIcon; // optional leading lucide icon
+  color?: string; // text + icon color
   backgroundColor?: string;
   backgroundColorPressed?: string;
   width?: DimensionValue;
   height?: DimensionValue;
-  marginVertical?: number,
+  marginVertical?: number;
   borderRadius?: number;
   fontSize?: number;
   hapticStyle?: Haptics.ImpactFeedbackStyle;
-  style?: StyleProp<ViewStyle>;   //per-use container overrides
-  textStyle?: StyleProp<TextStyle>; //per-use text overrides
+  style?: StyleProp<ViewStyle>; // per-use container overrides
+  textStyle?: StyleProp<TextStyle>; // per-use text overrides
   disabled?: boolean;
   disabledBackgroundColor?: string;
   borderWidth?: number;
@@ -48,13 +55,12 @@ export default function LargeButton({
   textStyle,
   disabled = false,
   disabledBackgroundColor = Colors.theme.disabled,
-
 }: LargeButtonProps) {
   return (
     <Pressable
       disabled={disabled}
       onPress={() => {
-        //Haptic feedback for the button
+        // Haptic feedback for the button
         Haptics.impactAsync(hapticStyle);
         onPress();
       }}
@@ -68,25 +74,27 @@ export default function LargeButton({
           borderWidth,
           borderColor,
           borderStyle,
-          flexDirection: 'row',     //icon + text sit side by side
+          flexDirection: 'row', // icon + text sit side by side
           alignItems: 'center',
           justifyContent: 'center',
-          alignSelf: 'center',      //center the button within its parent
-          gap: 8,                   //space between icon and text
-          backgroundColor: disabled ? disabledBackgroundColor : pressed ?  backgroundColorPressed : backgroundColor,
+          alignSelf: 'center', // center the button within its parent
+          gap: 8, // space between icon and text
+          backgroundColor: disabled
+            ? disabledBackgroundColor
+            : pressed
+              ? backgroundColorPressed
+              : backgroundColor,
         },
-        style, //caller overrides come last so they win
-      ]}>
-      
+        style, // caller overrides come last so they win
+      ]}
+    >
       {/* pointerEvents none: keep the lucide/SVG icon from swallowing taps */}
       {Icon && (
         <View pointerEvents="none">
           <Icon color={color} size={fontSize + 2} />
         </View>
       )}
-      <Text style={[{ color, fontSize, fontWeight: '700' }, textStyle]}>
-        {label}
-      </Text>
+      <Text style={[{ color, fontSize, fontWeight: '700' }, textStyle]}>{label}</Text>
     </Pressable>
   );
 }

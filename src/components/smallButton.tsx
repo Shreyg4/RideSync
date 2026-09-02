@@ -3,17 +3,17 @@ import * as Haptics from 'expo-haptics';
 import { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
 
-//Reusable circular icon button (e.g. the header "+" button).
-//All sizing/colours are props so the same component works anywhere.
+// Reusable circular icon button (e.g. the header "+" button).
+// All sizing/colours are props so the same component works anywhere.
 type SmallButtonProps = {
-  icon: LucideIcon;            //pass the lucide icon component itself
+  icon: LucideIcon; // pass the lucide icon component itself
   onPress: () => void;
   color?: string;
   backgroundColor?: string;
   size?: number;
   diameter?: number;
   hapticStyle?: Haptics.ImpactFeedbackStyle;
-  style?: StyleProp<ViewStyle>; //per-use overrides
+  style?: StyleProp<ViewStyle>; // per-use overrides
 };
 
 export default function SmallButton({
@@ -29,11 +29,11 @@ export default function SmallButton({
   return (
     <Pressable
       onPress={() => {
-        //Haptic feedback for the button
+        // Haptic feedback for the button
         Haptics.impactAsync(hapticStyle);
         onPress();
       }}
-      hitSlop={8} //expands the tap target beyond the small circle
+      hitSlop={8} // expands the tap target beyond the small circle
       style={({ pressed }) => [
         {
           width: diameter,
@@ -42,10 +42,11 @@ export default function SmallButton({
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor,
-          opacity: pressed ? 0.6 : 1, //press feedback
+          opacity: pressed ? 0.6 : 1, // press feedback
         },
-        style, //caller overrides come last so they win
-      ]}>
+        style, // caller overrides come last so they win
+      ]}
+    >
       {/* pointerEvents none: keep the lucide/SVG icon from swallowing taps */}
       <View pointerEvents="none">
         <Icon color={color} size={size} />

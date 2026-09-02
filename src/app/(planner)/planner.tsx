@@ -1,21 +1,20 @@
-import { StyleSheet, Text, View, ScrollView } from 'react-native'
-import { useState } from 'react'
-import { ChevronLeft, Settings, Plus } from 'lucide-react-native'
-import { router } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import SmallButton from '@/src/components/smallButton'
-import LargeButton from '@/src/components/largeButton'
-import React from 'react'
-import Colors from '@/src/constants/colors'
-import { LinearGradient } from 'expo-linear-gradient'
-import StopListItem from '@/src/components/stopListItem'
-import locations from '@/assets/dummydata/data/locations'
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { ChevronLeft, Settings, Plus } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SmallButton from '@/src/components/smallButton';
+import LargeButton from '@/src/components/largeButton';
+import Colors from '@/src/constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import StopListItem from '@/src/components/stopListItem';
+import locations from '@/assets/dummydata/data/locations';
 
-const planner = () => {
+const Planner = () => {
   const insets = useSafeAreaInsets();
-  const [headerHeight, setHeaderHeight] = useState(0)
+  const [headerHeight, setHeaderHeight] = useState(0);
   return (
-    <View style={{flex: 1}}>
+    <View style={{ flex: 1 }}>
       <View>
         <LinearGradient
           colors={[Colors.theme.card, Colors.theme.background]}
@@ -23,26 +22,37 @@ const planner = () => {
           end={{ x: 0, y: 0.7 }}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.headerRow, {marginTop: insets.top}]} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+        <View
+          style={[styles.headerRow, { marginTop: insets.top }]}
+          onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+        >
           <Text style={styles.title}>Planner</Text>
           <View style={styles.headerLeft}>
-            <SmallButton icon={ChevronLeft} onPress={() => router.back()}/>
+            <SmallButton icon={ChevronLeft} onPress={() => router.back()} />
           </View>
           <View style={styles.headerRight}>
-            <SmallButton icon={Settings} onPress={() => router.push('/tripSettings')}/>
+            <SmallButton icon={Settings} onPress={() => router.push('/tripSettings')} />
           </View>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} 
-            contentContainerStyle={{ paddingBottom: insets.bottom + 10}} 
-            keyboardDismissMode="on-drag" 
-            keyboardShouldPersistTaps="never">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 10 }}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="never"
+      >
         <View style={styles.plannerStyle}>
           {locations.map((location) => (
-            <StopListItem key={location.id} location={location}/>
+            <StopListItem key={location.id} location={location} />
           ))}
-          <SmallButton icon={Plus} color={Colors.theme.text} size={40} onPress={() => router.push('/enterStop')} style={styles.addButton}/>
+          <SmallButton
+            icon={Plus}
+            color={Colors.theme.text}
+            size={40}
+            onPress={() => router.push('/enterStop')}
+            style={styles.addButton}
+          />
         </View>
 
         <View style={styles.infoRow}>
@@ -50,24 +60,27 @@ const planner = () => {
           <Text style={styles.subtext}>Total Time</Text>
         </View>
 
-        <LargeButton 
-          label='Directions' disabled={false}
-          onPress={() => router.replace('/journeys')} 
+        <LargeButton
+          label="Directions"
+          disabled={false}
+          onPress={() => router.replace('/journeys')}
         />
-        <LargeButton 
-          label='Save Trip' disabled={false}
-          onPress={() => router.replace('/journeys')} 
+        <LargeButton
+          label="Save Trip"
+          disabled={false}
+          onPress={() => router.replace('/journeys')}
         />
       </ScrollView>
 
-      <LinearGradient colors={[Colors.theme.background, 'transparent']}
-        style={[styles.header, {top: insets.top + headerHeight}]}
+      <LinearGradient
+        colors={[Colors.theme.background, 'transparent']}
+        style={[styles.header, { top: insets.top + headerHeight }]}
       />
     </View>
-  )
-}
+  );
+};
 
-export default planner
+export default Planner;
 
 const styles = StyleSheet.create({
   header: {
@@ -87,28 +100,28 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     width: '100%',
-    alignItems: 'center', 
+    alignItems: 'center',
     justifyContent: 'center',
-    padding: 15
+    padding: 15,
   },
   headerLeft: {
     position: 'absolute',
     left: 16,
-    top: 0, 
+    top: 0,
     bottom: 0,
     justifyContent: 'center',
   },
   headerRight: {
     position: 'absolute',
     right: 16,
-    top: 0, 
+    top: 0,
     bottom: 0,
     justifyContent: 'center',
   },
   text: {
     color: Colors.theme.text,
     alignSelf: 'center',
-    marginTop: 90
+    marginTop: 90,
   },
   subtext: {
     color: Colors.theme.text,
@@ -120,13 +133,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.theme.card,
     margin: 10,
     paddingVertical: 10,
-    borderRadius: 20
+    borderRadius: 20,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     margin: 15,
-    columnGap: 100
+    columnGap: 100,
   },
   addButton: {
     color: Colors.theme.text,
@@ -135,6 +148,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 50 / 2,
-    alignSelf: 'center'
-  }  
-})
+    alignSelf: 'center',
+  },
+});

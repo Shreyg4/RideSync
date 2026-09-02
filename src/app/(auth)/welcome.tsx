@@ -1,20 +1,20 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import React from 'react'
+import React from 'react';
 import Colors from '@/src/constants/colors';
 import LargeButton from '@/src/components/largeButton';
 
-export default function welcome() {
-  const inset = useSafeAreaInsets()
+export default function Welcome() {
+  const inset = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { marginTop: inset.top, marginBottom: inset.bottom}]}>
-      <View style={{flex: 1, marginTop: 30}}>
+    <View style={[styles.container, { marginTop: inset.top, marginBottom: inset.bottom }]}>
+      <View style={{ flex: 1, marginTop: 30 }}>
         <Text style={styles.text}>Welcome to{'\n'}Ride Sync</Text>
       </View>
-      <LargeButton label='Login' onPress={() => router.push('/login')}/>
-      <LargeButton label='Create Account' onPress={() => router.push('/sign-up')}/>
+      <LargeButton label="Login" onPress={() => router.push('/login')} />
+      <LargeButton label="Create Account" onPress={() => router.push('/signUp')} />
     </View>
   );
 }
@@ -31,5 +31,5 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: '800',
     textAlign: 'center',
-  }, 
-})
+  },
+});

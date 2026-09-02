@@ -4,16 +4,23 @@ import { useState } from 'react';
 import { View, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 
-export default function joinTrip() {
-const [joinCode, setJoinCode] = useState('')
+export default function JoinTrip() {
+  const [joinCode, setJoinCode] = useState('');
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag" 
-        keyboardShouldPersistTaps="never">
-      <View style={{flex: 1}}>
-        <TextBox value={joinCode} onChangeText={setJoinCode} placeholder='Enter code' keyboardType='number-pad'/>
-        <LargeButton label='Join Trip' disabled={false} onPress={() => router.back()} />
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="never"
+    >
+      <View style={{ flex: 1 }}>
+        <TextBox
+          value={joinCode}
+          onChangeText={setJoinCode}
+          placeholder="Enter code"
+          keyboardType="number-pad"
+        />
+        <LargeButton label="Join Trip" disabled={false} onPress={() => router.back()} />
       </View>
     </ScrollView>
   );

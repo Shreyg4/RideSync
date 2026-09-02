@@ -1,34 +1,34 @@
-import { StyleSheet, Text, View } from 'react-native'
-import SmallButton from '@/src/components/smallButton'
-import { ChevronLeft } from 'lucide-react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
-import Colors from '@/src/constants/colors'
-import { LinearGradient } from 'expo-linear-gradient'
-import React from 'react'
+import { StyleSheet, Text, View } from 'react-native';
+import SmallButton from '@/src/components/smallButton';
+import { ChevronLeft } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import Colors from '@/src/constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
 
-const tripSettings = () => {
+const TripSettings = () => {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{flex: 1}}>
+    <View style={{ flex: 1 }}>
       <LinearGradient
         colors={[Colors.theme.card, Colors.theme.background]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 0.3 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={[styles.headerRow, {marginTop: insets.top}]}>
+      <View style={[styles.headerRow, { marginTop: insets.top }]}>
         <Text style={styles.title}>Trip Settings</Text>
         <View style={styles.headerLeft}>
-          <SmallButton icon={ChevronLeft} onPress={() => router.back()}/>
+          <SmallButton icon={ChevronLeft} onPress={() => router.back()} />
         </View>
       </View>
       <Text>tripSettings</Text>
     </View>
-  )
-}
+  );
+};
 
-export default tripSettings
+export default TripSettings;
 
 const styles = StyleSheet.create({
   title: {
@@ -39,15 +39,15 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     width: '100%',
-    alignItems: 'center', 
+    alignItems: 'center',
     justifyContent: 'center',
-    padding: 15
+    padding: 15,
   },
   headerLeft: {
     position: 'absolute',
     left: 16,
-    top: 0, 
+    top: 0,
     bottom: 0,
     justifyContent: 'center',
   },
-})
+});

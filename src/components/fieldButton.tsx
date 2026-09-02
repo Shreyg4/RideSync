@@ -1,21 +1,30 @@
 import Colors from '@/src/constants/colors';
 import * as Haptics from 'expo-haptics';
 import { LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, Text, ViewStyle } from 'react-native';
 
 type FieldButtonProps = {
-  text: string | null
-  placeholder: string
-  icon?: LucideIcon
-  onPress: () => void
-  style?: StyleProp<ViewStyle>
-}
+  text: string | null;
+  placeholder: string;
+  icon?: LucideIcon;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+};
 
-export default function FieldButton({ text, placeholder, icon: Icon, onPress, style }: FieldButtonProps) {
+export default function FieldButton({
+  text,
+  placeholder,
+  icon: Icon,
+  onPress,
+  style,
+}: FieldButtonProps) {
   return (
     <Pressable
-      onPress={() => { Haptics.selectionAsync(); onPress() }}
-      accessibilityRole='button'
+      onPress={() => {
+        Haptics.selectionAsync();
+        onPress();
+      }}
+      accessibilityRole="button"
       accessibilityLabel={text ?? placeholder}
       style={({ pressed }) => [
         {
@@ -34,12 +43,12 @@ export default function FieldButton({ text, placeholder, icon: Icon, onPress, st
           opacity: pressed ? 0.85 : 1,
         },
         style,
-      ]}  
-    > 
-      {Icon && <Icon size={20} color={Colors.theme.textMutedLight}/>}
+      ]}
+    >
+      {Icon && <Icon size={20} color={Colors.theme.textMutedLight} />}
       <Text style={{ fontSize: 18, color: text ? Colors.theme.text : Colors.theme.textMuted }}>
         {text ?? placeholder}
       </Text>
     </Pressable>
-  )
+  );
 }

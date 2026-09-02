@@ -10,54 +10,60 @@ import { avatarUrl } from '@/src/lib/avatarStorage';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 
-export default function settings() {
+export default function Settings() {
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth()
-  const [photoPath, setPhotoPath] = useState<string | null>(null)
+  const { user, signOut } = useAuth();
+  const [photoPath, setPhotoPath] = useState<string | null>(null);
 
   useEffect(() => {
-
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('avatar_image')
         .eq('id', user?.id)
-        .single()
+        .single();
 
-        if (cancelled) return
-        if (!error) setPhotoPath(data.avatar_image)
-    })()
+      if (cancelled) return;
+      if (!error) setPhotoPath(data.avatar_image);
+    })();
 
-    return () => { cancelled = true }
-  }, [user?.id])
-  
-  const handleSignOut=async() => {
-    try{
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const handleSignOut = async () => {
+    try {
       await signOut();
-    }catch(error:any){
-      alert(error.message)
+    } catch (error: any) {
+      alert(error.message);
     }
-  }
+  };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView showsVerticalScrollIndicator={false} 
-          contentContainerStyle={{ paddingBottom: insets.bottom + 75}}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 75 }}
+      >
         <View>
-          <AvatarImage uri={avatarUrl(photoPath)} style={{alignSelf: 'center', marginVertical: 20}} />
+          <AvatarImage
+            uri={avatarUrl(photoPath)}
+            style={{ alignSelf: 'center', marginVertical: 20 }}
+          />
           <Text style={styles.text}>Settings that will come soon</Text>
-          <LargeButton 
-            label='Delete Account' 
-            onPress={() => router.back()} 
-            color='red'
+          <LargeButton
+            label="Delete Account"
+            onPress={() => router.back()}
+            color="red"
             backgroundColor={Colors.theme.border}
             backgroundColorPressed={Colors.theme.card}
           />
-          <LargeButton 
-            label='Log Out' 
-            onPress={handleSignOut} 
-            color='red'
+          <LargeButton
+            label="Log Out"
+            onPress={handleSignOut}
+            color="red"
             backgroundColor={Colors.theme.border}
             backgroundColorPressed={Colors.theme.card}
           />
@@ -87,6 +93,6 @@ const styles = StyleSheet.create({
     color: Colors.theme.text,
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: '140%'
+    marginBottom: '140%',
   },
 });

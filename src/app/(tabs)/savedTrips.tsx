@@ -3,22 +3,26 @@ import archive from '@/assets/dummydata/data/archive';
 import TripListItem from '@/src/components/tripListItem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlatList, StyleSheet, View, Text } from 'react-native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
-//Renders list of all of the User's created and joined trips
-export default function savedTrips() {
+// Renders list of all of the User's created and joined trips
+export default function SavedTrips() {
   const isEmpty = archive.length === 0;
 
   return (
     <View style={{ flex: 1 }}>
       <FlatList
         data={archive}
-        renderItem={({ item }) => <TripListItem trip={item}/> }
-        contentContainerStyle={[ {gap: 10, padding: 10, paddingBottom: useBottomTabBarHeight() + 10}, isEmpty && { flexGrow: 1, justifyContent: 'center' }]}
+        renderItem={({ item }) => <TripListItem trip={item} />}
+        contentContainerStyle={[
+          { gap: 10, padding: 10, paddingBottom: useBottomTabBarHeight() + 10 },
+          isEmpty && { flexGrow: 1, justifyContent: 'center' },
+        ]}
         ListEmptyComponent={
           <View style={styles.container}>
             <Text style={styles.text}>No Archived Journeys</Text>
-          </View>}
+          </View>
+        }
       />
 
       {/* Gradient header overlay: solid at the top, fading to transparent at the bottom */}
@@ -49,6 +53,6 @@ const styles = StyleSheet.create({
   text: {
     color: Colors.theme.text,
     fontSize: 20,
-    fontWeight: 500
+    fontWeight: 500,
   },
 });

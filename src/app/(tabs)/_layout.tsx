@@ -9,35 +9,36 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-//Icon size of icons in tab bar
+// Icon size of icons in tab bar
 const ICON_SIZE = 20;
 
-//Used to fill the pill behind the icon when tab is slected.
+// Used to fill the pill behind the icon when tab is slected.
 function TabIcon({ focused, children }: { focused: boolean; children: React.ReactNode }) {
   return (
     <View
       style={{
-        width: 60, //Width of selected pill
-        height: 30, //height of selected pill
+        width: 60, // Width of selected pill
+        height: 30, // height of selected pill
         borderRadius: 15,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: focused ? Colors.theme.tint : 'transparent',
-        pointerEvents: 'none'
-      }}>
+        pointerEvents: 'none',
+      }}
+    >
       {children}
     </View>
   );
 }
 
 export default function TabLayout() {
-  //Bottom inset = Android system nav bar / iPhone home indicator height
+  // Bottom inset = Android system nav bar / iPhone home indicator height
   const insets = useSafeAreaInsets();
   return (
     <Tabs
-      initialRouteName='journeys'
+      initialRouteName="journeys"
       screenOptions={{
-        //Custom tab-bar design
+        // Custom tab-bar design
         tabBarStyle: {
           position: 'absolute',
           height: 60 + insets.bottom,
@@ -50,17 +51,20 @@ export default function TabLayout() {
             colors={[Colors.theme.background, Colors.theme.card]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1.7 }}
-            style={[StyleSheet.absoluteFill, {borderTopWidth: 1, borderColor: Colors.theme.border}]}
+            style={[
+              StyleSheet.absoluteFill,
+              { borderTopWidth: 1, borderColor: Colors.theme.border },
+            ]}
           />
         ),
         tabBarLabelStyle: {
           marginTop: 4,
         },
 
-        //Header style for all tabs
+        // Header style for all tabs
         headerShown: useClientOnlyValue(false, true),
-        headerStyle: [{height: 130}],
-        //Gradient sits behind the title/buttons. end y:0.5 means it fades from card->background over the top half.
+        headerStyle: [{ height: 130 }],
+        // Gradient sits behind the title/buttons. end y:0.5 means it fades from card->background over the top half.
         headerBackground: () => (
           <LinearGradient
             colors={[Colors.theme.card, Colors.theme.background]}
@@ -79,61 +83,77 @@ export default function TabLayout() {
         headerShadowVisible: false,
       }}
 
-      //Haptic feedback for tab bar
+      // Haptic feedback for tab bar
       screenListeners={{
         tabPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
-      }}>
-
+      }}
+    >
       <Tabs.Screen
-        //Home screen of the app where all of the users created/joined trips will show up
+        // Home screen of the app where all of the users created/joined trips will show up
         name="journeys"
         options={{
           title: 'Journeys',
-          //Create-trip FAB 
+          // Create-trip FAB
           headerRight: () => (
-            <SmallButton icon={Plus} onPress={() => router.push('/createTrip')} style={{ marginRight: 16, marginTop: 5 }} />
+            <SmallButton
+              icon={Plus}
+              onPress={() => router.push('/createTrip')}
+              style={{ marginRight: 16, marginTop: 5 }}
+            />
           ),
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <Route color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
+              <Route
+                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
+                size={ICON_SIZE}
+              />
             </TabIcon>
           ),
         }}
       />
       <Tabs.Screen
-        //Where users will Join someone else's party via join code
+        // Where users will Join someone else's party via join code
         name="joinTrip"
         options={{
           title: 'Join Trip',
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <User color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
+              <User
+                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
+                size={ICON_SIZE}
+              />
             </TabIcon>
-          )
+          ),
         }}
       />
       <Tabs.Screen
-        //User can Archive any trip to use later for themselves or a new group
+        // User can Archive any trip to use later for themselves or a new group
         name="savedTrips"
         options={{
           title: 'Saved Trips',
-          tabBarIcon: ({ focused}) => (
+          tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <Archive color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
+              <Archive
+                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
+                size={ICON_SIZE}
+              />
             </TabIcon>
-          )
+          ),
         }}
       />
       <Tabs.Screen
-        //User can Archive any trip to use later for themselves or a new group
+        // User can Archive any trip to use later for themselves or a new group
         name="settings"
         options={{
           title: 'Settings',
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <Settings color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight} size={ICON_SIZE} />
+              <Settings
+                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
+                size={ICON_SIZE}
+              />
             </TabIcon>
-          )
+          ),
         }}
       />
     </Tabs>

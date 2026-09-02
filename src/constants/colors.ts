@@ -1,20 +1,20 @@
 const palette = {
-  blue1: '#08121F', 
+  blue1: '#08121F',
   blue2: '#082444',
   blue3: '#073C75',
   blue4: '#225B9F',
-  blue5: '#1B8AFF', //Primary Color
+  blue5: '#1B8AFF', // Primary Color
   blue6: '#75B7FF',
   blue7: '#CAE3FF',
 
-  black:   '#000',
+  black: '#000',
   gray900: '#121213',
   gray700: '#272729',
-  gray500: '#47474B', 
+  gray500: '#47474B',
   gray300: '#7B7B80',
-  white:   '#FFF',
+  white: '#FFF',
   red: '#E5484D',
-  green: '#28a745'
+  green: '#28a745',
 };
 
 export default {
@@ -43,6 +43,6 @@ export default {
     tabIconDefault: palette.gray500,
     tabIconSelected: palette.blue5,
     error: palette.red,
-    success: palette.green
+    success: palette.green,
   },
 };

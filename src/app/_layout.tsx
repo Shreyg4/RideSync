@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '@/src/context/AuthProvider';
 
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary
+  ErrorBoundary,
 } from 'expo-router';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -30,11 +30,11 @@ export default function RootLayout() {
     return null;
   }
 
-  return(
+  return (
     <AuthProvider>
       <RootLayoutNav />
     </AuthProvider>
-  )
+  );
 }
 
 function RootLayoutNav() {
@@ -42,13 +42,13 @@ function RootLayoutNav() {
   const segments = useSegments();
 
   useEffect(() => {
-    //Wait for the stored session to load, or bounce to /welcome on every cold start.
+    // Wait for the stored session to load, or bounce to /welcome on every cold start.
     if (loading) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!session && !inAuthGroup) {
-      router.replace('/welcome');       //logged out but on a protected screen
+      router.replace('/welcome'); // logged out but on a protected screen
     } else if (session && inAuthGroup) {
-      router.replace('/journeys');      //logged in but still on an auth screen
+      router.replace('/journeys'); // logged in but still on an auth screen
     }
   }, [session, loading, segments]);
   return (
@@ -58,10 +58,13 @@ function RootLayoutNav() {
           <Stack.Protected guard={!!session}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="(planner)" options={{ headerShown: false }} />
-            <Stack.Screen name="createTrip" options={{ 
-              presentation: 'modal',
-              headerShown: false,
-            }} />
+            <Stack.Screen
+              name="createTrip"
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+              }}
+            />
           </Stack.Protected>
 
           <Stack.Protected guard={!session}>
@@ -72,4 +75,3 @@ function RootLayoutNav() {
     </KeyboardProvider>
   );
 }
-
