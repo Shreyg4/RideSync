@@ -23,15 +23,6 @@ const EnterStop = () => {
 export default EnterStop;
 
 const styles = StyleSheet.create({
-  header: {
-    position: 'absolute',
-    height: 15,
-    left: 0,
-    right: 0,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
   title: {
     color: Colors.theme.text,
     fontSize: 25,
@@ -47,13 +38,6 @@ const styles = StyleSheet.create({
   headerLeft: {
     position: 'absolute',
     left: 16,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  headerRight: {
-    position: 'absolute',
-    right: 16,
     top: 0,
     bottom: 0,
     justifyContent: 'center',

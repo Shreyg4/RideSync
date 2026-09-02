@@ -213,9 +213,6 @@ const CreateTripScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   title: {
     color: Colors.theme.text,
     fontSize: 30,

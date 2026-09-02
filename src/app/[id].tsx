@@ -113,10 +113,6 @@ const TripDetails = () => {
 export default TripDetails;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.theme.background,
-  },
   image: {
     width: '100%',
     aspectRatio: 1.2,

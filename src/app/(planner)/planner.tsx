@@ -118,11 +118,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
   },
-  text: {
-    color: Colors.theme.text,
-    alignSelf: 'center',
-    marginTop: 90,
-  },
   subtext: {
     color: Colors.theme.text,
     justifyContent: 'flex-start',

@@ -115,13 +115,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: '50%',
   },
-  subText: {
-    color: Colors.theme.textMutedLight,
-    fontSize: 20,
-    margin: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
   errorText: {
     color: Colors.theme.error,
     fontSize: 15,
