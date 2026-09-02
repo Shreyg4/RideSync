@@ -6,14 +6,19 @@ import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/src/context/AuthProvider';
+import { reportError } from '@/src/lib/logger';
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// Prevent the splash screen from auto-hiding before asset loading is complete. It rejects if
+// the splash screen is already gone, which is survivable - but an unhandled rejection here is
+// invisible, so it goes through the logger instead.
+SplashScreen.preventAutoHideAsync().catch((error) =>
+  reportError(error, { scope: 'RootLayout.preventAutoHide' })
+);
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
