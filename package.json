@@ -7,7 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest --watchAll",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage",
     "lint": "expo lint"
   },
@@ -18,8 +19,10 @@
     ],
     "moduleNameMapper": {
       "^@components/(.*)$": "<rootDir>/src/components/$1",
-      "^@/(.*)$": "<rootDir>/$1"
-    }
+      "^@/(.*)$": "<rootDir>/$1",
+      "^@assets/(.*)$": "<rootDir>/assets/$1"
+    },
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"]
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -59,9 +62,9 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@jest/globals": "~29.7.0",
     "@testing-library/react-native": "^14.0.1",
     "@types/aes-js": "^3.1.4",
-    "@types/jest": "29.5.14",
     "@types/react": "~19.1.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~10.0.0",
@@ -70,8 +73,8 @@
     "jest": "~29.7.0",
     "jest-expo": "~54.0.18",
     "prettier": "^3.9.6",
-    "react-test-renderer": "^19.1.0",
     "supabase": "^2.111.0",
+    "test-renderer": "^1.2.0",
     "typescript": "~5.9.2"
   },
   "//": "react-native-screens pinned to exact 4.23.0 (not SDK 54's ~4.16.0): 4.15-4.16 mis-size RNSScreenContentWrapper on iOS 26 so bottom-of-screen buttons render but are touch-dead; 4.24 breaks expo-router 6.0.24. The expo.install.exclude below stops `expo install --fix` reverting it.",
