@@ -10,7 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "types:gen": "supabase gen types typescript --local > src/types/database.ts && prettier --write src/types/database.ts"
   },
   "jest": {
     "preset": "jest-expo",

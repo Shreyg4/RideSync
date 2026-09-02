@@ -19,13 +19,13 @@ export default function Settings() {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('avatar_image')
+        .from('users')
+        .select('avatar_path')
         .eq('id', user?.id)
         .single();
 
       if (cancelled) return;
-      if (!error) setPhotoPath(data.avatar_image);
+      if (!error) setPhotoPath(data.avatar_path);
     })();
 
     return () => {

@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   // The profile fields ride along in `options.data`, which lands in auth.users.raw_user_meta_data.
-  // The handle_new_user trigger reads them from there to build the profiles row
+  // The handle_new_user trigger reads them from there to build the public.users row
   const signUp = async (
     first_name: string,
     last_name: string,

@@ -15,10 +15,12 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import FieldButton from '@/src/components/fieldButton';
 
-const tripType = [
-  { label: 'One-way', icon: MapPin },
-  { label: 'Round-trip', icon: Repeat },
-];
+const TRIP_TYPES = [
+  { value: 'one-way', icon: MapPin },
+  { value: 'round-trip', icon: Repeat },
+] as const;
+
+const tripTypeLabel = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
 const CreateTripScreen = () => {
   const insets = useSafeAreaInsets();
@@ -96,20 +98,20 @@ const CreateTripScreen = () => {
 
         {/* Select which type of trip this will be */}
         <View style={[styles.types, { margin: 10 }]}>
-          {tripType.map((tripType) => {
+          {TRIP_TYPES.map((tripType) => {
             const Icon = tripType.icon;
             return (
               <Pressable
-                key={tripType.label}
+                key={tripType.value}
                 onPress={() => {
-                  setSelectedType(tripType.label);
+                  setSelectedType(tripType.value);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 // Styling of selected pill
                 style={() => [
                   {
                     backgroundColor:
-                      selectedType === tripType.label ? Colors.theme.tint : 'transparent',
+                      selectedType === tripType.value ? Colors.theme.tint : 'transparent',
                     width: '50%',
                     height: 70,
                     borderRadius: 20,
@@ -119,7 +121,7 @@ const CreateTripScreen = () => {
                 ]}
               >
                 <Icon color={Colors.theme.text} size={24} style={{ alignSelf: 'center' }} />
-                <Text style={styles.typeText}>{tripType.label}</Text>
+                <Text style={styles.typeText}>{tripTypeLabel(tripType.value)}</Text>
               </Pressable>
             );
           })}

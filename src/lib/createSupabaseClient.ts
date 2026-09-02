@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClientOptions } from '@supabase/supabase-js';
+import type { Database } from '@/src/types/database';
 
 export type SessionStorage = NonNullable<
   NonNullable<SupabaseClientOptions<'public'>['auth']>['storage']
@@ -17,7 +18,7 @@ export const createSupabaseClient = ({
   storage,
   detectSessionInUrl,
 }: SupabaseConfig) =>
-  createClient(url, anonKey, {
+  createClient<Database>(url, anonKey, {
     auth: {
       storage,
       persistSession: true,

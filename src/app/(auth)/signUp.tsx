@@ -21,7 +21,7 @@ import * as Haptics from 'expo-haptics';
 //  - the hint/availability text under the username box is derived during render, so it
 //    updates live as the user types. Nothing is stored for it.
 
-// Must stay in sync with the check constraint on profiles.username in the create_profiles migration.
+// Must stay in sync with the check constraint on users.username in the create_profiles migration.
 // If you widen one, widen the other, or the DB will reject names the app accepted.
 const HANDLE = /^[a-zA-Z0-9_]+$/;
 
