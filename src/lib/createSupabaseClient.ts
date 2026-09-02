@@ -1,21 +1,30 @@
-import { createClient, type SupabaseClientOptions } from "@supabase/supabase-js";
+import { createClient, type SupabaseClientOptions } from '@supabase/supabase-js';
 
-type SessionStorage = NonNullable<NonNullable<SupabaseClientOptions<'public'>['auth']>['storage']>;
+export type SessionStorage = NonNullable<
+  NonNullable<SupabaseClientOptions<'public'>['auth']>['storage']
+>;
 
 export interface SupabaseConfig {
   url: string;
   anonKey: string;
   storage: SessionStorage;
+  detectSessionInUrl: boolean;
 }
 
-export const createSupabaseClient = ({ url, anonKey, storage }: SupabaseConfig) => 
+export const createSupabaseClient = ({
+  url,
+  anonKey,
+  storage,
+  detectSessionInUrl,
+}: SupabaseConfig) =>
   createClient(url, anonKey, {
     auth: {
       storage,
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl,
+      flowType: 'pkce',
     },
-});
+  });
 
 export type AppSupabaseClient = ReturnType<typeof createSupabaseClient>;
