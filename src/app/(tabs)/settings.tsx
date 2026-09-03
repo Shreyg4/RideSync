@@ -1,11 +1,12 @@
-import { Text, View, ScrollView, StyleSheet, Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, View, StyleSheet } from 'react-native';
 import LargeButton from '@/src/components/LargeButton';
+import ErrorText from '@/src/components/ErrorText';
+import Screen from '@/src/components/Screen';
+import TopFade from '@/src/components/TopFade';
 import Colors from '@/src/constants/colors';
-import { gradients } from '@/src/constants/gradients';
+import { spacing } from '@/src/constants/spacing';
 import { fontSize, fontWeight } from '@/src/constants/typography';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
 import AvatarImage from '@/src/components/AvatarImage';
 import { avatarUrl } from '@/src/services/avatarService';
@@ -13,16 +14,11 @@ import { useCallback, useState } from 'react';
 import { getUserAvatarPath } from '@/src/services/userService';
 import { reportAndDescribe } from '@/src/services/errors';
 import { useAsync } from '@/src/hooks/useAsync';
-
-const SmallTextButton = ({ label, onPress }: { label: string; onPress: () => void }) => (
-  <Pressable onPress={onPress} accessibilityRole="button">
-    <Text style={styles.retryText}>{label}</Text>
-  </Pressable>
-);
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
+  const tabBarHeight = useBottomTabBarHeight();
   const [signOutError, setSignOutError] = useState<string>();
 
   const loadAvatarPath = useCallback(() => getUserAvatarPath(user?.id), [user?.id]);
@@ -30,93 +26,68 @@ export default function SettingsScreen() {
     data: photoPath,
     error: avatarError,
     reload: reloadAvatar,
-  } = useAsync(loadAvatarPath, [user?.id], 'Settings.getUserAvatarPath');
+  } = useAsync(loadAvatarPath, [user?.id], 'SettingsScreen.getUserAvatarPath');
 
   const handleSignOut = async () => {
     setSignOutError(undefined);
     try {
       await signOut();
     } catch (error) {
-      setSignOutError(reportAndDescribe(error, { scope: 'Settings.signOut' }));
+      setSignOutError(reportAndDescribe(error, { scope: 'SettingsScreen.signOut' }));
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 75 }}
-      >
-        <View>
-          <AvatarImage
-            uri={avatarUrl(photoPath)}
-            style={{ alignSelf: 'center', marginVertical: 20 }}
-          />
-          {avatarError ? (
-            <View style={styles.errorRow}>
-              <Text style={styles.errorText}>{avatarError}</Text>
-              <SmallTextButton label="Retry" onPress={reloadAvatar} />
-            </View>
-          ) : null}
-          <Text style={styles.text}>Settings that will come soon</Text>
-          <LargeButton
-            label="Delete Account"
-            onPress={() => router.back()}
-            color={Colors.error}
-            backgroundColor={Colors.border}
-            backgroundColorPressed={Colors.card}
-          />
-          <LargeButton
-            label="Log Out"
-            onPress={handleSignOut}
-            color={Colors.error}
-            backgroundColor={Colors.border}
-            backgroundColorPressed={Colors.card}
-          />
-          {signOutError ? (
-            <View style={styles.errorRow}>
-              <Text style={styles.errorText}>{signOutError}</Text>
-              <SmallTextButton label="Try again" onPress={handleSignOut} />
-            </View>
-          ) : null}
-        </View>
-      </ScrollView>
-      {/* Gradient header overlay: solid at the top, fading to transparent at the bottom */}
-      <LinearGradient {...gradients.topFade} style={[styles.header]} />
+      <Screen scroll bottomOffset={tabBarHeight}>
+        <AvatarImage uri={avatarUrl(photoPath)} style={styles.avatar} testID="settings-avatar" />
+
+        <ErrorText
+          message={avatarError}
+          onRetry={reloadAvatar}
+          retryLabel="Retry"
+          style={styles.error}
+        />
+
+        <Text style={styles.text}>Settings that will come soon</Text>
+
+        <View style={styles.spacer} />
+
+        <LargeButton
+          label="Delete Account"
+          variant="danger"
+          onPress={() => router.back()}
+          testID="delete-account-button"
+        />
+        <LargeButton
+          label="Log Out"
+          variant="danger"
+          onPress={handleSignOut}
+          testID="log-out-button"
+        />
+        <ErrorText message={signOutError} onRetry={handleSignOut} style={styles.error} />
+      </Screen>
+      <TopFade height={12} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+  avatar: {
+    alignSelf: 'center',
+    marginVertical: spacing.lg,
   },
-  errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginLeft: 15,
-    marginBottom: 8,
-  },
-  errorText: {
-    color: Colors.error,
-    fontSize: fontSize.caption,
-  },
-  retryText: {
-    color: Colors.tint,
-    fontSize: fontSize.caption,
-    fontWeight: fontWeight.semibold,
+  error: {
+    marginLeft: spacing.md,
   },
   text: {
     color: Colors.text,
     fontSize: fontSize.section,
     fontWeight: fontWeight.bold,
-    marginBottom: '140%',
+    marginLeft: spacing.md,
+  },
+  spacer: {
+    flex: 1,
+    minHeight: spacing.xxl,
   },
 });

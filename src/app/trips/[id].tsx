@@ -6,6 +6,7 @@ import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import Colors from '@/src/constants/colors';
+import { spacing } from '@/src/constants/spacing';
 import { radii } from '@/src/constants/radii';
 import { fontSize, fontWeight } from '@/src/constants/typography';
 import SmallButton from '@/src/components/SmallButton';
@@ -40,6 +41,7 @@ const TripDetailsScreen = () => {
         >
           {/* Bottom scrim: keeps the title readable; scrolls away with the image */}
           <LinearGradient
+            pointerEvents="none"
             colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']}
             locations={[0, 0.7, 0.85]}
             style={StyleSheet.absoluteFill}
@@ -68,30 +70,18 @@ const TripDetailsScreen = () => {
         {/* Where itinerary will be listed */}
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Itinerary</Text>
-          <Text style={[styles.text, { paddingBottom: 300 }]}>Not planned</Text>
+          <Text style={[styles.text, { paddingBottom: spacing.lg }]}>Not planned</Text>
           <LargeButton
             icon={Pencil}
             label="Edit itinerary"
-            color={Colors.textMutedLight}
+            variant="dashed"
             onPress={() => router.push('/planner')}
-            backgroundColor={Colors.card}
-            backgroundColorPressed={Colors.textMuted}
-            style={{
-              borderWidth: 1,
-              borderColor: Colors.textMutedLight,
-              borderStyle: 'dashed',
-            }}
           />
         </View>
         {/* The Directions Button */}
-        <LargeButton label="Directions" onPress={() => router.back()} style={{ margin: 10 }} />
+        <LargeButton label="Directions" onPress={() => router.back()} />
         {/* The start trip Button */}
-        <LargeButton
-          label="Start Trip"
-          disabled={true}
-          onPress={() => router.back()}
-          style={{ margin: 10 }}
-        />
+        <LargeButton label="Start Trip" disabled onPress={() => router.back()} />
       </ScrollView>
 
       {/* Fixed top gradient so that status bar is always easy to see */}
@@ -104,6 +94,7 @@ const TripDetailsScreen = () => {
       <SmallButton
         icon={ChevronLeft}
         onPress={() => router.back()}
+        accessibilityLabel="Go back"
         style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
       />
     </View>

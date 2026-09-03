@@ -28,7 +28,11 @@ const TripListItem = ({ trip }: TripListItemProps) => {
     >
       <ImageBackground source={tripImageSource(trip.image)} style={styles.container}>
         {/* Dark gradient over the image bottom so the white text stays readable on any photo. */}
-        <LinearGradient {...gradients.imageScrim} style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          pointerEvents="none"
+          {...gradients.imageScrim}
+          style={StyleSheet.absoluteFill}
+        />
         {/* Date pill */}
         <View style={[styles.infoContainer, { backgroundColor: Colors.background }]}>
           <Calendar color={Colors.tint} size={15} />

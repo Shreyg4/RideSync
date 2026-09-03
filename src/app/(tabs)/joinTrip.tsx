@@ -1,28 +1,25 @@
 import TextBox from '@/src/components/TextBox';
 import { copy } from '@/src/constants/copy';
 import LargeButton from '@/src/components/LargeButton';
+import Screen from '@/src/components/Screen';
 import { useState } from 'react';
-import { View, ScrollView } from 'react-native';
 import { router } from 'expo-router';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 export default function JoinTripScreen() {
   const [joinCode, setJoinCode] = useState('');
+  const tabBarHeight = useBottomTabBarHeight();
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      keyboardDismissMode="on-drag"
-      keyboardShouldPersistTaps="never"
-    >
-      <View style={{ flex: 1 }}>
-        <TextBox
-          value={joinCode}
-          onChangeText={setJoinCode}
-          placeholder={copy.fields.joinCode}
-          keyboardType="number-pad"
-        />
-        <LargeButton label="Join Trip" disabled={false} onPress={() => router.back()} />
-      </View>
-    </ScrollView>
+    <Screen bottomOffset={tabBarHeight}>
+      <TextBox
+        value={joinCode}
+        onChangeText={setJoinCode}
+        placeholder={copy.fields.joinCode}
+        keyboardType="number-pad"
+        testID="join-code-input"
+      />
+      <LargeButton label="Join Trip" onPress={() => router.back()} testID="join-trip-button" />
+    </Screen>
   );
 }

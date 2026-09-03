@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import React, { useState } from 'react';
 import SmallButton from '@/src/components/SmallButton';
 import TextBox from '@/src/components/TextBox';
@@ -7,6 +7,9 @@ import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
+import { spacing } from '@/src/constants/spacing';
+import ErrorText from '@/src/components/ErrorText';
+import Screen from '@/src/components/Screen';
 import { fontSize, fontWeight } from '@/src/constants/typography';
 import { copy } from '@/src/constants/copy';
 import { useAuth } from '@/src/context/AuthProvider';
@@ -57,13 +60,14 @@ const LoginScreen = () => {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
-        <SmallButton
-          icon={ChevronLeft}
-          onPress={() => router.back()}
-          style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
-        />
+    <>
+      <SmallButton
+        icon={ChevronLeft}
+        onPress={() => router.back()}
+        accessibilityLabel="Go back"
+        style={[styles.back, { top: insets.top }]}
+      />
+      <Screen scroll bottomOffset={spacing.xxl}>
         <Text style={styles.text}>Login</Text>
         <TextBox
           value={email}
@@ -72,8 +76,9 @@ const LoginScreen = () => {
           placeholder={copy.fields.email}
           autoCapitalize="none"
           keyboardType="email-address"
+          testID="email-input"
         />
-        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+        <ErrorText message={errors.email} style={styles.fieldError} />
 
         <TextBox
           value={password}
@@ -81,44 +86,42 @@ const LoginScreen = () => {
           error={!!errors.password}
           placeholder={copy.fields.password}
           secureTextEntry={true}
+          testID="password-input"
         />
-        {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+        <ErrorText message={errors.password} style={styles.fieldError} />
+        <ErrorText message={formError} style={styles.formError} testID="login-form-error" />
 
-        {/* Whole-form message. marginLeft is zeroed because errorText indents to line up
-            with the field boxes, which is wrong for a centered line. */}
-        {formError ? (
-          <Text style={[styles.errorText, { alignSelf: 'center', marginLeft: 0 }]}>
-            {formError}
-          </Text>
-        ) : null}
         <LargeButton
           label={loading ? 'Logging In...' : 'Login'}
           disabled={loading}
           onPress={handleSignIn}
+          testID="login-submit"
         />
-      </View>
-    </TouchableWithoutFeedback>
+      </Screen>
+    </>
   );
 };
 
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  back: {
+    position: 'absolute',
+    left: spacing.md,
+    zIndex: 10,
   },
   text: {
     color: Colors.text,
     fontSize: fontSize.screenTitle,
-    marginBottom: 15,
+    marginBottom: spacing.md,
     fontWeight: fontWeight.heavy,
     textAlign: 'center',
-    marginTop: '50%',
+    marginTop: spacing.xxl * 2,
   },
-  errorText: {
-    color: Colors.error,
-    fontSize: fontSize.caption,
-    fontWeight: fontWeight.regular,
-    marginLeft: 15,
+  fieldError: {
+    marginLeft: spacing.md,
+  },
+  formError: {
+    alignSelf: 'center',
   },
 });

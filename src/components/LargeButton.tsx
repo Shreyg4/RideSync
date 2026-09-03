@@ -2,104 +2,140 @@ import Colors from '@/src/constants/colors';
 import { contentWidth } from '@/src/constants/layout';
 import { radii } from '@/src/constants/radii';
 import { spacing } from '@/src/constants/spacing';
-import { fontSize as fontSizes, fontWeight } from '@/src/constants/typography';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import { haptics, type HapticRole } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
 import { LucideIcon } from 'lucide-react-native';
-import {
-  Pressable,
-  StyleProp,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-  DimensionValue,
-} from 'react-native';
+import { Pressable, StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native';
 
-// Reusable wide button (e.g. "Start Trip", "Login").
-// Shows a text label, with an optional leading icon. Centers itself.
+export type LargeButtonVariant = 'primary' | 'danger' | 'ghost' | 'dashed';
+
+type VariantStyle = {
+  color: string;
+  backgroundColor: string;
+  backgroundColorPressed: string;
+  borderWidth: number;
+  borderColor: string;
+  borderStyle: ViewStyle['borderStyle'];
+  haptic: HapticRole;
+};
+
+const VARIANTS: Record<LargeButtonVariant, VariantStyle> = {
+  primary: {
+    color: Colors.background,
+    backgroundColor: Colors.tint,
+    backgroundColorPressed: Colors.tintPressed,
+    borderWidth: 0,
+    borderColor: Colors.border,
+    borderStyle: 'solid',
+    haptic: 'action',
+  },
+  danger: {
+    color: Colors.error,
+    backgroundColor: Colors.border,
+    backgroundColorPressed: Colors.card,
+    borderWidth: 0,
+    borderColor: Colors.border,
+    borderStyle: 'solid',
+    haptic: 'destructive',
+  },
+  ghost: {
+    color: Colors.textMutedLight,
+    backgroundColor: Colors.card,
+    backgroundColorPressed: Colors.textMuted,
+    borderWidth: 0,
+    borderColor: Colors.border,
+    borderStyle: 'solid',
+    haptic: 'action',
+  },
+  dashed: {
+    color: Colors.textMutedLight,
+    backgroundColor: Colors.card,
+    backgroundColorPressed: Colors.textMuted,
+    borderWidth: 1,
+    borderColor: Colors.textMutedLight,
+    borderStyle: 'dashed',
+    haptic: 'action',
+  },
+};
+
 type LargeButtonProps = {
-  label: string; // button text
+  label: string;
   onPress: () => void;
-  icon?: LucideIcon; // optional leading lucide icon
-  color?: string; // text + icon color
-  backgroundColor?: string;
-  backgroundColorPressed?: string;
-  width?: DimensionValue;
-  height?: DimensionValue;
-  marginVertical?: number;
-  borderRadius?: number;
-  fontSize?: number;
-  haptic?: HapticRole;
-  style?: StyleProp<ViewStyle>; // per-use container overrides
-  textStyle?: StyleProp<TextStyle>; // per-use text overrides
+  variant?: LargeButtonVariant;
+  icon?: LucideIcon;
   disabled?: boolean;
-  disabledBackgroundColor?: string;
-  borderWidth?: number;
-  borderColor?: string;
-  borderStyle?: ViewStyle['borderStyle'];
+  testID?: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
 };
 
 export default function LargeButton({
   label,
   onPress,
+  variant = 'primary',
   icon: Icon,
-  color = Colors.background,
-  backgroundColor = Colors.tint,
-  backgroundColorPressed = Colors.tintPressed,
-  width = contentWidth,
-  height = 60,
-  marginVertical = spacing.sm,
-  borderRadius = radii.lg,
-  borderWidth = 0,
-  borderColor = Colors.border,
-  borderStyle = 'solid',
-  fontSize = fontSizes.body,
-  haptic = 'action',
+  disabled = false,
+  testID,
+  accessibilityLabel,
+  accessibilityHint,
   style,
   textStyle,
-  disabled = false,
-  disabledBackgroundColor = Colors.disabled,
 }: LargeButtonProps) {
+  const v = VARIANTS[variant];
+
   return (
     <Pressable
       disabled={disabled}
       onPress={() => {
-        haptics[haptic]();
+        haptics[v.haptic]();
         onPress();
       }}
       hitSlop={8}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled }}
       style={({ pressed }) => [
         pressFeedback.control(pressed),
         {
-          width,
-          height,
-          marginVertical,
-          borderRadius,
-          borderWidth,
-          borderColor,
-          borderStyle,
-          flexDirection: 'row', // icon + text sit side by side
+          width: contentWidth,
+          height: 60,
+          marginVertical: spacing.sm,
+          borderRadius: radii.lg,
+          borderWidth: v.borderWidth,
+          borderColor: v.borderColor,
+          borderStyle: v.borderStyle,
+          flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          alignSelf: 'center', // center the button within its parent
+          alignSelf: 'center',
           gap: spacing.xxs * 2,
           backgroundColor: disabled
-            ? disabledBackgroundColor
+            ? Colors.disabled
             : pressed
-              ? backgroundColorPressed
-              : backgroundColor,
+              ? v.backgroundColorPressed
+              : v.backgroundColor,
         },
-        style, // caller overrides come last so they win
+        style,
       ]}
     >
-      {/* pointerEvents none: keep the lucide/SVG icon from swallowing taps */}
       {Icon && (
         <View pointerEvents="none">
-          <Icon color={color} size={fontSize + 2} />
+          <Icon color={v.color} size={fontSize.body + 2} />
         </View>
       )}
-      <Text style={[{ color, fontSize, fontWeight: fontWeight.bold }, textStyle]}>{label}</Text>
+      <Text
+        style={[
+          { color: v.color, fontSize: fontSize.body, fontWeight: fontWeight.bold },
+          textStyle,
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }

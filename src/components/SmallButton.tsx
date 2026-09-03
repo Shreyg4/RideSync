@@ -15,6 +15,9 @@ type SmallButtonProps = {
   size?: number;
   diameter?: number;
   haptic?: HapticRole;
+  testID?: string;
+  accessibilityLabel: string;
+  accessibilityHint?: string;
   style?: StyleProp<ViewStyle>; // per-use overrides
 };
 
@@ -26,6 +29,9 @@ export default function SmallButton({
   size = 32,
   diameter = 48,
   haptic = 'action',
+  testID,
+  accessibilityLabel,
+  accessibilityHint,
   style,
 }: SmallButtonProps) {
   return (
@@ -35,6 +41,10 @@ export default function SmallButton({
         onPress();
       }}
       hitSlop={8} // expands the tap target beyond the small circle
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         pressFeedback.control(pressed),
         {

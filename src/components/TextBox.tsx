@@ -41,6 +41,9 @@ type TextBoxProps = {
   style?: StyleProp<ViewStyle & TextStyle>; // per-use overrides (win over defaults)
   error?: boolean;
   borderColorError?: string;
+  testID?: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
 export default function TextBox({
@@ -66,6 +69,9 @@ export default function TextBox({
   style,
   error,
   borderColorError = Colors.error,
+  testID,
+  accessibilityLabel,
+  accessibilityHint,
 }: TextBoxProps) {
   const [focused, setFocused] = useState(false); // true while the field is being edited
   const [revealed, setRevealed] = useState(false); // password temporarily shown as plain text
@@ -86,6 +92,10 @@ export default function TextBox({
         autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry && !revealed} // The prop says "this is a password field"; `revealed` says "but show it right now".
         maxLength={maxLength}
+        testID={testID}
+        accessibilityLabel={accessibilityLabel ?? placeholder}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: !editable }}
         onFocus={() => {
           setFocused(true);
           haptics.selection();

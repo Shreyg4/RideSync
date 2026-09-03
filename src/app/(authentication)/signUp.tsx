@@ -1,11 +1,13 @@
 import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import React, { useState, useEffect } from 'react';
 import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
+import { spacing } from '@/src/constants/spacing';
+import ErrorText from '@/src/components/ErrorText';
+import Screen from '@/src/components/Screen';
 import { fontSize, fontWeight } from '@/src/constants/typography';
 import { copy } from '@/src/constants/copy';
 import TextBox from '@/src/components/TextBox';
@@ -165,15 +167,10 @@ const SignUpScreen = () => {
       <SmallButton
         icon={ChevronLeft}
         onPress={() => router.back()}
+        accessibilityLabel="Go back"
         style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
       />
-      <KeyboardAwareScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1, paddingTop: '35%', paddingBottom: 50 }}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={125}
-      >
+      <Screen scroll bottomOffset={spacing.xxl * 2} contentContainerStyle={styles.content}>
         <Text style={styles.text}>Create Account</Text>
         {/* Avatar Image Picker */}
         <Pressable
@@ -193,14 +190,14 @@ const SignUpScreen = () => {
           error={!!errors.firstName}
           placeholder={copy.fields.firstName}
         />
-        {errors.firstName ? <Text style={styles.errorText}>{errors.firstName}</Text> : null}
+        <ErrorText message={errors.firstName} style={styles.fieldError} />
         <TextBox
           value={lastName}
           onChangeText={updateField('lastName', setLastName)}
           error={!!errors.lastName}
           placeholder={copy.fields.lastName}
         />
-        {errors.lastName ? <Text style={styles.errorText}>{errors.lastName}</Text> : null}
+        <ErrorText message={errors.lastName} style={styles.fieldError} />
 
         {/* Username. Two lines sit under the box: the rules hint (replaced by the error
             after a failed submit) and the live availability row. */}
@@ -214,13 +211,13 @@ const SignUpScreen = () => {
           maxLength={USERNAME_MAX_LENGTH}
         />
         {errors.username ? (
-          <Text style={styles.errorText}>{errors.username}</Text>
+          <ErrorText message={errors.username} style={styles.fieldError} />
         ) : (
           <Text style={styles.infoText}>5–20 characters, letters, numbers and underscores</Text>
         )}
         {availability ? (
           <View style={styles.availabilityRow}>
-            <Text style={[styles.availabilityText, { color: availability.color, marginLeft: 0 }]}>
+            <Text style={[styles.availabilityText, { color: availability.color }]}>
               {availability.text}
             </Text>
             <availability.Icon size={16} color={availability.color} />
@@ -236,7 +233,7 @@ const SignUpScreen = () => {
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+        <ErrorText message={errors.email} style={styles.fieldError} />
 
         {/* Password */}
         <Text style={styles.subtext}>{copy.headings.setPassword}</Text>
@@ -248,7 +245,7 @@ const SignUpScreen = () => {
           secureTextEntry={true}
         />
         {errors.password ? (
-          <Text style={styles.errorText}>{errors.password}</Text>
+          <ErrorText message={errors.password} style={styles.fieldError} />
         ) : (
           <Text style={styles.infoText}>Must be at least 8-characters long</Text>
         )}
@@ -260,22 +257,16 @@ const SignUpScreen = () => {
           placeholder={copy.fields.confirmPassword}
           secureTextEntry={true}
         />
-        {errors.confirmPassword ? (
-          <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-        ) : null}
+        <ErrorText message={errors.confirmPassword} style={styles.fieldError} />
 
-        {formError ? (
-          <Text style={[styles.errorText, { textAlign: 'center', marginLeft: 0 }]}>
-            {formError}
-          </Text>
-        ) : null}
+        <ErrorText message={formError} style={styles.formError} testID="signup-form-error" />
 
         <LargeButton
           label={loading ? 'Creating Account...' : 'Create Account'}
           disabled={loading}
           onPress={handleSignUp}
         />
-      </KeyboardAwareScrollView>
+      </Screen>
     </View>
   );
 };
@@ -305,13 +296,14 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.regular,
     marginLeft: 15,
   },
-  errorText: {
-    color: Colors.error,
-    fontSize: fontSize.caption,
-    marginTop: -7,
-    marginBottom: 5,
-    fontWeight: fontWeight.regular,
-    marginLeft: 15,
+  fieldError: {
+    marginLeft: spacing.md,
+  },
+  formError: {
+    alignSelf: 'center',
+  },
+  content: {
+    paddingTop: spacing.xxl * 2,
   },
   availabilityRow: {
     flexDirection: 'row',
@@ -322,6 +314,5 @@ const styles = StyleSheet.create({
   availabilityText: {
     fontSize: fontSize.caption,
     fontWeight: fontWeight.regular,
-    marginLeft: 15,
   },
 });

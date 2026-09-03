@@ -1,19 +1,21 @@
-import { View, Text, StyleSheet, Pressable, Platform, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, Modal } from 'react-native';
 import React, { useState } from 'react';
 import TextBox from '@components/TextBox';
 import Colors from '@/src/constants/colors';
 import { contentWidth } from '@/src/constants/layout';
 import { radii } from '@/src/constants/radii';
+import { spacing } from '@/src/constants/spacing';
 import { gradients } from '@/src/constants/gradients';
 import { fontSize, fontWeight } from '@/src/constants/typography';
 import { copy } from '@/src/constants/copy';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ImagePlus, MapPin, Repeat, ChevronLeft, Calendar, Clock } from 'lucide-react-native';
+import { ImagePlus, MapPin, Repeat, Calendar, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import LargeButton from '@/src/components/LargeButton';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SmallButton from '@/src/components/SmallButton';
+import Screen from '@/src/components/Screen';
+import ScreenHeader from '@/src/components/ScreenHeader';
 import DateTimePicker, {
   DateTimePickerAndroid,
   DateTimePickerEvent,
@@ -58,26 +60,18 @@ const CreateTripScreen = () => {
     setPickerMode(null);
   };
   return (
-    <View style={{ paddingTop: Platform.select({ ios: 0, android: insets.top }) }}>
-      <LinearGradient {...gradients.cardToBackground} style={StyleSheet.absoluteFill} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="never"
-      >
-        <View style={[styles.headerRow]}>
-          <Text style={styles.title}>Create Trip</Text>
-          {Platform.OS === 'android' && (
-            <View style={styles.headerLeft}>
-              <SmallButton
-                icon={ChevronLeft}
-                onPress={() => router.dismiss()}
-                style={{ left: 10 }}
-              />
-            </View>
-          )}
-        </View>
+    <View style={{ flex: 1 }}>
+      <LinearGradient
+        pointerEvents="none"
+        {...gradients.cardToBackground}
+        style={StyleSheet.absoluteFill}
+      />
+      <Screen scroll bottomOffset={spacing.lg}>
+        <ScreenHeader
+          title="Create Trip"
+          onBack={Platform.OS === 'android' ? () => router.dismiss() : undefined}
+          applyTopInset={Platform.OS === 'android'}
+        />
 
         <TextBox
           value={tripName}
@@ -162,7 +156,7 @@ const CreateTripScreen = () => {
           disabled={false}
           onPress={() => router.replace('/planner')}
         />
-      </ScrollView>
+      </Screen>
       {/* iOS only - Android opens its own dialog from openPicker() above. */}
       {Platform.OS === 'ios' && (
         <Modal
@@ -217,12 +211,6 @@ const CreateTripScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  title: {
-    color: Colors.text,
-    fontSize: fontSize.sheetTitle,
-    fontWeight: fontWeight.semibold,
-    alignSelf: 'center',
-  },
   imageBox: {
     backgroundColor: Colors.card,
     borderColor: Colors.textMutedLight,
@@ -250,19 +238,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 10,
     alignSelf: 'center',
-  },
-  headerRow: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 30,
-  },
-  headerLeft: {
-    position: 'absolute',
-    left: 16,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
   },
   doneButton: {
     backgroundColor: Colors.tint,

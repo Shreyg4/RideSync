@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { Dot } from 'lucide-react-native';
 import type { Location } from '@/src/types/trip';
@@ -11,15 +10,21 @@ import { fontSize, fontWeight } from '@/src/constants/typography';
 
 type StopListItemProps = {
   location: Location;
+  onPress?: () => void;
+  testID?: string;
 };
 
-const StopListItem = ({ location }: StopListItemProps) => {
+const StopListItem = ({ location, onPress, testID }: StopListItemProps) => {
   return (
     <Pressable
+      disabled={!onPress}
       onPress={() => {
         haptics.action();
-        router.push('/trips');
+        onPress?.();
       }}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={`${location.name}, ${location.address}`}
       style={({ pressed }) => [pressFeedback.card(pressed)]}
     >
       <View style={styles.container}>

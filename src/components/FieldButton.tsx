@@ -13,6 +13,7 @@ type FieldButtonProps = {
   placeholder: string;
   icon?: LucideIcon;
   onPress: () => void;
+  testID?: string;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -21,6 +22,7 @@ export default function FieldButton({
   placeholder,
   icon: Icon,
   onPress,
+  testID,
   style,
 }: FieldButtonProps) {
   return (
@@ -29,6 +31,7 @@ export default function FieldButton({
         haptics.selection();
         onPress();
       }}
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={text ?? placeholder}
       style={({ pressed }) => [

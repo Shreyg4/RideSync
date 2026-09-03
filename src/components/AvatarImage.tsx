@@ -9,6 +9,8 @@ type AvatarImageProps = {
   style?: StyleProp<ViewStyle>;
   borderColor?: string;
   borderWidth?: number;
+  testID?: string;
+  accessibilityLabel?: string;
 };
 
 export default function AvatarImage({
@@ -16,10 +18,16 @@ export default function AvatarImage({
   size = 110,
   borderColor = Colors.tint,
   borderWidth = 1,
+  testID,
+  accessibilityLabel = 'Profile picture',
   style,
 }: AvatarImageProps) {
   return (
     <View
+      testID={testID}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={accessibilityLabel}
       style={[
         {
           width: size,

@@ -52,6 +52,7 @@ export default function TabLayout() {
         },
         tabBarBackground: () => (
           <LinearGradient
+            pointerEvents="none"
             colors={[Colors.background, Colors.card]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1.7 }}
@@ -67,7 +68,11 @@ export default function TabLayout() {
         headerStyle: [{ height: 130 }],
         // Gradient sits behind the title/buttons. end y:0.5 means it fades from card->background over the top half.
         headerBackground: () => (
-          <LinearGradient {...gradients.cardToBackground} style={StyleSheet.absoluteFill} />
+          <LinearGradient
+            pointerEvents="none"
+            {...gradients.cardToBackground}
+            style={StyleSheet.absoluteFill}
+          />
         ),
         headerTitleAlign: 'left',
         headerTintColor: Colors.text,
@@ -94,6 +99,7 @@ export default function TabLayout() {
             <SmallButton
               icon={Plus}
               onPress={() => router.push('/createTrip')}
+              accessibilityLabel="Create a trip"
               style={{ marginRight: 16, marginTop: 5 }}
             />
           ),

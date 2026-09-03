@@ -1,14 +1,15 @@
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import React, { useState } from 'react';
-import { ChevronLeft, Settings, Plus } from 'lucide-react-native';
+import { Settings, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmallButton from '@/src/components/SmallButton';
 import LargeButton from '@/src/components/LargeButton';
+import ScreenHeader from '@/src/components/ScreenHeader';
 import Colors from '@/src/constants/colors';
 import { radii } from '@/src/constants/radii';
+import { spacing } from '@/src/constants/spacing';
 import { gradients } from '@/src/constants/gradients';
-import { fontSize, fontWeight } from '@/src/constants/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import StopListItem from '@/src/components/StopListItem';
 import locations from '@/src/__fixtures__/locations';
@@ -16,55 +17,65 @@ import locations from '@/src/__fixtures__/locations';
 const PlannerScreen = () => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(0);
+
   return (
     <View style={{ flex: 1 }}>
       <View>
-        <LinearGradient {...gradients.cardToBackground} style={StyleSheet.absoluteFill} />
-        <View
-          style={[styles.headerRow, { marginTop: insets.top }]}
-          onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
-        >
-          <Text style={styles.title}>Planner</Text>
-          <View style={styles.headerLeft}>
-            <SmallButton icon={ChevronLeft} onPress={() => router.back()} />
-          </View>
-          <View style={styles.headerRight}>
-            <SmallButton icon={Settings} onPress={() => router.push('/tripSettings')} />
-          </View>
+        <LinearGradient
+          pointerEvents="none"
+          {...gradients.cardToBackground}
+          style={StyleSheet.absoluteFill}
+        />
+        <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+          <ScreenHeader
+            title="Planner"
+            onBack={() => router.back()}
+            rightAction={
+              <SmallButton
+                icon={Settings}
+                onPress={() => router.push('/tripSettings')}
+                accessibilityLabel="Trip settings"
+              />
+            }
+          />
         </View>
       </View>
 
-      <ScrollView
+      <FlatList
+        data={locations}
+        keyExtractor={(location) => location.id.toString()}
+        renderItem={({ item }) => (
+          <StopListItem location={item} onPress={() => router.push('/enterStop')} />
+        )}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 10 }}
         keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="never"
-      >
-        <View style={styles.plannerStyle}>
-          {locations.map((location) => (
-            <StopListItem key={location.id} location={location} />
-          ))}
-          <SmallButton
-            icon={Plus}
-            color={Colors.text}
-            size={40}
-            onPress={() => router.push('/enterStop')}
-            style={styles.addButton}
-          />
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.subtext}>Trip Distance</Text>
-          <Text style={styles.subtext}>Total Time</Text>
-        </View>
-
-        <LargeButton label="Directions" disabled={false} onPress={() => router.replace('/trips')} />
-        <LargeButton label="Save Trip" disabled={false} onPress={() => router.replace('/trips')} />
-      </ScrollView>
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.sm }}
+        ListHeaderComponent={<View style={styles.listSpacer} />}
+        ListFooterComponent={
+          <>
+            <SmallButton
+              icon={Plus}
+              color={Colors.text}
+              size={40}
+              onPress={() => router.push('/enterStop')}
+              accessibilityLabel="Add a stop"
+              style={styles.addButton}
+            />
+            <View style={styles.infoRow}>
+              <Text style={styles.subtext}>Trip Distance</Text>
+              <Text style={styles.subtext}>Total Time</Text>
+            </View>
+            <LargeButton label="Directions" onPress={() => router.replace('/trips')} />
+            <LargeButton label="Save Trip" onPress={() => router.replace('/trips')} />
+          </>
+        }
+      />
 
       <LinearGradient
         colors={[Colors.background, 'transparent']}
-        style={[styles.header, { top: insets.top + headerHeight }]}
+        pointerEvents="none"
+        style={[styles.headerFade, { top: insets.top + headerHeight }]}
       />
     </View>
   );
@@ -73,63 +84,28 @@ const PlannerScreen = () => {
 export default PlannerScreen;
 
 const styles = StyleSheet.create({
-  header: {
+  headerFade: {
     position: 'absolute',
-    height: 15,
+    height: spacing.md,
     left: 0,
     right: 0,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
   },
-  title: {
-    color: Colors.text,
-    fontSize: fontSize.sheetTitle,
-    fontWeight: fontWeight.semibold,
-    alignSelf: 'center',
-  },
-  headerRow: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-  },
-  headerLeft: {
-    position: 'absolute',
-    left: 16,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  headerRight: {
-    position: 'absolute',
-    right: 16,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
+  listSpacer: {
+    height: spacing.sm,
   },
   subtext: {
     color: Colors.text,
-    justifyContent: 'flex-start',
     alignSelf: 'center',
-  },
-  plannerStyle: {
-    flexGrow: 1,
-    backgroundColor: Colors.card,
-    margin: 10,
-    paddingVertical: 10,
-    borderRadius: radii.lg,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    margin: 15,
+    margin: spacing.md,
     columnGap: 100,
   },
   addButton: {
-    color: Colors.text,
     backgroundColor: Colors.tintDark,
-    margin: 15,
+    margin: spacing.md,
     width: 50,
     height: 50,
     borderRadius: radii.pill,
