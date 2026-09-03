@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { router, Stack, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/src/context/AuthProvider';
@@ -44,18 +44,14 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { session, loading } = useAuth();
-  const segments = useSegments();
 
   useEffect(() => {
-    // Wait for the stored session to load, or bounce to /welcome on every cold start.
     if (loading) return;
-    const inAuthGroup = segments[0] === '(auth)';
-    if (!session && !inAuthGroup) {
-      router.replace('/welcome'); // logged out but on a protected screen
-    } else if (session && inAuthGroup) {
-      router.replace('/journeys'); // logged in but still on an auth screen
-    }
-  }, [session, loading, segments]);
+    SplashScreen.hideAsync().catch((error) =>
+      reportError(error, { scope: 'RootLayoutNav.hideSplash' })
+    );
+  }, [loading]);
+
   return (
     <KeyboardProvider>
       <ThemeProvider value={DarkTheme}>
@@ -73,7 +69,7 @@ function RootLayoutNav() {
           </Stack.Protected>
 
           <Stack.Protected guard={!session}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(authentication)" options={{ headerShown: false }} />
           </Stack.Protected>
         </Stack>
       </ThemeProvider>

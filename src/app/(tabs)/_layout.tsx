@@ -1,4 +1,5 @@
-import SmallButton from '@/src/components/smallButton';
+import SmallButton from '@/src/components/SmallButton';
+import { copy } from '@/src/constants/copy';
 import { useClientOnlyValue } from '@/src/hooks/useClientOnlyValue';
 import Colors from '@/src/constants/colors';
 import * as Haptics from 'expo-haptics';
@@ -12,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // Icon size of icons in tab bar
 const ICON_SIZE = 20;
 
-// Used to fill the pill behind the icon when tab is slected.
+// Used to fill the pill behind the icon when tab is selected.
 function TabIcon({ focused, children }: { focused: boolean; children: React.ReactNode }) {
   return (
     <View
@@ -36,7 +37,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   return (
     <Tabs
-      initialRouteName="journeys"
+      initialRouteName="trips"
       screenOptions={{
         // Custom tab-bar design
         tabBarStyle: {
@@ -90,9 +91,9 @@ export default function TabLayout() {
     >
       <Tabs.Screen
         // Home screen of the app where all of the users created/joined trips will show up
-        name="journeys"
+        name="trips"
         options={{
-          title: 'Journeys',
+          title: copy.tabs.trips,
           // Create-trip FAB
           headerRight: () => (
             <SmallButton
@@ -115,7 +116,7 @@ export default function TabLayout() {
         // Where users will Join someone else's party via join code
         name="joinTrip"
         options={{
-          title: 'Join Trip',
+          title: copy.tabs.joinTrip,
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
               <User
@@ -130,7 +131,7 @@ export default function TabLayout() {
         // User can Archive any trip to use later for themselves or a new group
         name="savedTrips"
         options={{
-          title: 'Saved Trips',
+          title: copy.tabs.savedTrips,
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
               <Archive
@@ -142,10 +143,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        // User can Archive any trip to use later for themselves or a new group
         name="settings"
         options={{
-          title: 'Settings',
+          title: copy.tabs.settings,
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
               <Settings

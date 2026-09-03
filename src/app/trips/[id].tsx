@@ -7,14 +7,15 @@ import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import Colors from '@/src/constants/colors';
-import SmallButton from '@/src/components/smallButton';
+import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
-import LargeButton from '@/src/components/largeButton';
+import LargeButton from '@/src/components/LargeButton';
 
-const TripDetails = () => {
+const TripDetailsScreen = () => {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams();
-  const trip = trips.find((p) => p.id.toString() === id);
+  const { id } = useLocalSearchParams<{ id: string | string[] }>();
+  const tripId = Array.isArray(id) ? id[0] : id;
+  const trip = trips.find((t) => t.id.toString() === tripId);
 
   if (!trip) {
     return <Text>Trip not Found</Text>;
@@ -64,7 +65,7 @@ const TripDetails = () => {
           <Text style={styles.text}>There are {trip?.numMembers} on this trip</Text>
         </View>
 
-        {/* Where itenerary will be listed */}
+        {/* Where itinerary will be listed */}
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Itinerary</Text>
           <Text style={[styles.text, { paddingBottom: 300 }]}>Not planned</Text>
@@ -110,7 +111,7 @@ const TripDetails = () => {
   );
 };
 
-export default TripDetails;
+export default TripDetailsScreen;
 
 const styles = StyleSheet.create({
   image: {

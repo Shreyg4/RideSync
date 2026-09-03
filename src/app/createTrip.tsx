@@ -1,19 +1,20 @@
 import { View, Text, StyleSheet, Pressable, Platform, ScrollView, Modal } from 'react-native';
 import React, { useState } from 'react';
-import TextBox from '@components/textbox';
+import TextBox from '@components/TextBox';
 import Colors from '@/src/constants/colors';
+import { copy } from '@/src/constants/copy';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ImagePlus, MapPin, Repeat, ChevronLeft, Calendar, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import LargeButton from '@/src/components/largeButton';
+import LargeButton from '@/src/components/LargeButton';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SmallButton from '@/src/components/smallButton';
+import SmallButton from '@/src/components/SmallButton';
 import DateTimePicker, {
   DateTimePickerAndroid,
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import FieldButton from '@/src/components/fieldButton';
+import FieldButton from '@/src/components/FieldButton';
 import { TRIP_TYPES, tripTypeLabel } from '@/src/domain/rules';
 import { mergeDateTime } from '@/src/lib/dateTime';
 
@@ -24,33 +25,33 @@ const CreateTripScreen = () => {
 
   const [tripName, setTripName] = useState('');
 
-  const [when, setWhen] = useState<Date | null>(null);
-  const [mode, setMode] = useState<'date' | 'time' | null>(null);
+  const [startsAt, setStartsAt] = useState<Date | null>(null);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
   // Mode arrives as an argument instead of being read out of state
-  const onPicked = (which: 'date' | 'time') => (event: DateTimePickerEvent, picked?: Date) => {
+  const handlePicked = (which: 'date' | 'time') => (event: DateTimePickerEvent, picked?: Date) => {
     if (event.type === 'dismissed' || !picked) return;
-    setWhen((prev) => mergeDateTime(prev, picked, which));
+    setStartsAt((prev) => mergeDateTime(prev, picked, which));
   };
 
   // Android's picker is a system dialog, not a view, so it's opened imperatively and
-  // dismisses itself. iOS renders inline, so there `mode` drives the Modal below.
-  const open = (which: 'date' | 'time') => {
+  // dismisses itself. iOS renders inline, so there `pickerMode` drives the Modal below.
+  const openPicker = (which: 'date' | 'time') => {
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
-        value: when ?? new Date(),
+        value: startsAt ?? new Date(),
         mode: which,
         display: which === 'date' ? 'calendar' : 'spinner',
-        onChange: onPicked(which),
+        onChange: handlePicked(which),
       });
       return;
     }
-    setMode(which);
+    setPickerMode(which);
   };
 
-  const onDone = () => {
-    setMode(null);
+  const closePicker = () => {
+    setPickerMode(null);
   };
   return (
     <View style={{ paddingTop: Platform.select({ ios: 0, android: insets.top }) }}>
@@ -82,7 +83,7 @@ const CreateTripScreen = () => {
         <TextBox
           value={tripName}
           onChangeText={setTripName}
-          placeholder="Enter trip name"
+          placeholder={copy.fields.tripName}
           style={{ marginTop: 0 }}
         />
 
@@ -118,19 +119,26 @@ const CreateTripScreen = () => {
 
         <FieldButton
           text={
-            when &&
-            when.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+            startsAt &&
+            startsAt.toLocaleDateString(undefined, {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            })
           }
           placeholder="Start Date"
           icon={Calendar}
-          onPress={() => open('date')}
+          onPress={() => openPicker('date')}
         />
 
         <FieldButton
-          text={when && when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+          text={
+            startsAt &&
+            startsAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+          }
           placeholder="Start Time"
           icon={Clock}
-          onPress={() => open('time')}
+          onPress={() => openPicker('time')}
         />
         {/* Button for user to include an image */}
         <Pressable
@@ -156,18 +164,18 @@ const CreateTripScreen = () => {
           onPress={() => router.replace('/planner')}
         />
       </ScrollView>
-      {/* iOS only - Android opens its own dialog from open() above. */}
+      {/* iOS only - Android opens its own dialog from openPicker() above. */}
       {Platform.OS === 'ios' && (
         <Modal
-          visible={mode !== null}
+          visible={pickerMode !== null}
           transparent
           animationType="slide"
-          onRequestClose={onDone} // Android back button; harmless on iOS, good habit
+          onRequestClose={closePicker} // Android back button; harmless on iOS, good habit
         >
           {/* Backdrop: fills the screen, pushes the card to the bottom, dismisses on tap */}
           <Pressable
             style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
-            onPress={onDone}
+            onPress={closePicker}
           >
             {/* Swallow taps so pressing the card itself doesn't close it */}
             <Pressable
@@ -180,16 +188,16 @@ const CreateTripScreen = () => {
               }}
             >
               <DateTimePicker
-                value={when ?? new Date()}
-                mode={mode ?? 'date'} // required prop; `visible` is false when null anyway
-                display={mode === 'date' ? 'inline' : 'spinner'}
+                value={startsAt ?? new Date()}
+                mode={pickerMode ?? 'date'} // required prop; `visible` is false when null anyway
+                display={pickerMode === 'date' ? 'inline' : 'spinner'}
                 themeVariant="dark"
-                onChange={onPicked(mode ?? 'date')}
+                onChange={handlePicked(pickerMode ?? 'date')}
                 style={{ alignSelf: 'center' }}
               />
 
               <View style={{ flexDirection: 'row', justifyContent: 'center', padding: 10 }}>
-                <Pressable onPress={onDone} hitSlop={12} style={styles.doneButton}>
+                <Pressable onPress={closePicker} hitSlop={12} style={styles.doneButton}>
                   <Text style={{ color: Colors.theme.background, fontSize: 17, fontWeight: '600' }}>
                     Done
                   </Text>

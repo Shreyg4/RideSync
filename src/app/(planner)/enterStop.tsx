@@ -2,11 +2,11 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SmallButton from '@/src/components/smallButton';
+import SmallButton from '@/src/components/SmallButton';
 import React from 'react';
 import Colors from '@/src/constants/colors';
 
-const EnterStop = () => {
+const EnterStopScreen = () => {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1 }}>
@@ -20,7 +20,7 @@ const EnterStop = () => {
   );
 };
 
-export default EnterStop;
+export default EnterStopScreen;
 
 const styles = StyleSheet.create({
   title: {

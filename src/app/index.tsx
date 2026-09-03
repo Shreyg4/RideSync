@@ -1,14 +1,11 @@
-import React, { useEffect } from 'react';
-import { Redirect, SplashScreen } from 'expo-router';
+import React from 'react';
+import { Redirect } from 'expo-router';
 import { useAuth } from '@/src/context/AuthProvider';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Colors from '@/src/constants/colors';
 
-export default function Index() {
+export default function IndexScreen() {
   const { loading, session } = useAuth();
-  useEffect(() => {
-    if (!loading) SplashScreen.hideAsync();
-  }, [loading]);
 
   if (loading)
     return (
@@ -16,7 +13,7 @@ export default function Index() {
         <ActivityIndicator size={'large'} color={Colors.theme.tint} />
       </View>
     );
-  return <Redirect href={session ? '/journeys' : '/welcome'} />;
+  return <Redirect href={session ? '/trips' : '/welcome'} />;
 }
 
 const styles = StyleSheet.create({

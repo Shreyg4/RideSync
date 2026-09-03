@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import React, { useState } from 'react';
-import SmallButton from '@/src/components/smallButton';
-import TextBox from '@/src/components/textbox';
-import LargeButton from '@/src/components/largeButton';
+import SmallButton from '@/src/components/SmallButton';
+import TextBox from '@/src/components/TextBox';
+import LargeButton from '@/src/components/LargeButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
+import { copy } from '@/src/constants/copy';
 import { useAuth } from '@/src/context/AuthProvider';
 import { reportAndDescribe } from '@/src/services/errors';
 import {
@@ -18,7 +19,7 @@ import {
 // Sign-in screen. Errors come in two tiers:
 //  - errors: per-field problems we can spot locally (missing password, malformed email)
 //  - formError: whatever the server said, shown once above the button and never pinned to a field.
-const Login = () => {
+const LoginScreen = () => {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,7 +68,7 @@ const Login = () => {
           value={email}
           onChangeText={updateField('email', setEmail)}
           error={!!errors.email}
-          placeholder="E-mail"
+          placeholder={copy.fields.email}
           autoCapitalize="none"
           keyboardType="email-address"
         />
@@ -77,7 +78,7 @@ const Login = () => {
           value={password}
           onChangeText={updateField('password', setPassword)}
           error={!!errors.password}
-          placeholder="Password"
+          placeholder={copy.fields.password}
           secureTextEntry={true}
         />
         {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
@@ -99,7 +100,7 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: {

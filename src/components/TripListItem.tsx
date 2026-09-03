@@ -18,7 +18,7 @@ const TripListItem = ({ trip }: TripListItemProps) => {
       onPress={() => {
         // Haptic feedback, then navigate to the trip details screen
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push(`/${trip.id}`);
+        router.push(`/trips/${trip.id}`);
       }}
       style={({ pressed }) => [
         {

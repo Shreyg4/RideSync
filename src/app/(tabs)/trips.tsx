@@ -1,6 +1,7 @@
 import Colors from '@/src/constants/colors';
+import { copy } from '@/src/constants/copy';
 import trips from '@/src/__fixtures__/trips';
-import TripListItem from '@/src/components/tripListItem';
+import TripListItem from '@/src/components/TripListItem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlatList, StyleSheet, View, Text } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -20,8 +21,8 @@ export default function TripsScreen() {
         ]}
         ListEmptyComponent={
           <View style={styles.container}>
-            <Text style={styles.text}>No Upcoming Journeys</Text>
-            <Text style={styles.subtext}>Press the + button to create a trip or join one</Text>
+            <Text style={styles.text}>{copy.trips.emptyTitle}</Text>
+            <Text style={styles.subtext}>{copy.trips.emptySubtitle}</Text>
           </View>
         }
       />

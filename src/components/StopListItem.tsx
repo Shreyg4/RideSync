@@ -14,7 +14,7 @@ const StopListItem = ({ location }: StopListItemProps) => {
     <Pressable
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        router.push('/journeys');
+        router.push('/trips');
       }}
       style={({ pressed }) => [
         {

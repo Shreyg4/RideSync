@@ -3,9 +3,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import React from 'react';
 import Colors from '@/src/constants/colors';
-import LargeButton from '@/src/components/largeButton';
+import LargeButton from '@/src/components/LargeButton';
 
-export default function Welcome() {
+export default function WelcomeScreen() {
   const inset = useSafeAreaInsets();
 
   return (

@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 import { ChevronLeft, Settings, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SmallButton from '@/src/components/smallButton';
-import LargeButton from '@/src/components/largeButton';
+import SmallButton from '@/src/components/SmallButton';
+import LargeButton from '@/src/components/LargeButton';
 import Colors from '@/src/constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
-import StopListItem from '@/src/components/stopListItem';
+import StopListItem from '@/src/components/StopListItem';
 import locations from '@/src/__fixtures__/locations';
 
-const Planner = () => {
+const PlannerScreen = () => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(0);
   return (
@@ -60,16 +60,8 @@ const Planner = () => {
           <Text style={styles.subtext}>Total Time</Text>
         </View>
 
-        <LargeButton
-          label="Directions"
-          disabled={false}
-          onPress={() => router.replace('/journeys')}
-        />
-        <LargeButton
-          label="Save Trip"
-          disabled={false}
-          onPress={() => router.replace('/journeys')}
-        />
+        <LargeButton label="Directions" disabled={false} onPress={() => router.replace('/trips')} />
+        <LargeButton label="Save Trip" disabled={false} onPress={() => router.replace('/trips')} />
       </ScrollView>
 
       <LinearGradient
@@ -80,7 +72,7 @@ const Planner = () => {
   );
 };
 
-export default Planner;
+export default PlannerScreen;
 
 const styles = StyleSheet.create({
   header: {

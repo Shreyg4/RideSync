@@ -1,16 +1,17 @@
 import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import React, { useState, useEffect } from 'react';
-import SmallButton from '@/src/components/smallButton';
+import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
-import TextBox from '@/src/components/textbox';
-import LargeButton from '@/src/components/largeButton';
+import { copy } from '@/src/constants/copy';
+import TextBox from '@/src/components/TextBox';
+import LargeButton from '@/src/components/LargeButton';
 import { useAuth } from '@/src/context/AuthProvider';
 import * as ImagePicker from 'expo-image-picker';
-import AvatarImage from '@/src/components/avatarImage';
+import AvatarImage from '@/src/components/AvatarImage';
 import { uploadAvatar } from '@/src/services/avatarService';
 import { isUsernameAvailable } from '@/src/services/userService';
 import { reportAndDescribe } from '@/src/services/errors';
@@ -31,7 +32,7 @@ import * as Haptics from 'expo-haptics';
 //  - the hint/availability text under the username box is derived during render, so it
 //    updates live as the user types. Nothing is stored for it.
 
-const SignUp = () => {
+const SignUpScreen = () => {
   const insets = useSafeAreaInsets();
   const [avatarAsset, setAvatarAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [firstName, setFirstName] = useState('');
@@ -173,7 +174,7 @@ const SignUp = () => {
         bottomOffset={125}
       >
         <Text style={styles.text}>Create Account</Text>
-        {/* Avater Image Picker */}
+        {/* Avatar Image Picker */}
         <Pressable
           onPress={pickAvatarImage}
           style={{ alignSelf: 'center', marginVertical: 20, pointerEvents: 'box-only' }}
@@ -184,30 +185,30 @@ const SignUp = () => {
           Profile Picture (optional)
         </Text>
         {/* Name */}
-        <Text style={styles.subtext}>Name</Text>
+        <Text style={styles.subtext}>{copy.headings.name}</Text>
         <TextBox
           value={firstName}
           onChangeText={updateField('firstName', setFirstName)}
           error={!!errors.firstName}
-          placeholder="First Name"
+          placeholder={copy.fields.firstName}
         />
         {errors.firstName ? <Text style={styles.errorText}>{errors.firstName}</Text> : null}
         <TextBox
           value={lastName}
           onChangeText={updateField('lastName', setLastName)}
           error={!!errors.lastName}
-          placeholder="Last Name"
+          placeholder={copy.fields.lastName}
         />
         {errors.lastName ? <Text style={styles.errorText}>{errors.lastName}</Text> : null}
 
         {/* Username. Two lines sit under the box: the rules hint (replaced by the error
             after a failed submit) and the live availability row. */}
-        <Text style={styles.subtext}>Unique Username and E-mail</Text>
+        <Text style={styles.subtext}>{copy.headings.usernameAndEmail}</Text>
         <TextBox
           value={username}
           onChangeText={updateField('username', setUsername)}
           error={!!errors.username}
-          placeholder="Username"
+          placeholder={copy.fields.username}
           autoCapitalize="none"
           maxLength={USERNAME_MAX_LENGTH}
         />
@@ -218,31 +219,31 @@ const SignUp = () => {
         )}
         {availability ? (
           <View style={styles.availabilityRow}>
-            <Text style={[styles.availablityText, { color: availability.color, marginLeft: 0 }]}>
+            <Text style={[styles.availabilityText, { color: availability.color, marginLeft: 0 }]}>
               {availability.text}
             </Text>
             <availability.Icon size={16} color={availability.color} />
           </View>
         ) : null}
 
-        {/* E-mail */}
+        {/* Email */}
         <TextBox
           value={email}
           onChangeText={updateField('email', setEmail)}
           error={!!errors.email}
-          placeholder="E-mail"
+          placeholder={copy.fields.email}
           autoCapitalize="none"
           keyboardType="email-address"
         />
         {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
         {/* Password */}
-        <Text style={styles.subtext}>Set Password</Text>
+        <Text style={styles.subtext}>{copy.headings.setPassword}</Text>
         <TextBox
           value={password}
           onChangeText={updateField('password', setPassword)}
           error={!!errors.password}
-          placeholder="Password"
+          placeholder={copy.fields.password}
           secureTextEntry={true}
         />
         {errors.password ? (
@@ -255,7 +256,7 @@ const SignUp = () => {
           value={confirmPassword}
           onChangeText={updateField('confirmPassword', setConfirmPassword)}
           error={!!errors.confirmPassword}
-          placeholder="Re-enter password"
+          placeholder={copy.fields.confirmPassword}
           secureTextEntry={true}
         />
         {errors.confirmPassword ? (
@@ -278,7 +279,7 @@ const SignUp = () => {
   );
 };
 
-export default SignUp;
+export default SignUpScreen;
 
 const styles = StyleSheet.create({
   text: {
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginLeft: 15,
   },
-  availablityText: {
+  availabilityText: {
     fontSize: 15,
     fontWeight: '400',
     marginLeft: 15,

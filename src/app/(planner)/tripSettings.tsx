@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import SmallButton from '@/src/components/smallButton';
+import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -7,7 +7,7 @@ import Colors from '@/src/constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 
-const TripSettings = () => {
+const TripSettingsScreen = () => {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1 }}>
@@ -28,7 +28,7 @@ const TripSettings = () => {
   );
 };
 
-export default TripSettings;
+export default TripSettingsScreen;
 
 const styles = StyleSheet.create({
   title: {

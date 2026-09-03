@@ -1,10 +1,11 @@
-import TextBox from '@/src/components/textbox';
-import LargeButton from '@/src/components/largeButton';
+import TextBox from '@/src/components/TextBox';
+import { copy } from '@/src/constants/copy';
+import LargeButton from '@/src/components/LargeButton';
 import { useState } from 'react';
 import { View, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 
-export default function JoinTrip() {
+export default function JoinTripScreen() {
   const [joinCode, setJoinCode] = useState('');
 
   return (
@@ -17,7 +18,7 @@ export default function JoinTrip() {
         <TextBox
           value={joinCode}
           onChangeText={setJoinCode}
-          placeholder="Enter code"
+          placeholder={copy.fields.joinCode}
           keyboardType="number-pad"
         />
         <LargeButton label="Join Trip" disabled={false} onPress={() => router.back()} />

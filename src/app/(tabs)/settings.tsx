@@ -1,11 +1,11 @@
 import { Text, View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import LargeButton from '@/src/components/largeButton';
+import LargeButton from '@/src/components/LargeButton';
 import Colors from '@/src/constants/colors';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
-import AvatarImage from '@/src/components/avatarImage';
+import AvatarImage from '@/src/components/AvatarImage';
 import { avatarUrl } from '@/src/services/avatarService';
 import { useCallback, useState } from 'react';
 import { getUserAvatarPath } from '@/src/services/userService';
@@ -18,7 +18,7 @@ const SmallTextButton = ({ label, onPress }: { label: string; onPress: () => voi
   </Pressable>
 );
 
-export default function Settings() {
+export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const [signOutError, setSignOutError] = useState<string>();
