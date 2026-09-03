@@ -1,4 +1,6 @@
 import Colors from '@/src/constants/colors';
+import { gradients } from '@/src/constants/gradients';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import { copy } from '@/src/constants/copy';
 import trips from '@/src/__fixtures__/trips';
 import TripListItem from '@/src/components/TripListItem';
@@ -28,11 +30,7 @@ export default function TripsScreen() {
       />
 
       {/* Gradient header overlay: solid at the top, fading to transparent at the bottom */}
-      <LinearGradient
-        colors={[Colors.theme.background, Colors.theme.background, 'transparent']}
-        locations={[0, 0, 1]}
-        style={[styles.header]}
-      />
+      <LinearGradient {...gradients.topFade} style={[styles.header]} />
     </View>
   );
 }
@@ -53,13 +51,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    color: Colors.theme.text,
-    fontSize: 20,
-    fontWeight: 500,
+    color: Colors.text,
+    fontSize: fontSize.section,
+    fontWeight: fontWeight.medium,
   },
   subtext: {
-    color: Colors.theme.textMutedLight,
-    fontSize: 15,
-    fontWeight: 200,
+    color: Colors.textMutedLight,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.regular,
   },
 });

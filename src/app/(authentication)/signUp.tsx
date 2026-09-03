@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import { copy } from '@/src/constants/copy';
 import TextBox from '@/src/components/TextBox';
 import LargeButton from '@/src/components/LargeButton';
@@ -283,33 +284,33 @@ export default SignUpScreen;
 
 const styles = StyleSheet.create({
   text: {
-    color: Colors.theme.text,
-    fontSize: 40,
+    color: Colors.text,
+    fontSize: fontSize.screenTitle,
     marginBottom: 10,
-    fontWeight: '700',
+    fontWeight: fontWeight.heavy,
     textAlign: 'center',
   },
   subtext: {
-    color: Colors.theme.tint,
-    fontSize: 20,
+    color: Colors.tint,
+    fontSize: fontSize.section,
     marginVertical: 5,
     marginLeft: 15,
-    fontWeight: '600',
+    fontWeight: fontWeight.semibold,
   },
   infoText: {
-    color: Colors.theme.textMutedLight,
-    fontSize: 15,
+    color: Colors.textMutedLight,
+    fontSize: fontSize.caption,
     marginTop: -7,
     marginBottom: 5,
-    fontWeight: '400',
+    fontWeight: fontWeight.regular,
     marginLeft: 15,
   },
   errorText: {
-    color: Colors.theme.error,
-    fontSize: 15,
+    color: Colors.error,
+    fontSize: fontSize.caption,
     marginTop: -7,
     marginBottom: 5,
-    fontWeight: '400',
+    fontWeight: fontWeight.regular,
     marginLeft: 15,
   },
   availabilityRow: {
@@ -319,8 +320,8 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   availabilityText: {
-    fontSize: 15,
-    fontWeight: '400',
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.regular,
     marginLeft: 15,
   },
 });

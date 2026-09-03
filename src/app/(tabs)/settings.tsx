@@ -2,6 +2,8 @@ import { Text, View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LargeButton from '@/src/components/LargeButton';
 import Colors from '@/src/constants/colors';
+import { gradients } from '@/src/constants/gradients';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
@@ -60,16 +62,16 @@ export default function SettingsScreen() {
           <LargeButton
             label="Delete Account"
             onPress={() => router.back()}
-            color="red"
-            backgroundColor={Colors.theme.border}
-            backgroundColorPressed={Colors.theme.card}
+            color={Colors.error}
+            backgroundColor={Colors.border}
+            backgroundColorPressed={Colors.card}
           />
           <LargeButton
             label="Log Out"
             onPress={handleSignOut}
-            color="red"
-            backgroundColor={Colors.theme.border}
-            backgroundColorPressed={Colors.theme.card}
+            color={Colors.error}
+            backgroundColor={Colors.border}
+            backgroundColorPressed={Colors.card}
           />
           {signOutError ? (
             <View style={styles.errorRow}>
@@ -80,11 +82,7 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
       {/* Gradient header overlay: solid at the top, fading to transparent at the bottom */}
-      <LinearGradient
-        colors={[Colors.theme.background, Colors.theme.background, 'transparent']}
-        locations={[0, 0, 1]}
-        style={[styles.header]}
-      />
+      <LinearGradient {...gradients.topFade} style={[styles.header]} />
     </View>
   );
 }
@@ -107,18 +105,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   errorText: {
-    color: Colors.theme.error,
-    fontSize: 15,
+    color: Colors.error,
+    fontSize: fontSize.caption,
   },
   retryText: {
-    color: Colors.theme.tint,
-    fontSize: 15,
-    fontWeight: '600',
+    color: Colors.tint,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.semibold,
   },
   text: {
-    color: Colors.theme.text,
-    fontSize: 20,
-    fontWeight: 'bold',
+    color: Colors.text,
+    fontSize: fontSize.section,
+    fontWeight: fontWeight.bold,
     marginBottom: '140%',
   },
 });

@@ -2,8 +2,12 @@ import { router } from 'expo-router';
 import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { Dot } from 'lucide-react-native';
 import type { Location } from '@/src/types/trip';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/src/constants/haptics';
+import { pressFeedback } from '@/src/constants/pressFeedback';
 import Colors from '@/src/constants/colors';
+import { radii } from '@/src/constants/radii';
+import { spacing } from '@/src/constants/spacing';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 
 type StopListItemProps = {
   location: Location;
@@ -13,15 +17,10 @@ const StopListItem = ({ location }: StopListItemProps) => {
   return (
     <Pressable
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        haptics.action();
         router.push('/trips');
       }}
-      style={({ pressed }) => [
-        {
-          transform: [{ scale: pressed ? 0.95 : 1 }],
-          opacity: pressed ? 0.85 : 1,
-        },
-      ]}
+      style={({ pressed }) => [pressFeedback.card(pressed)]}
     >
       <View style={styles.container}>
         <Text style={styles.name}>{location.name}</Text>
@@ -39,26 +38,26 @@ export default StopListItem;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.theme.tintmid,
-    borderRadius: 20,
-    margin: 10,
-    padding: 10,
+    backgroundColor: Colors.card,
+    borderRadius: radii.lg,
+    margin: spacing.sm,
+    padding: spacing.sm,
   },
   name: {
-    color: Colors.theme.textMuted,
-    fontSize: 30,
-    fontWeight: 700,
+    color: Colors.text,
+    fontSize: fontSize.sheetTitle,
+    fontWeight: fontWeight.bold,
   },
   subtext: {
-    fontSize: 15,
-    fontWeight: 300,
+    color: Colors.textMutedLight,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.regular,
   },
   infoRow: {
-    color: Colors.theme.textMuted,
     flexDirection: 'row',
   },
 });
 const iconProps = {
-  color: Colors.theme.textMuted,
+  color: Colors.textMutedLight,
   size: 15,
 };

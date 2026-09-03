@@ -1,5 +1,10 @@
 import Colors from '@/src/constants/colors';
-import * as Haptics from 'expo-haptics';
+import { contentWidth } from '@/src/constants/layout';
+import { radii } from '@/src/constants/radii';
+import { spacing } from '@/src/constants/spacing';
+import { fontSize as fontSizes, fontWeight } from '@/src/constants/typography';
+import { haptics, type HapticRole } from '@/src/constants/haptics';
+import { pressFeedback } from '@/src/constants/pressFeedback';
 import { LucideIcon } from 'lucide-react-native';
 import {
   Pressable,
@@ -25,7 +30,7 @@ type LargeButtonProps = {
   marginVertical?: number;
   borderRadius?: number;
   fontSize?: number;
-  hapticStyle?: Haptics.ImpactFeedbackStyle;
+  haptic?: HapticRole;
   style?: StyleProp<ViewStyle>; // per-use container overrides
   textStyle?: StyleProp<TextStyle>; // per-use text overrides
   disabled?: boolean;
@@ -39,33 +44,33 @@ export default function LargeButton({
   label,
   onPress,
   icon: Icon,
-  color = Colors.theme.background,
-  backgroundColor = Colors.theme.tint,
-  backgroundColorPressed = Colors.theme.tintPressed,
-  width = '95%',
+  color = Colors.background,
+  backgroundColor = Colors.tint,
+  backgroundColorPressed = Colors.tintPressed,
+  width = contentWidth,
   height = 60,
-  marginVertical = 10,
-  borderRadius = 20,
+  marginVertical = spacing.sm,
+  borderRadius = radii.lg,
   borderWidth = 0,
-  borderColor = Colors.theme.border,
+  borderColor = Colors.border,
   borderStyle = 'solid',
-  fontSize = 18,
-  hapticStyle = Haptics.ImpactFeedbackStyle.Heavy,
+  fontSize = fontSizes.body,
+  haptic = 'action',
   style,
   textStyle,
   disabled = false,
-  disabledBackgroundColor = Colors.theme.disabled,
+  disabledBackgroundColor = Colors.disabled,
 }: LargeButtonProps) {
   return (
     <Pressable
       disabled={disabled}
       onPress={() => {
-        // Haptic feedback for the button
-        Haptics.impactAsync(hapticStyle);
+        haptics[haptic]();
         onPress();
       }}
       hitSlop={8}
       style={({ pressed }) => [
+        pressFeedback.control(pressed),
         {
           width,
           height,
@@ -78,7 +83,7 @@ export default function LargeButton({
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: 'center', // center the button within its parent
-          gap: 8, // space between icon and text
+          gap: spacing.xxs * 2,
           backgroundColor: disabled
             ? disabledBackgroundColor
             : pressed
@@ -94,7 +99,7 @@ export default function LargeButton({
           <Icon color={color} size={fontSize + 2} />
         </View>
       )}
-      <Text style={[{ color, fontSize, fontWeight: '700' }, textStyle]}>{label}</Text>
+      <Text style={[{ color, fontSize, fontWeight: fontWeight.bold }, textStyle]}>{label}</Text>
     </Pressable>
   );
 }

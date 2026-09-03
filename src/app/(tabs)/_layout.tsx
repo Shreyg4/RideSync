@@ -2,6 +2,9 @@ import SmallButton from '@/src/components/SmallButton';
 import { copy } from '@/src/constants/copy';
 import { useClientOnlyValue } from '@/src/hooks/useClientOnlyValue';
 import Colors from '@/src/constants/colors';
+import { fontWeight } from '@/src/constants/typography';
+import { radii } from '@/src/constants/radii';
+import { gradients } from '@/src/constants/gradients';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs, router } from 'expo-router';
@@ -20,10 +23,10 @@ function TabIcon({ focused, children }: { focused: boolean; children: React.Reac
       style={{
         width: 60, // Width of selected pill
         height: 30, // height of selected pill
-        borderRadius: 15,
+        borderRadius: radii.md,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: focused ? Colors.theme.tint : 'transparent',
+        backgroundColor: focused ? Colors.tint : 'transparent',
         pointerEvents: 'none',
       }}
     >
@@ -43,19 +46,16 @@ export default function TabLayout() {
         tabBarStyle: {
           position: 'absolute',
           height: 60 + insets.bottom,
-          borderRadius: 24,
+          borderRadius: radii.xl,
           borderTopWidth: 0,
-          borderColor: Colors.theme.border,
+          borderColor: Colors.border,
         },
         tabBarBackground: () => (
           <LinearGradient
-            colors={[Colors.theme.background, Colors.theme.card]}
+            colors={[Colors.background, Colors.card]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1.7 }}
-            style={[
-              StyleSheet.absoluteFill,
-              { borderTopWidth: 1, borderColor: Colors.theme.border },
-            ]}
+            style={[StyleSheet.absoluteFill, { borderTopWidth: 1, borderColor: Colors.border }]}
           />
         ),
         tabBarLabelStyle: {
@@ -67,18 +67,13 @@ export default function TabLayout() {
         headerStyle: [{ height: 130 }],
         // Gradient sits behind the title/buttons. end y:0.5 means it fades from card->background over the top half.
         headerBackground: () => (
-          <LinearGradient
-            colors={[Colors.theme.card, Colors.theme.background]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 0.7 }}
-            style={StyleSheet.absoluteFill}
-          />
+          <LinearGradient {...gradients.cardToBackground} style={StyleSheet.absoluteFill} />
         ),
         headerTitleAlign: 'left',
-        headerTintColor: Colors.theme.text,
+        headerTintColor: Colors.text,
         headerTitleStyle: {
           fontSize: 40,
-          fontWeight: '800',
+          fontWeight: fontWeight.heavy,
           justifyContent: 'flex-start',
         },
         headerShadowVisible: false,
@@ -104,10 +99,7 @@ export default function TabLayout() {
           ),
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <Route
-                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
-                size={ICON_SIZE}
-              />
+              <Route color={focused ? Colors.textOnTint : Colors.textMutedLight} size={ICON_SIZE} />
             </TabIcon>
           ),
         }}
@@ -119,10 +111,7 @@ export default function TabLayout() {
           title: copy.tabs.joinTrip,
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
-              <User
-                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
-                size={ICON_SIZE}
-              />
+              <User color={focused ? Colors.textOnTint : Colors.textMutedLight} size={ICON_SIZE} />
             </TabIcon>
           ),
         }}
@@ -135,7 +124,7 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
               <Archive
-                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
+                color={focused ? Colors.textOnTint : Colors.textMutedLight}
                 size={ICON_SIZE}
               />
             </TabIcon>
@@ -149,7 +138,7 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused}>
               <Settings
-                color={focused ? Colors.theme.textOnTint : Colors.theme.textMutedLight}
+                color={focused ? Colors.textOnTint : Colors.textMutedLight}
                 size={ICON_SIZE}
               />
             </TabIcon>

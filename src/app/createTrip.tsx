@@ -2,6 +2,10 @@ import { View, Text, StyleSheet, Pressable, Platform, ScrollView, Modal } from '
 import React, { useState } from 'react';
 import TextBox from '@components/TextBox';
 import Colors from '@/src/constants/colors';
+import { contentWidth } from '@/src/constants/layout';
+import { radii } from '@/src/constants/radii';
+import { gradients } from '@/src/constants/gradients';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import { copy } from '@/src/constants/copy';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ImagePlus, MapPin, Repeat, ChevronLeft, Calendar, Clock } from 'lucide-react-native';
@@ -55,12 +59,7 @@ const CreateTripScreen = () => {
   };
   return (
     <View style={{ paddingTop: Platform.select({ ios: 0, android: insets.top }) }}>
-      <LinearGradient
-        colors={[Colors.theme.card, Colors.theme.background]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 0.3 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient {...gradients.cardToBackground} style={StyleSheet.absoluteFill} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
@@ -101,16 +100,16 @@ const CreateTripScreen = () => {
                 // Styling of selected pill
                 style={() => [
                   {
-                    backgroundColor: selectedType === tripType ? Colors.theme.tint : 'transparent',
+                    backgroundColor: selectedType === tripType ? Colors.tint : 'transparent',
                     width: '50%',
                     height: 70,
-                    borderRadius: 20,
+                    borderRadius: radii.lg,
                     justifyContent: 'center',
                     alignItems: 'center',
                   },
                 ]}
               >
-                <Icon color={Colors.theme.text} size={24} style={{ alignSelf: 'center' }} />
+                <Icon color={Colors.text} size={24} style={{ alignSelf: 'center' }} />
                 <Text style={styles.typeText}>{tripTypeLabel(tripType)}</Text>
               </Pressable>
             );
@@ -154,8 +153,8 @@ const CreateTripScreen = () => {
             },
           ]}
         >
-          <ImagePlus color={Colors.theme.textMutedLight} style={{ marginBottom: 10 }} />
-          <Text style={{ color: Colors.theme.textMutedLight }}>Add cover image (optional)</Text>
+          <ImagePlus color={Colors.textMutedLight} style={{ marginBottom: 10 }} />
+          <Text style={{ color: Colors.textMutedLight }}>Add cover image (optional)</Text>
         </Pressable>
 
         <LargeButton
@@ -181,7 +180,7 @@ const CreateTripScreen = () => {
             <Pressable
               onPress={() => {}}
               style={{
-                backgroundColor: Colors.theme.card,
+                backgroundColor: Colors.card,
                 borderTopLeftRadius: 20,
                 borderTopRightRadius: 20,
                 paddingBottom: insets.bottom,
@@ -198,7 +197,13 @@ const CreateTripScreen = () => {
 
               <View style={{ flexDirection: 'row', justifyContent: 'center', padding: 10 }}>
                 <Pressable onPress={closePicker} hitSlop={12} style={styles.doneButton}>
-                  <Text style={{ color: Colors.theme.background, fontSize: 17, fontWeight: '600' }}>
+                  <Text
+                    style={{
+                      color: Colors.background,
+                      fontSize: fontSize.body,
+                      fontWeight: fontWeight.semibold,
+                    }}
+                  >
                     Done
                   </Text>
                 </Pressable>
@@ -213,28 +218,28 @@ const CreateTripScreen = () => {
 
 const styles = StyleSheet.create({
   title: {
-    color: Colors.theme.text,
-    fontSize: 30,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: fontSize.sheetTitle,
+    fontWeight: fontWeight.semibold,
     alignSelf: 'center',
   },
   imageBox: {
-    backgroundColor: Colors.theme.card,
-    borderColor: Colors.theme.textMutedLight,
-    width: '95%',
+    backgroundColor: Colors.card,
+    borderColor: Colors.textMutedLight,
+    width: contentWidth,
     aspectRatio: 1.6,
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: radii.lg,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
   },
   types: {
-    backgroundColor: Colors.theme.card,
-    width: '95%',
+    backgroundColor: Colors.card,
+    width: contentWidth,
     height: 70,
-    borderRadius: 20,
+    borderRadius: radii.lg,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -242,7 +247,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   typeText: {
-    color: Colors.theme.text,
+    color: Colors.text,
     fontSize: 10,
     alignSelf: 'center',
   },
@@ -260,10 +265,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   doneButton: {
-    backgroundColor: Colors.theme.tint,
+    backgroundColor: Colors.tint,
     paddingHorizontal: 90,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: radii.lg,
   },
 });
 export default CreateTripScreen;

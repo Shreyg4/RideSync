@@ -10,7 +10,7 @@ export default function IndexScreen() {
   if (loading)
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size={'large'} color={Colors.theme.tint} />
+        <ActivityIndicator size={'large'} color={Colors.tint} />
       </View>
     );
   return <Redirect href={session ? '/trips' : '/welcome'} />;
@@ -21,6 +21,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.theme.background,
+    backgroundColor: Colors.background,
   },
 });

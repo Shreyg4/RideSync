@@ -8,9 +8,9 @@ describe('availabilityIndicator', () => {
   });
 
   it('uses the palette, not raw colours', () => {
-    expect(availabilityIndicator('free')?.color).toBe(Colors.theme.success);
-    expect(availabilityIndicator('taken')?.color).toBe(Colors.theme.error);
-    expect(availabilityIndicator('checking')?.color).toBe(Colors.theme.textMuted);
+    expect(availabilityIndicator('free')?.color).toBe(Colors.success);
+    expect(availabilityIndicator('taken')?.color).toBe(Colors.error);
+    expect(availabilityIndicator('checking')?.color).toBe(Colors.textMuted);
   });
 
   it('has an entry for every state', () => {

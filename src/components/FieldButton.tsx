@@ -1,5 +1,10 @@
 import Colors from '@/src/constants/colors';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/src/constants/haptics';
+import { contentWidth } from '@/src/constants/layout';
+import { pressFeedback } from '@/src/constants/pressFeedback';
+import { radii } from '@/src/constants/radii';
+import { spacing } from '@/src/constants/spacing';
+import { fontSize } from '@/src/constants/typography';
 import { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleProp, Text, ViewStyle } from 'react-native';
 
@@ -21,32 +26,32 @@ export default function FieldButton({
   return (
     <Pressable
       onPress={() => {
-        Haptics.selectionAsync();
+        haptics.selection();
         onPress();
       }}
       accessibilityRole="button"
       accessibilityLabel={text ?? placeholder}
       style={({ pressed }) => [
+        pressFeedback.control(pressed),
         {
-          width: '95%',
+          width: contentWidth,
           height: 60,
-          borderRadius: 20,
+          borderRadius: radii.lg,
           borderWidth: 1,
-          borderColor: Colors.theme.textMutedLight,
-          backgroundColor: Colors.theme.card,
-          marginVertical: 10,
+          borderColor: Colors.textMutedLight,
+          backgroundColor: Colors.card,
+          marginVertical: spacing.sm,
           alignSelf: 'center',
-          paddingHorizontal: 16,
+          paddingHorizontal: spacing.md,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          opacity: pressed ? 0.85 : 1,
+          gap: spacing.sm,
         },
         style,
       ]}
     >
-      {Icon && <Icon size={20} color={Colors.theme.textMutedLight} />}
-      <Text style={{ fontSize: 18, color: text ? Colors.theme.text : Colors.theme.textMuted }}>
+      {Icon && <Icon size={20} color={Colors.textMutedLight} />}
+      <Text style={{ fontSize: fontSize.body, color: text ? Colors.text : Colors.textMuted }}>
         {text ?? placeholder}
       </Text>
     </Pressable>

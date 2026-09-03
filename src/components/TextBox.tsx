@@ -9,7 +9,10 @@ import {
   Pressable,
   DimensionValue,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/src/constants/haptics';
+import { contentWidth } from '@/src/constants/layout';
+import { radii } from '@/src/constants/radii';
+import { fontSize as fontSizes } from '@/src/constants/typography';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 // Reusable single-line text field (e.g. trip name, destination).
@@ -44,17 +47,17 @@ export default function TextBox({
   value,
   onChangeText,
   placeholder,
-  placeholderTextColor = Colors.theme.textMuted,
-  color = Colors.theme.text,
-  backgroundColor = Colors.theme.card,
-  width = '95%',
+  placeholderTextColor = Colors.textMuted,
+  color = Colors.text,
+  backgroundColor = Colors.card,
+  width = contentWidth,
   height = 60,
-  borderRadius = 20,
+  borderRadius = radii.lg,
   borderWidth = 1,
-  borderColor = Colors.theme.textMutedLight,
-  borderColorSelected = Colors.theme.tint,
+  borderColor = Colors.textMutedLight,
+  borderColorSelected = Colors.tint,
   marginVertical = 10,
-  fontSize = 18,
+  fontSize = fontSizes.body,
   editable = true,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
@@ -62,7 +65,7 @@ export default function TextBox({
   maxLength,
   style,
   error,
-  borderColorError = Colors.theme.error,
+  borderColorError = Colors.error,
 }: TextBoxProps) {
   const [focused, setFocused] = useState(false); // true while the field is being edited
   const [revealed, setRevealed] = useState(false); // password temporarily shown as plain text
@@ -85,7 +88,7 @@ export default function TextBox({
         maxLength={maxLength}
         onFocus={() => {
           setFocused(true);
-          Haptics.selectionAsync();
+          haptics.selection();
         }}
         onBlur={() => setFocused(false)}
         style={[
@@ -124,9 +127,9 @@ export default function TextBox({
           accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
         >
           {revealed ? (
-            <EyeOff size={20} color={Colors.theme.textMutedLight} />
+            <EyeOff size={20} color={Colors.textMutedLight} />
           ) : (
-            <Eye size={20} color={Colors.theme.textMutedLight} />
+            <Eye size={20} color={Colors.textMutedLight} />
           )}
         </Pressable>
       ) : null}

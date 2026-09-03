@@ -1,5 +1,7 @@
 import Colors from '@/src/constants/colors';
-import * as Haptics from 'expo-haptics';
+import { haptics, type HapticRole } from '@/src/constants/haptics';
+import { pressFeedback } from '@/src/constants/pressFeedback';
+import { radii } from '@/src/constants/radii';
 import { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
 
@@ -12,37 +14,36 @@ type SmallButtonProps = {
   backgroundColor?: string;
   size?: number;
   diameter?: number;
-  hapticStyle?: Haptics.ImpactFeedbackStyle;
+  haptic?: HapticRole;
   style?: StyleProp<ViewStyle>; // per-use overrides
 };
 
 export default function SmallButton({
   icon: Icon,
   onPress,
-  color = Colors.theme.tint,
-  backgroundColor = Colors.theme.border,
+  color = Colors.tint,
+  backgroundColor = Colors.border,
   size = 32,
   diameter = 48,
-  hapticStyle = Haptics.ImpactFeedbackStyle.Light,
+  haptic = 'action',
   style,
 }: SmallButtonProps) {
   return (
     <Pressable
       onPress={() => {
-        // Haptic feedback for the button
-        Haptics.impactAsync(hapticStyle);
+        haptics[haptic]();
         onPress();
       }}
       hitSlop={8} // expands the tap target beyond the small circle
       style={({ pressed }) => [
+        pressFeedback.control(pressed),
         {
           width: diameter,
           height: diameter,
-          borderRadius: diameter / 2,
+          borderRadius: radii.pill,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor,
-          opacity: pressed ? 0.6 : 1, // press feedback
         },
         style, // caller overrides come last so they win
       ]}

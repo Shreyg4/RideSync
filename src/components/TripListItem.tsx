@@ -1,10 +1,14 @@
 import { Text, View, ImageBackground, Pressable, StyleSheet } from 'react-native';
 import type { Trip } from '@/src/types/trip';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/src/constants/haptics';
+import { pressFeedback } from '@/src/constants/pressFeedback';
+import { gradients } from '@/src/constants/gradients';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Calendar, Dot, Users } from 'lucide-react-native';
 import Colors from '@/src/constants/colors';
+import { fontWeight } from '@/src/constants/typography';
+import { radii } from '@/src/constants/radii';
 import { tripImageSource } from '@/src/constants/tripImage';
 
 type TripListItemProps = {
@@ -17,26 +21,17 @@ const TripListItem = ({ trip }: TripListItemProps) => {
     <Pressable
       onPress={() => {
         // Haptic feedback, then navigate to the trip details screen
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        haptics.action();
         router.push(`/trips/${trip.id}`);
       }}
-      style={({ pressed }) => [
-        {
-          transform: [{ scale: pressed ? 0.95 : 1 }],
-          opacity: pressed ? 0.85 : 1,
-        },
-      ]}
+      style={({ pressed }) => [pressFeedback.card(pressed)]}
     >
       <ImageBackground source={tripImageSource(trip.image)} style={styles.container}>
         {/* Dark gradient over the image bottom so the white text stays readable on any photo. */}
-        <LinearGradient
-          colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']}
-          locations={[0, 0.5, 0.85]}
-          style={StyleSheet.absoluteFill}
-        />
+        <LinearGradient {...gradients.imageScrim} style={StyleSheet.absoluteFill} />
         {/* Date pill */}
-        <View style={[styles.infoContainer, { backgroundColor: Colors.theme.background }]}>
-          <Calendar color={Colors.theme.tint} size="15" />
+        <View style={[styles.infoContainer, { backgroundColor: Colors.background }]}>
+          <Calendar color={Colors.tint} size={15} />
           <Text style={styles.date}> {trip.departureDate}</Text>
         </View>
         <Text style={styles.title}>{trip.name}</Text>
@@ -58,10 +53,10 @@ export default TripListItem;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.theme.background,
-    borderColor: Colors.theme.border,
+    backgroundColor: Colors.background,
+    borderColor: Colors.border,
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: radii.lg,
     padding: 20,
     overflow: 'hidden', // clips the image + gradient to the rounded corners
     flex: 1,
@@ -74,26 +69,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start', // shrink-wrap to content instead of stretching full width
     padding: 6,
-    borderRadius: 10,
+    borderRadius: radii.sm,
   },
   title: {
-    color: Colors.theme.text,
+    color: Colors.text,
     fontSize: 25,
-    fontWeight: '700',
+    fontWeight: fontWeight.bold,
     marginTop: 10,
   },
   date: {
-    color: Colors.theme.tint,
+    color: Colors.tint,
     fontWeight: 'bold',
   },
   info: {
-    color: Colors.theme.textMutedLight,
+    color: Colors.textMutedLight,
     fontWeight: 'bold',
   },
 });
 
 // Shared styling for the meta-row icons
 const iconProps = {
-  color: Colors.theme.textMutedLight,
+  color: Colors.textMutedLight,
   size: 15,
 };

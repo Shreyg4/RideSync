@@ -6,6 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmallButton from '@/src/components/SmallButton';
 import LargeButton from '@/src/components/LargeButton';
 import Colors from '@/src/constants/colors';
+import { radii } from '@/src/constants/radii';
+import { gradients } from '@/src/constants/gradients';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import StopListItem from '@/src/components/StopListItem';
 import locations from '@/src/__fixtures__/locations';
@@ -16,12 +19,7 @@ const PlannerScreen = () => {
   return (
     <View style={{ flex: 1 }}>
       <View>
-        <LinearGradient
-          colors={[Colors.theme.card, Colors.theme.background]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 0.7 }}
-          style={StyleSheet.absoluteFill}
-        />
+        <LinearGradient {...gradients.cardToBackground} style={StyleSheet.absoluteFill} />
         <View
           style={[styles.headerRow, { marginTop: insets.top }]}
           onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
@@ -48,7 +46,7 @@ const PlannerScreen = () => {
           ))}
           <SmallButton
             icon={Plus}
-            color={Colors.theme.text}
+            color={Colors.text}
             size={40}
             onPress={() => router.push('/enterStop')}
             style={styles.addButton}
@@ -65,7 +63,7 @@ const PlannerScreen = () => {
       </ScrollView>
 
       <LinearGradient
-        colors={[Colors.theme.background, 'transparent']}
+        colors={[Colors.background, 'transparent']}
         style={[styles.header, { top: insets.top + headerHeight }]}
       />
     </View>
@@ -85,9 +83,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   title: {
-    color: Colors.theme.text,
-    fontSize: 25,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: fontSize.sheetTitle,
+    fontWeight: fontWeight.semibold,
     alignSelf: 'center',
   },
   headerRow: {
@@ -111,16 +109,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   subtext: {
-    color: Colors.theme.text,
+    color: Colors.text,
     justifyContent: 'flex-start',
     alignSelf: 'center',
   },
   plannerStyle: {
     flexGrow: 1,
-    backgroundColor: Colors.theme.card,
+    backgroundColor: Colors.card,
     margin: 10,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: radii.lg,
   },
   infoRow: {
     flexDirection: 'row',
@@ -129,12 +127,12 @@ const styles = StyleSheet.create({
     columnGap: 100,
   },
   addButton: {
-    color: Colors.theme.text,
-    backgroundColor: Colors.theme.tintDark,
+    color: Colors.text,
+    backgroundColor: Colors.tintDark,
     margin: 15,
     width: 50,
     height: 50,
-    borderRadius: 50 / 2,
+    borderRadius: radii.pill,
     alignSelf: 'center',
   },
 });

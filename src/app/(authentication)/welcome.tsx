@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import React from 'react';
 import Colors from '@/src/constants/colors';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import LargeButton from '@/src/components/LargeButton';
 
 export default function WelcomeScreen() {
@@ -27,9 +28,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   text: {
-    color: Colors.theme.text,
-    fontSize: 40,
-    fontWeight: '800',
+    color: Colors.text,
+    fontSize: fontSize.screenTitle,
+    fontWeight: fontWeight.heavy,
     textAlign: 'center',
   },
 });

@@ -7,6 +7,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import { copy } from '@/src/constants/copy';
 import { useAuth } from '@/src/context/AuthProvider';
 import { reportAndDescribe } from '@/src/services/errors';
@@ -107,17 +108,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   text: {
-    color: Colors.theme.text,
-    fontSize: 40,
+    color: Colors.text,
+    fontSize: fontSize.screenTitle,
     marginBottom: 15,
-    fontWeight: '800',
+    fontWeight: fontWeight.heavy,
     textAlign: 'center',
     marginTop: '50%',
   },
   errorText: {
-    color: Colors.theme.error,
-    fontSize: 15,
-    fontWeight: '400',
+    color: Colors.error,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.regular,
     marginLeft: 15,
   },
 });

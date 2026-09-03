@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmallButton from '@/src/components/SmallButton';
 import React from 'react';
 import Colors from '@/src/constants/colors';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 
 const EnterStopScreen = () => {
   const insets = useSafeAreaInsets();
@@ -24,9 +25,9 @@ export default EnterStopScreen;
 
 const styles = StyleSheet.create({
   title: {
-    color: Colors.theme.text,
-    fontSize: 25,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: fontSize.sheetTitle,
+    fontWeight: fontWeight.semibold,
     alignSelf: 'center',
   },
   headerRow: {

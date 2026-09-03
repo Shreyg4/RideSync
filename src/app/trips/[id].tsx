@@ -1,12 +1,13 @@
 import trips from '@/src/__fixtures__/trips';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import Colors from '@/src/constants/colors';
+import { radii } from '@/src/constants/radii';
+import { fontSize, fontWeight } from '@/src/constants/typography';
 import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
@@ -23,7 +24,6 @@ const TripDetailsScreen = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatusBar style="light" />
       <Stack.Screen
         options={{
           headerShown: false,
@@ -72,14 +72,13 @@ const TripDetailsScreen = () => {
           <LargeButton
             icon={Pencil}
             label="Edit itinerary"
-            color={Colors.theme.textMutedLight}
+            color={Colors.textMutedLight}
             onPress={() => router.push('/planner')}
-            backgroundColor={Colors.theme.card}
-            backgroundColorPressed={Colors.theme.textMuted}
+            backgroundColor={Colors.card}
+            backgroundColorPressed={Colors.textMuted}
             style={{
-              width: '100%',
               borderWidth: 1,
-              borderColor: Colors.theme.textMutedLight,
+              borderColor: Colors.textMutedLight,
               borderStyle: 'dashed',
             }}
           />
@@ -119,32 +118,32 @@ const styles = StyleSheet.create({
     aspectRatio: 1.2,
   },
   title: {
-    color: Colors.theme.text,
-    fontSize: 40,
-    fontWeight: '800',
+    color: Colors.text,
+    fontSize: fontSize.screenTitle,
+    fontWeight: fontWeight.heavy,
     marginTop: 210,
     textAlign: 'center',
   },
   subContainer: {
     margin: 10,
     padding: 20,
-    borderRadius: 25,
-    backgroundColor: Colors.theme.card,
+    borderRadius: radii.xl,
+    backgroundColor: Colors.card,
   },
   subHeading: {
-    color: Colors.theme.text,
-    fontSize: 30,
-    fontWeight: '800',
+    color: Colors.text,
+    fontSize: fontSize.sheetTitle,
+    fontWeight: fontWeight.heavy,
     marginBottom: 10,
   },
   text: {
-    color: Colors.theme.tintSubtle,
-    fontSize: 15,
-    fontWeight: '400',
+    color: Colors.tintSubtle,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.regular,
   },
 });
 
 const iconProps = {
-  color: Colors.theme.tintSubtle,
+  color: Colors.tintSubtle,
   size: 15,
 };

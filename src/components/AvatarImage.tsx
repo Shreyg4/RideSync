@@ -14,7 +14,7 @@ type AvatarImageProps = {
 export default function AvatarImage({
   uri,
   size = 110,
-  borderColor = Colors.theme.tint,
+  borderColor = Colors.tint,
   borderWidth = 1,
   style,
 }: AvatarImageProps) {
@@ -36,7 +36,7 @@ export default function AvatarImage({
       {uri ? (
         <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
       ) : (
-        <User size={size * 0.45} color={Colors.theme.textMuted} />
+        <User size={size * 0.45} color={Colors.textMuted} />
       )}
     </View>
   );
@@ -47,6 +47,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.theme.card,
+    backgroundColor: Colors.card,
   },
 });
