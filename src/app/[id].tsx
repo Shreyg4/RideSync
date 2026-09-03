@@ -1,11 +1,11 @@
-import trips from '@assets/dummydata/data/trips';
+import trips from '@/src/__fixtures__/trips';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { defaultTripImage } from '@/src/components/tripListItem';
+import { tripImageSource } from '@/src/constants/tripImage';
 import Colors from '@/src/constants/colors';
 import SmallButton from '@/src/components/smallButton';
 import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
@@ -34,7 +34,7 @@ const TripDetails = () => {
         contentContainerStyle={{ paddingBottom: insets.bottom }}
       >
         <ImageBackground
-          source={{ uri: trip.image || defaultTripImage }}
+          source={tripImageSource(trip.image)}
           style={[styles.image, { paddingTop: insets.top }]}
         >
           {/* Bottom scrim: keeps the title readable; scrolls away with the image */}
@@ -54,7 +54,7 @@ const TripDetails = () => {
           </Text>
           <Text style={[styles.subHeading, { marginTop: 10 }]}>Type</Text>
           <Text style={styles.text}>
-            {trip.type} <Dot {...iconProps} /> {trip.form}{' '}
+            {trip.duration} <Dot {...iconProps} /> {trip.tripType}{' '}
           </Text>
         </View>
 

@@ -1,14 +1,11 @@
 import { Text, View, ImageBackground, Pressable, StyleSheet } from 'react-native';
-import { Trip } from '@assets/dummydata/types';
+import type { Trip } from '@/src/types/trip';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Calendar, Dot, Users } from 'lucide-react-native';
 import Colors from '@/src/constants/colors';
-
-// Fallback image used when a trip has no image of its own
-export const defaultTripImage =
-  'https://imageio.forbes.com/specials-images/imageserve//62bdd4a21a6dc599d18bca9b/0x0.jpg?format=jpg&height=900&width=1600&fit=bounds';
+import { tripImageSource } from '@/src/constants/tripImage';
 
 type TripListItemProps = {
   trip: Trip;
@@ -30,7 +27,7 @@ const TripListItem = ({ trip }: TripListItemProps) => {
         },
       ]}
     >
-      <ImageBackground source={{ uri: trip.image || defaultTripImage }} style={styles.container}>
+      <ImageBackground source={tripImageSource(trip.image)} style={styles.container}>
         {/* Dark gradient over the image bottom so the white text stays readable on any photo. */}
         <LinearGradient
           colors={['transparent', 'transparent', 'rgba(0, 0, 0, 1)']}
@@ -50,7 +47,7 @@ const TripListItem = ({ trip }: TripListItemProps) => {
           <Dot {...iconProps} />
           <Text style={styles.info}>{trip.departureTime}</Text>
           <Dot {...iconProps} />
-          <Text style={styles.info}>{trip.type}</Text>
+          <Text style={styles.info}>{trip.duration}</Text>
         </View>
       </ImageBackground>
     </Pressable>

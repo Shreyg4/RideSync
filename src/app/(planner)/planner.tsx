@@ -8,7 +8,7 @@ import LargeButton from '@/src/components/largeButton';
 import Colors from '@/src/constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import StopListItem from '@/src/components/stopListItem';
-import locations from '@/assets/dummydata/data/locations';
+import locations from '@/src/__fixtures__/locations';
 
 const Planner = () => {
   const insets = useSafeAreaInsets();

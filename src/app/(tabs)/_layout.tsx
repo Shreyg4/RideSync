@@ -1,5 +1,5 @@
 import SmallButton from '@/src/components/smallButton';
-import { useClientOnlyValue } from '@/src/components/useClientOnlyValue';
+import { useClientOnlyValue } from '@/src/hooks/useClientOnlyValue';
 import Colors from '@/src/constants/colors';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';

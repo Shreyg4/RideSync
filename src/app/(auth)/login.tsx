@@ -8,40 +8,38 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
 import { useAuth } from '@/src/context/AuthProvider';
+import { reportAndDescribe } from '@/src/services/errors';
+import {
+  normalizeEmail,
+  validateLoginForm,
+  type LoginFieldErrors,
+} from '@/src/validation/userForms';
 
 // Sign-in screen. Errors come in two tiers:
 //  - errors: per-field problems we can spot locally (missing password, malformed email)
 //  - formError: whatever the server said, shown once above the button and never pinned to a field.
 const Login = () => {
-  type FieldErrors = Partial<Record<'email' | 'password', string>>;
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string>();
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [errors, setErrors] = useState<LoginFieldErrors>({});
 
   // Matches the normalization the sign-up screen applies before creating the account.
-  const cleanEmail = email.trim().toLowerCase();
-
-  // Accounts created under older rules must still be able to sign in, and rejecting locally would leak the password policy.
-  const validate = (): FieldErrors => {
-    const next: FieldErrors = {};
-    if (!cleanEmail.includes('@')) next.email = 'Enter valid email'; // The email check is a typo-catcher
-    if (!password) next.password = 'Required';
-    return next;
-  };
+  const cleanEmail = normalizeEmail(email);
 
   // Typing in a field clears that field's error.
-  const updateField = (key: keyof FieldErrors, setter: (v: string) => void) => (text: string) => {
-    setter(text);
-    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
-  };
+  const updateField =
+    (key: keyof LoginFieldErrors, setter: (v: string) => void) => (text: string) => {
+      setter(text);
+      setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+    };
 
   const { signIn } = useAuth();
   const handleSignIn = async () => {
     setFormError(undefined); // clear the previous failure, or the user can't tell old from new
-    const found = validate();
+    const found = validateLoginForm(cleanEmail, password);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
@@ -49,8 +47,8 @@ const Login = () => {
     try {
       await signIn(cleanEmail, password);
       // No navigation here: RootLayoutNav watches the session and redirects once it lands.
-    } catch (e: any) {
-      setFormError(e.message);
+    } catch (e) {
+      setFormError(reportAndDescribe(e, { scope: 'Login.signIn' }));
     } finally {
       setLoading(false);
     }

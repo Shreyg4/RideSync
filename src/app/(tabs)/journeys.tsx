@@ -1,5 +1,5 @@
 import Colors from '@/src/constants/colors';
-import trips from '@assets/dummydata/data/trips';
+import trips from '@/src/__fixtures__/trips';
 import TripListItem from '@/src/components/tripListItem';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlatList, StyleSheet, View, Text } from 'react-native';

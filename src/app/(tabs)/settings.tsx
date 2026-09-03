@@ -1,4 +1,4 @@
-import { Text, View, ScrollView, StyleSheet } from 'react-native';
+import { Text, View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LargeButton from '@/src/components/largeButton';
 import Colors from '@/src/constants/colors';
@@ -6,38 +6,36 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
 import AvatarImage from '@/src/components/avatarImage';
-import { avatarUrl } from '@/src/lib/avatarStorage';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { avatarUrl } from '@/src/services/avatarService';
+import { useCallback, useState } from 'react';
+import { getUserAvatarPath } from '@/src/services/userService';
+import { reportAndDescribe } from '@/src/services/errors';
+import { useAsync } from '@/src/hooks/useAsync';
+
+const SmallTextButton = ({ label, onPress }: { label: string; onPress: () => void }) => (
+  <Pressable onPress={onPress} accessibilityRole="button">
+    <Text style={styles.retryText}>{label}</Text>
+  </Pressable>
+);
 
 export default function Settings() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
-  const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const [signOutError, setSignOutError] = useState<string>();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('avatar_path')
-        .eq('id', user?.id)
-        .single();
-
-      if (cancelled) return;
-      if (!error) setPhotoPath(data.avatar_path);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
+  const loadAvatarPath = useCallback(() => getUserAvatarPath(user?.id), [user?.id]);
+  const {
+    data: photoPath,
+    error: avatarError,
+    reload: reloadAvatar,
+  } = useAsync(loadAvatarPath, [user?.id], 'Settings.getUserAvatarPath');
 
   const handleSignOut = async () => {
+    setSignOutError(undefined);
     try {
       await signOut();
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error) {
+      setSignOutError(reportAndDescribe(error, { scope: 'Settings.signOut' }));
     }
   };
 
@@ -52,6 +50,12 @@ export default function Settings() {
             uri={avatarUrl(photoPath)}
             style={{ alignSelf: 'center', marginVertical: 20 }}
           />
+          {avatarError ? (
+            <View style={styles.errorRow}>
+              <Text style={styles.errorText}>{avatarError}</Text>
+              <SmallTextButton label="Retry" onPress={reloadAvatar} />
+            </View>
+          ) : null}
           <Text style={styles.text}>Settings that will come soon</Text>
           <LargeButton
             label="Delete Account"
@@ -67,6 +71,12 @@ export default function Settings() {
             backgroundColor={Colors.theme.border}
             backgroundColorPressed={Colors.theme.card}
           />
+          {signOutError ? (
+            <View style={styles.errorRow}>
+              <Text style={styles.errorText}>{signOutError}</Text>
+              <SmallTextButton label="Try again" onPress={handleSignOut} />
+            </View>
+          ) : null}
         </View>
       </ScrollView>
       {/* Gradient header overlay: solid at the top, fading to transparent at the bottom */}
@@ -88,6 +98,22 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 15,
+    marginBottom: 8,
+  },
+  errorText: {
+    color: Colors.theme.error,
+    fontSize: 15,
+  },
+  retryText: {
+    color: Colors.theme.tint,
+    fontSize: 15,
+    fontWeight: '600',
   },
   text: {
     color: Colors.theme.text,

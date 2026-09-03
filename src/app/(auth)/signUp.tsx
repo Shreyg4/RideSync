@@ -2,17 +2,27 @@ import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import React, { useState, useEffect } from 'react';
 import SmallButton from '@/src/components/smallButton';
-import { ChevronLeft, LoaderCircle, CircleCheck, CircleX } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/src/constants/colors';
 import TextBox from '@/src/components/textbox';
 import LargeButton from '@/src/components/largeButton';
 import { useAuth } from '@/src/context/AuthProvider';
-import { supabase } from '@/src/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import AvatarImage from '@/src/components/avatarImage';
-import { uploadAvatar } from '@/src/lib/avatarStorage';
+import { uploadAvatar } from '@/src/services/avatarService';
+import { isUsernameAvailable } from '@/src/services/userService';
+import { reportAndDescribe } from '@/src/services/errors';
+import { USERNAME_MAX_LENGTH } from '@/src/domain/rules';
+import { availabilityIndicator, type UsernameState } from '@/src/domain/usernameAvailability';
+import {
+  isUsernameCandidate,
+  normalizeSignUpForm,
+  validateSignUpForm,
+  type SignUpFieldErrors,
+  type SignUpForm,
+} from '@/src/validation/userForms';
 import * as Haptics from 'expo-haptics';
 
 // Account creation screen.
@@ -21,18 +31,7 @@ import * as Haptics from 'expo-haptics';
 //  - the hint/availability text under the username box is derived during render, so it
 //    updates live as the user types. Nothing is stored for it.
 
-// Must stay in sync with the check constraint on users.username in the create_profiles migration.
-// If you widen one, widen the other, or the DB will reject names the app accepted.
-const HANDLE = /^[a-zA-Z0-9_]+$/;
-
 const SignUp = () => {
-  // A message per field. A key being present means "this field is wrong"; the string is what we show.
-  type FieldErrors = Partial<
-    Record<'firstName' | 'lastName' | 'username' | 'email' | 'password' | 'confirmPassword', string>
-  >;
-  // The text fields we clean up before validating or sending. Passwords are deliberately absent (see normalize).
-  type Form = { firstName: string; lastName: string; username: string; email: string };
-
   const insets = useSafeAreaInsets();
   const [avatarAsset, setAvatarAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [firstName, setFirstName] = useState('');
@@ -42,16 +41,18 @@ const SignUp = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [errors, setErrors] = useState<SignUpFieldErrors>({});
+  const [formError, setFormError] = useState<string>();
   // Result of the live username lookup. 'idle' also covers "we couldn't check".
-  const [usernameState, setUsernameState] = useState<'idle' | 'checking' | 'free' | 'taken'>(
-    'idle'
-  );
+  const [usernameState, setUsernameState] = useState<UsernameState>('idle');
 
   const pickAvatarImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!granted) return;
+    if (!granted) {
+      setFormError('Photo access is off. Enable it in Settings to pick a picture.');
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -68,7 +69,7 @@ const SignUp = () => {
   useEffect(() => {
     const candidate = username.trim();
     // Don't ask the server about names that can never be valid - it would show a green
-    if (candidate.length < 5 || !HANDLE.test(candidate)) {
+    if (!isUsernameCandidate(candidate)) {
       setUsernameState('idle');
       return;
     }
@@ -77,10 +78,9 @@ const SignUp = () => {
     setUsernameState('checking');
 
     const timer = setTimeout(async () => {
-      // username_available is a security definer function that sees past RLS and returns only a boolean.
-      const { data, error } = await supabase.rpc('username_available', { candidate });
+      const available = await isUsernameAvailable(candidate);
       if (cancelled) return; // a newer keystroke already superseded this response
-      setUsernameState(error ? 'idle' : data ? 'free' : 'taken');
+      setUsernameState(available === null ? 'idle' : available ? 'free' : 'taken');
     }, 400);
 
     // Runs before every re-run and on unmount: kills the timer, and flags any in-flight
@@ -91,55 +91,34 @@ const SignUp = () => {
     };
   }, [username]);
 
-  // Clean the user's raw typing once, at the submit boundary, so everything downstream sees identical values.
-  const normalize = (raw: Form): Form => ({
-    firstName: raw.firstName.trim(),
-    lastName: raw.lastName.trim(),
-    username: raw.username.trim(),
-    email: raw.email.trim().toLowerCase(),
-  });
-
-  // Takes the already-normalized values as a parameter rather than reading state directly.
-  const validate = (v: Form): FieldErrors => {
-    const next: FieldErrors = {};
-    if (!v.firstName) next.firstName = 'Required';
-    if (!v.lastName) next.lastName = 'Required';
-
-    // Length before format, so a short name gets the more useful of the two messages.
-    if (v.username.length < 5) next.username = 'At least 5 characters';
-    else if (!HANDLE.test(v.username)) next.username = 'Letters, numbers and underscores only';
-
-    if (!v.email.includes('@')) next.email = 'Enter a valid email';
-    if (password.length < 8) next.password = 'Password is not long enough';
-    if (password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
-    return next;
-  };
-
   // Wraps a state setter so typing in a field also clears that field's error.
-  const updateField = (key: keyof FieldErrors, setter: (v: string) => void) => (text: string) => {
-    setter(text);
-    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
-  };
+  const updateField =
+    (key: keyof SignUpFieldErrors, setter: (v: string) => void) => (text: string) => {
+      setter(text);
+      setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+    };
 
-  // The live line under the username box. Keyed by the state union, so adding a new state
-  // to usernameState makes TypeScript flag the missing case here.
-  const availability = {
-    idle: null,
-    checking: { text: 'Checking…', color: Colors.theme.textMuted, Icon: LoaderCircle },
-    free: { text: 'Available', color: Colors.theme.success, Icon: CircleCheck },
-    taken: { text: 'Already taken', color: Colors.theme.error, Icon: CircleX },
-  }[usernameState];
+  const availability = availabilityIndicator(usernameState);
 
   const { signUp } = useAuth();
   const handleSignUp = async () => {
-    const clean = normalize({ firstName, lastName, username, email });
-    const found = validate(clean);
+    setFormError(undefined);
+    const raw: SignUpForm = { firstName, lastName, username, email };
+    const clean = normalizeSignUpForm(raw);
+    const found = validateSignUpForm(clean, password, confirmPassword);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
-    // Availability lives outside FieldErrors, so it gets its own gate. 'checking' is included
-    // because the 400ms debounce is easy to beat by tapping straight after typing.
-    if (usernameState === 'taken' || usernameState === 'checking') return;
+    // Availability lives outside the field errors, so it gets its own gate. 'checking' is
+    // included because the 400ms debounce is easy to beat by tapping straight after typing.
+    if (usernameState === 'taken') {
+      setErrors((prev) => ({ ...prev, username: 'Username already taken' }));
+      return;
+    }
+    if (usernameState === 'checking') {
+      setFormError('Still checking that username - one moment.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -150,26 +129,29 @@ const SignUp = () => {
         clean.email,
         password
       );
+      let avatarFailed = false;
       if (user && avatarAsset) {
         try {
           await uploadAvatar(user.id, avatarAsset.uri, avatarAsset.mimeType);
         } catch (e) {
-          console.warn('avatar upload failed', e); // deliberately not rethrown
+          avatarFailed = true;
+          reportAndDescribe(e, { scope: 'SignUp.uploadAvatar' });
         }
       }
-      Alert.alert('Account created successfully');
-    } catch (e: any) {
+      Alert.alert(
+        'Account created successfully',
+        avatarFailed ? "We couldn't upload your photo - you can add it in Settings." : undefined
+      );
+    } catch (e) {
       // Two people can claim a name in the same second, so the unique index is the real
       // enforcement. When that fires it surfaces as an opaque "Database error saving new
       // user", so re-check and turn it into a message on the right field.
-      const { data: stillFree } = await supabase.rpc('username_available', {
-        candidate: clean.username,
-      });
-      // === false, not !stillFree: a failed RPC returns null, and we mustn't read that as "taken".
+      const stillFree = await isUsernameAvailable(clean.username);
+      // === false, not !stillFree: a failed lookup returns null, and we mustn't read that as "taken".
       if (stillFree === false) {
         setErrors((prev) => ({ ...prev, username: 'Username already taken' }));
       } else {
-        Alert.alert(e.message);
+        setFormError(reportAndDescribe(e, { scope: 'SignUp.signUp' }));
       }
     } finally {
       setLoading(false);
@@ -227,7 +209,7 @@ const SignUp = () => {
           error={!!errors.username}
           placeholder="Username"
           autoCapitalize="none"
-          maxLength={20}
+          maxLength={USERNAME_MAX_LENGTH}
         />
         {errors.username ? (
           <Text style={styles.errorText}>{errors.username}</Text>
@@ -278,6 +260,12 @@ const SignUp = () => {
         />
         {errors.confirmPassword ? (
           <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+        ) : null}
+
+        {formError ? (
+          <Text style={[styles.errorText, { textAlign: 'center', marginLeft: 0 }]}>
+            {formError}
+          </Text>
         ) : null}
 
         <LargeButton

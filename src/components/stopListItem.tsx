@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { Dot } from 'lucide-react-native';
-import { Location } from '@/assets/dummydata/types';
+import type { Location } from '@/src/types/trip';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/src/constants/colors';
 

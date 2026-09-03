@@ -14,13 +14,10 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import FieldButton from '@/src/components/fieldButton';
+import { TRIP_TYPES, tripTypeLabel } from '@/src/domain/rules';
+import { mergeDateTime } from '@/src/lib/dateTime';
 
-const TRIP_TYPES = [
-  { value: 'one-way', icon: MapPin },
-  { value: 'round-trip', icon: Repeat },
-] as const;
-
-const tripTypeLabel = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+const TRIP_TYPE_ICONS = { 'one-way': MapPin, 'round-trip': Repeat } as const;
 
 const CreateTripScreen = () => {
   const insets = useSafeAreaInsets();
@@ -34,14 +31,7 @@ const CreateTripScreen = () => {
   // Mode arrives as an argument instead of being read out of state
   const onPicked = (which: 'date' | 'time') => (event: DateTimePickerEvent, picked?: Date) => {
     if (event.type === 'dismissed' || !picked) return;
-    setWhen((prev) => {
-      // Copy the existing instant so editing one half preserves the other.
-      const next = new Date(prev ?? new Date());
-      if (which === 'date')
-        next.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
-      else next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
-      return next;
-    });
+    setWhen((prev) => mergeDateTime(prev, picked, which));
   };
 
   // Android's picker is a system dialog, not a view, so it's opened imperatively and
@@ -99,19 +89,18 @@ const CreateTripScreen = () => {
         {/* Select which type of trip this will be */}
         <View style={[styles.types, { margin: 10 }]}>
           {TRIP_TYPES.map((tripType) => {
-            const Icon = tripType.icon;
+            const Icon = TRIP_TYPE_ICONS[tripType];
             return (
               <Pressable
-                key={tripType.value}
+                key={tripType}
                 onPress={() => {
-                  setSelectedType(tripType.value);
+                  setSelectedType(tripType);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 // Styling of selected pill
                 style={() => [
                   {
-                    backgroundColor:
-                      selectedType === tripType.value ? Colors.theme.tint : 'transparent',
+                    backgroundColor: selectedType === tripType ? Colors.theme.tint : 'transparent',
                     width: '50%',
                     height: 70,
                     borderRadius: 20,
@@ -121,7 +110,7 @@ const CreateTripScreen = () => {
                 ]}
               >
                 <Icon color={Colors.theme.text} size={24} style={{ alignSelf: 'center' }} />
-                <Text style={styles.typeText}>{tripTypeLabel(tripType.value)}</Text>
+                <Text style={styles.typeText}>{tripTypeLabel(tripType)}</Text>
               </Pressable>
             );
           })}
