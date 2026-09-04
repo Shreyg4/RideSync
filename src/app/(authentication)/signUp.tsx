@@ -24,7 +24,7 @@ import {
   type SignUpFieldErrors,
   type SignUpForm,
 } from '@/src/validation/userForms';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/src/constants/haptics';
 
 // Account creation screen.
 // Validation happens in two layers:
@@ -48,7 +48,7 @@ const SignUpScreen = () => {
   const [usernameState, setUsernameState] = useState<UsernameState>('idle');
 
   const pickAvatarImage = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptics.action();
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!granted) {
       setFormError('Photo access is off. Enable it in Settings to pick a picture.');

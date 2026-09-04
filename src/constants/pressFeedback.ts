@@ -1,3 +1,7 @@
+/**
+ * @file pressFeedback.ts
+ * @description styling when a button is pressed
+ */
 import type { ViewStyle } from 'react-native';
 
 export const pressFeedback = {

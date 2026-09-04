@@ -4,7 +4,8 @@ import TextBox from '@components/TextBox';
 import { colors, spacing, fontSize, fontWeight, radii, gradients, contentWidth } from '@/src/constants/theme'
 import { LinearGradient } from 'expo-linear-gradient';
 import { ImagePlus, MapPin, Repeat, Calendar, Clock } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '../constants/haptics';
+import { pressFeedback } from '../constants/pressFeedback';
 import LargeButton from '@/src/components/LargeButton';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -83,7 +84,7 @@ const CreateTripScreen = () => {
                 key={tripType}
                 onPress={() => {
                   setSelectedType(tripType);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  haptics.action();
                 }}
                 // Styling of selected pill
                 style={() => [
@@ -130,15 +131,10 @@ const CreateTripScreen = () => {
         {/* Button for user to include an image */}
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            haptics.action();
           }}
           style={({ pressed }) => [
-            styles.imageBox,
-            {
-              transform: [{ scale: pressed ? 0.95 : 1 }],
-              opacity: pressed ? 0.85 : 1,
-              margin: 10,
-            },
+            [styles.imageBox, pressFeedback.card(pressed), { margin: 10 }]
           ]}
         >
           <ImagePlus color={colors.textMutedLight} style={{ marginBottom: 10 }} />

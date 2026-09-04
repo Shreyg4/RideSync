@@ -1,7 +1,7 @@
 import SmallButton from '@/src/components/SmallButton';
 import { useClientOnlyValue } from '@/src/hooks/useClientOnlyValue';
 import { colors, fontWeight, radii, gradients } from '@/src/constants/theme'
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/src/constants/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs, router } from 'expo-router';
 import { Archive, Plus, Route, Settings, User } from 'lucide-react-native';
@@ -82,7 +82,7 @@ export default function TabLayout() {
 
       // Haptic feedback for tab bar
       screenListeners={{
-        tabPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+        tabPress: () => haptics.action,
       }}
     >
       <Tabs.Screen

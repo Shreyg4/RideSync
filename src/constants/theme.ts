@@ -1,3 +1,7 @@
+/**
+ * @file theme.ts
+ * @description Essential styling is listed here for easy access and consistency across the app
+ */
 import palette from './palette';
 import type { TextStyle } from 'react-native';
 import type { DimensionValue } from 'react-native';
