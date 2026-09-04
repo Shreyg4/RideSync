@@ -5,10 +5,7 @@ import React from 'react';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
-import { radii } from '@/src/constants/radii';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme'
 import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
@@ -109,7 +106,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1.2,
   },
   title: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.screenTitle,
     fontWeight: fontWeight.heavy,
     marginTop: 210,
@@ -119,22 +116,22 @@ const styles = StyleSheet.create({
     margin: 10,
     padding: 20,
     borderRadius: radii.xl,
-    backgroundColor: Colors.card,
+    backgroundColor: colors.card,
   },
   subHeading: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.sheetTitle,
     fontWeight: fontWeight.heavy,
     marginBottom: 10,
   },
   text: {
-    color: Colors.tintSubtle,
+    color: colors.tintSubtle,
     fontSize: fontSize.caption,
     fontWeight: fontWeight.regular,
   },
 });
 
 const iconProps = {
-  color: Colors.tintSubtle,
+  color: colors.tintSubtle,
   size: 15,
 };

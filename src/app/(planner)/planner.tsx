@@ -6,10 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmallButton from '@/src/components/SmallButton';
 import LargeButton from '@/src/components/LargeButton';
 import ScreenHeader from '@/src/components/ScreenHeader';
-import Colors from '@/src/constants/colors';
-import { radii } from '@/src/constants/radii';
-import { spacing } from '@/src/constants/spacing';
-import { gradients } from '@/src/constants/gradients';
+import { colors, spacing, radii, gradients } from '@/src/constants/theme'
 import { LinearGradient } from 'expo-linear-gradient';
 import StopListItem from '@/src/components/StopListItem';
 import locations from '@/src/__fixtures__/locations';
@@ -56,7 +53,7 @@ const PlannerScreen = () => {
           <>
             <SmallButton
               icon={Plus}
-              color={Colors.text}
+              color={colors.text}
               size={40}
               onPress={() => router.push('/enterStop')}
               accessibilityLabel="Add a stop"
@@ -73,7 +70,7 @@ const PlannerScreen = () => {
       />
 
       <LinearGradient
-        colors={[Colors.background, 'transparent']}
+        colors={[colors.background, 'transparent']}
         pointerEvents="none"
         style={[styles.headerFade, { top: insets.top + headerHeight }]}
       />
@@ -94,7 +91,7 @@ const styles = StyleSheet.create({
     height: spacing.sm,
   },
   subtext: {
-    color: Colors.text,
+    color: colors.text,
     alignSelf: 'center',
   },
   infoRow: {
@@ -104,7 +101,7 @@ const styles = StyleSheet.create({
     columnGap: 100,
   },
   addButton: {
-    backgroundColor: Colors.tintDark,
+    backgroundColor: colors.tintDark,
     margin: spacing.md,
     width: 50,
     height: 50,

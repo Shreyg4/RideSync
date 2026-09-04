@@ -1,5 +1,4 @@
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
+import { colors, spacing } from '@/src/constants/theme'
 import React from 'react';
 import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -64,7 +63,7 @@ export { ScrollView };
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   centered: {
     flexGrow: 1,

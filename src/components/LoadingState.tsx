@@ -1,4 +1,4 @@
-import Colors from '@/src/constants/colors';
+import { colors } from '@/src/constants/theme'
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 type LoadingStateProps = {
@@ -8,7 +8,7 @@ type LoadingStateProps = {
 export default function LoadingState({ testID }: LoadingStateProps) {
   return (
     <View style={styles.container} testID={testID}>
-      <ActivityIndicator size="large" color={Colors.tint} accessibilityLabel="Loading" />
+      <ActivityIndicator size="large" color={colors.tint} accessibilityLabel="Loading" />
     </View>
   );
 }
@@ -19,6 +19,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
 });

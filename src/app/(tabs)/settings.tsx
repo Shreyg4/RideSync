@@ -3,9 +3,7 @@ import LargeButton from '@/src/components/LargeButton';
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
 import TopFade from '@/src/components/TopFade';
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import { router } from 'expo-router';
 import { useAuth } from '@/src/context/AuthProvider';
 import AvatarImage from '@/src/components/AvatarImage';
@@ -81,7 +79,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   text: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.section,
     fontWeight: fontWeight.bold,
     marginLeft: spacing.md,

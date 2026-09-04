@@ -1,13 +1,7 @@
 import { View, Text, StyleSheet, Pressable, Platform, Modal } from 'react-native';
 import React, { useState } from 'react';
 import TextBox from '@components/TextBox';
-import Colors from '@/src/constants/colors';
-import { contentWidth } from '@/src/constants/layout';
-import { radii } from '@/src/constants/radii';
-import { spacing } from '@/src/constants/spacing';
-import { gradients } from '@/src/constants/gradients';
-import { fontSize, fontWeight } from '@/src/constants/typography';
-import { copy } from '@/src/constants/copy';
+import { colors, spacing, fontSize, fontWeight, radii, gradients, contentWidth } from '@/src/constants/theme'
 import { LinearGradient } from 'expo-linear-gradient';
 import { ImagePlus, MapPin, Repeat, Calendar, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -76,7 +70,7 @@ const CreateTripScreen = () => {
         <TextBox
           value={tripName}
           onChangeText={setTripName}
-          placeholder={copy.fields.tripName}
+          placeholder="Enter trip name"
           style={{ marginTop: 0 }}
         />
 
@@ -94,7 +88,7 @@ const CreateTripScreen = () => {
                 // Styling of selected pill
                 style={() => [
                   {
-                    backgroundColor: selectedType === tripType ? Colors.tint : 'transparent',
+                    backgroundColor: selectedType === tripType ? colors.tint : 'transparent',
                     width: '50%',
                     height: 70,
                     borderRadius: radii.lg,
@@ -103,7 +97,7 @@ const CreateTripScreen = () => {
                   },
                 ]}
               >
-                <Icon color={Colors.text} size={24} style={{ alignSelf: 'center' }} />
+                <Icon color={colors.text} size={24} style={{ alignSelf: 'center' }} />
                 <Text style={styles.typeText}>{tripTypeLabel(tripType)}</Text>
               </Pressable>
             );
@@ -147,8 +141,8 @@ const CreateTripScreen = () => {
             },
           ]}
         >
-          <ImagePlus color={Colors.textMutedLight} style={{ marginBottom: 10 }} />
-          <Text style={{ color: Colors.textMutedLight }}>Add cover image (optional)</Text>
+          <ImagePlus color={colors.textMutedLight} style={{ marginBottom: 10 }} />
+          <Text style={{ color: colors.textMutedLight }}>Add cover image (optional)</Text>
         </Pressable>
 
         <LargeButton
@@ -174,7 +168,7 @@ const CreateTripScreen = () => {
             <Pressable
               onPress={() => {}}
               style={{
-                backgroundColor: Colors.card,
+                backgroundColor: colors.card,
                 borderTopLeftRadius: 20,
                 borderTopRightRadius: 20,
                 paddingBottom: insets.bottom,
@@ -193,7 +187,7 @@ const CreateTripScreen = () => {
                 <Pressable onPress={closePicker} hitSlop={12} style={styles.doneButton}>
                   <Text
                     style={{
-                      color: Colors.background,
+                      color: colors.background,
                       fontSize: fontSize.body,
                       fontWeight: fontWeight.semibold,
                     }}
@@ -212,8 +206,8 @@ const CreateTripScreen = () => {
 
 const styles = StyleSheet.create({
   imageBox: {
-    backgroundColor: Colors.card,
-    borderColor: Colors.textMutedLight,
+    backgroundColor: colors.card,
+    borderColor: colors.textMutedLight,
     width: contentWidth,
     aspectRatio: 1.6,
     borderWidth: 1,
@@ -224,7 +218,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   types: {
-    backgroundColor: Colors.card,
+    backgroundColor: colors.card,
     width: contentWidth,
     height: 70,
     borderRadius: radii.lg,
@@ -235,12 +229,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   typeText: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: 10,
     alignSelf: 'center',
   },
   doneButton: {
-    backgroundColor: Colors.tint,
+    backgroundColor: colors.tint,
     paddingHorizontal: 90,
     paddingVertical: 10,
     borderRadius: radii.lg,

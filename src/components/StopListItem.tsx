@@ -3,10 +3,7 @@ import { Dot } from 'lucide-react-native';
 import type { Location } from '@/src/types/trip';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
-import Colors from '@/src/constants/colors';
-import { radii } from '@/src/constants/radii';
-import { spacing } from '@/src/constants/spacing';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme'
 
 type StopListItemProps = {
   location: Location;
@@ -43,18 +40,18 @@ export default StopListItem;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.card,
+    backgroundColor: colors.card,
     borderRadius: radii.lg,
     margin: spacing.sm,
     padding: spacing.sm,
   },
   name: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.sheetTitle,
     fontWeight: fontWeight.bold,
   },
   subtext: {
-    color: Colors.textMutedLight,
+    color: colors.textMutedLight,
     fontSize: fontSize.caption,
     fontWeight: fontWeight.regular,
   },
@@ -63,6 +60,6 @@ const styles = StyleSheet.create({
   },
 });
 const iconProps = {
-  color: Colors.textMutedLight,
+  color: colors.textMutedLight,
   size: 15,
 };

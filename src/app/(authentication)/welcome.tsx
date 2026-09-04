@@ -1,9 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import React from 'react';
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import LargeButton from '@/src/components/LargeButton';
 import Screen from '@/src/components/Screen';
 
@@ -32,7 +30,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.screenTitle,
     fontWeight: fontWeight.heavy,
     textAlign: 'center',

@@ -1,12 +1,12 @@
 import { CircleCheck, CircleX, LoaderCircle } from 'lucide-react-native';
-import Colors from '@/src/constants/colors';
+import { colors } from '@/src/constants/theme'
 
 export type UsernameState = 'idle' | 'checking' | 'free' | 'taken';
 
 export const availabilityIndicator = (state: UsernameState) =>
   ({
     idle: null,
-    checking: { text: 'Checking…', color: Colors.textMuted, Icon: LoaderCircle },
-    free: { text: 'Available', color: Colors.success, Icon: CircleCheck },
-    taken: { text: 'Already taken', color: Colors.error, Icon: CircleX },
+    checking: { text: 'Checking…', color: colors.textMuted, Icon: LoaderCircle },
+    free: { text: 'Available', color: colors.success, Icon: CircleCheck },
+    taken: { text: 'Already taken', color: colors.error, Icon: CircleX },
   })[state];

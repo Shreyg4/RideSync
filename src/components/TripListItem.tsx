@@ -2,13 +2,10 @@ import { Text, View, ImageBackground, Pressable, StyleSheet } from 'react-native
 import type { Trip } from '@/src/types/trip';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
-import { gradients } from '@/src/constants/gradients';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Calendar, Dot, Users } from 'lucide-react-native';
-import Colors from '@/src/constants/colors';
-import { fontWeight } from '@/src/constants/typography';
-import { radii } from '@/src/constants/radii';
+import { colors, fontWeight, radii, gradients } from '@/src/constants/theme'
 import { tripImageSource } from '@/src/constants/tripImage';
 
 type TripListItemProps = {
@@ -34,8 +31,8 @@ const TripListItem = ({ trip }: TripListItemProps) => {
           style={StyleSheet.absoluteFill}
         />
         {/* Date pill */}
-        <View style={[styles.infoContainer, { backgroundColor: Colors.background }]}>
-          <Calendar color={Colors.tint} size={15} />
+        <View style={[styles.infoContainer, { backgroundColor: colors.background }]}>
+          <Calendar color={colors.tint} size={15} />
           <Text style={styles.date}> {trip.departureDate}</Text>
         </View>
         <Text style={styles.title}>{trip.name}</Text>
@@ -57,8 +54,8 @@ export default TripListItem;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.background,
-    borderColor: Colors.border,
+    backgroundColor: colors.background,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: radii.lg,
     padding: 20,
@@ -76,23 +73,23 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   title: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: 25,
     fontWeight: fontWeight.bold,
     marginTop: 10,
   },
   date: {
-    color: Colors.tint,
+    color: colors.tint,
     fontWeight: 'bold',
   },
   info: {
-    color: Colors.textMutedLight,
+    color: colors.textMutedLight,
     fontWeight: 'bold',
   },
 });
 
 // Shared styling for the meta-row icons
 const iconProps = {
-  color: Colors.textMutedLight,
+  color: colors.textMutedLight,
   size: 15,
 };

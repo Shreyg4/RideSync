@@ -1,6 +1,4 @@
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import { ChevronLeft } from 'lucide-react-native';
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
@@ -45,7 +43,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   title: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.sheetTitle,
     fontWeight: fontWeight.semibold,
     alignSelf: 'center',

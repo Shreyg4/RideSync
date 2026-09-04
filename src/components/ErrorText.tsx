@@ -1,6 +1,4 @@
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 type ErrorTextProps = {
@@ -42,12 +40,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxs,
   },
   text: {
-    color: Colors.error,
+    color: colors.error,
     fontSize: fontSize.caption,
     fontWeight: fontWeight.regular,
   },
   retry: {
-    color: Colors.tint,
+    color: colors.tint,
     fontSize: fontSize.caption,
     fontWeight: fontWeight.semibold,
   },

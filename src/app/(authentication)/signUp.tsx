@@ -4,12 +4,9 @@ import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
-import { fontSize, fontWeight } from '@/src/constants/typography';
-import { copy } from '@/src/constants/copy';
 import TextBox from '@/src/components/TextBox';
 import LargeButton from '@/src/components/LargeButton';
 import { useAuth } from '@/src/context/AuthProvider';
@@ -183,30 +180,30 @@ const SignUpScreen = () => {
           Profile Picture (optional)
         </Text>
         {/* Name */}
-        <Text style={styles.subtext}>{copy.headings.name}</Text>
+        <Text style={styles.subtext}>Name</Text>
         <TextBox
           value={firstName}
           onChangeText={updateField('firstName', setFirstName)}
           error={!!errors.firstName}
-          placeholder={copy.fields.firstName}
+          placeholder="First name"
         />
         <ErrorText message={errors.firstName} style={styles.fieldError} />
         <TextBox
           value={lastName}
           onChangeText={updateField('lastName', setLastName)}
           error={!!errors.lastName}
-          placeholder={copy.fields.lastName}
+          placeholder="Last name"
         />
         <ErrorText message={errors.lastName} style={styles.fieldError} />
 
         {/* Username. Two lines sit under the box: the rules hint (replaced by the error
             after a failed submit) and the live availability row. */}
-        <Text style={styles.subtext}>{copy.headings.usernameAndEmail}</Text>
+        <Text style={styles.subtext}>Unique username and email</Text>
         <TextBox
           value={username}
           onChangeText={updateField('username', setUsername)}
           error={!!errors.username}
-          placeholder={copy.fields.username}
+          placeholder="Username"
           autoCapitalize="none"
           maxLength={USERNAME_MAX_LENGTH}
         />
@@ -229,19 +226,19 @@ const SignUpScreen = () => {
           value={email}
           onChangeText={updateField('email', setEmail)}
           error={!!errors.email}
-          placeholder={copy.fields.email}
+          placeholder="Email"
           autoCapitalize="none"
           keyboardType="email-address"
         />
         <ErrorText message={errors.email} style={styles.fieldError} />
 
         {/* Password */}
-        <Text style={styles.subtext}>{copy.headings.setPassword}</Text>
+        <Text style={styles.subtext}>Set password</Text>
         <TextBox
           value={password}
           onChangeText={updateField('password', setPassword)}
           error={!!errors.password}
-          placeholder={copy.fields.password}
+          placeholder="Password"
           secureTextEntry={true}
         />
         {errors.password ? (
@@ -254,7 +251,7 @@ const SignUpScreen = () => {
           value={confirmPassword}
           onChangeText={updateField('confirmPassword', setConfirmPassword)}
           error={!!errors.confirmPassword}
-          placeholder={copy.fields.confirmPassword}
+          placeholder="Re-enter password"
           secureTextEntry={true}
         />
         <ErrorText message={errors.confirmPassword} style={styles.fieldError} />
@@ -275,21 +272,21 @@ export default SignUpScreen;
 
 const styles = StyleSheet.create({
   text: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.screenTitle,
     marginBottom: 10,
     fontWeight: fontWeight.heavy,
     textAlign: 'center',
   },
   subtext: {
-    color: Colors.tint,
+    color: colors.tint,
     fontSize: fontSize.section,
     marginVertical: 5,
     marginLeft: 15,
     fontWeight: fontWeight.semibold,
   },
   infoText: {
-    color: Colors.textMutedLight,
+    color: colors.textMutedLight,
     fontSize: fontSize.caption,
     marginTop: -7,
     marginBottom: 5,

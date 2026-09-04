@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import ScreenHeader from '@/src/components/ScreenHeader';
-import { gradients } from '@/src/constants/gradients';
+import { gradients } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 

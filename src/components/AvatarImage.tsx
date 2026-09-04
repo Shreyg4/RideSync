@@ -1,4 +1,4 @@
-import Colors from '@/src/constants/colors';
+import { colors } from '@/src/constants/theme'
 import { User } from 'lucide-react-native';
 import { StyleProp, View, ViewStyle, Image, StyleSheet } from 'react-native';
 
@@ -16,7 +16,7 @@ type AvatarImageProps = {
 export default function AvatarImage({
   uri,
   size = 110,
-  borderColor = Colors.tint,
+  borderColor = colors.tint,
   borderWidth = 1,
   testID,
   accessibilityLabel = 'Profile picture',
@@ -44,7 +44,7 @@ export default function AvatarImage({
       {uri ? (
         <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
       ) : (
-        <User size={size * 0.45} color={Colors.textMuted} />
+        <User size={size * 0.45} color={colors.textMuted} />
       )}
     </View>
   );
@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: colors.card,
   },
 });

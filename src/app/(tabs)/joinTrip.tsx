@@ -1,5 +1,4 @@
 import TextBox from '@/src/components/TextBox';
-import { copy } from '@/src/constants/copy';
 import LargeButton from '@/src/components/LargeButton';
 import Screen from '@/src/components/Screen';
 import { useState } from 'react';
@@ -15,7 +14,7 @@ export default function JoinTripScreen() {
       <TextBox
         value={joinCode}
         onChangeText={setJoinCode}
-        placeholder={copy.fields.joinCode}
+        placeholder="Enter code"
         keyboardType="number-pad"
         testID="join-code-input"
       />

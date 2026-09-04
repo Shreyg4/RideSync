@@ -1,8 +1,4 @@
-import Colors from '@/src/constants/colors';
-import { contentWidth } from '@/src/constants/layout';
-import { radii } from '@/src/constants/radii';
-import { spacing } from '@/src/constants/spacing';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight, radii, contentWidth } from '@/src/constants/theme'
 import { haptics, type HapticRole } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
 import { LucideIcon } from 'lucide-react-native';
@@ -22,38 +18,38 @@ type VariantStyle = {
 
 const VARIANTS: Record<LargeButtonVariant, VariantStyle> = {
   primary: {
-    color: Colors.background,
-    backgroundColor: Colors.tint,
-    backgroundColorPressed: Colors.tintPressed,
+    color: colors.background,
+    backgroundColor: colors.tint,
+    backgroundColorPressed: colors.tintPressed,
     borderWidth: 0,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderStyle: 'solid',
     haptic: 'action',
   },
   danger: {
-    color: Colors.error,
-    backgroundColor: Colors.border,
-    backgroundColorPressed: Colors.card,
+    color: colors.error,
+    backgroundColor: colors.border,
+    backgroundColorPressed: colors.card,
     borderWidth: 0,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderStyle: 'solid',
     haptic: 'destructive',
   },
   ghost: {
-    color: Colors.textMutedLight,
-    backgroundColor: Colors.card,
-    backgroundColorPressed: Colors.textMuted,
+    color: colors.textMutedLight,
+    backgroundColor: colors.card,
+    backgroundColorPressed: colors.textMuted,
     borderWidth: 0,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     borderStyle: 'solid',
     haptic: 'action',
   },
   dashed: {
-    color: Colors.textMutedLight,
-    backgroundColor: Colors.card,
-    backgroundColorPressed: Colors.textMuted,
+    color: colors.textMutedLight,
+    backgroundColor: colors.card,
+    backgroundColorPressed: colors.textMuted,
     borderWidth: 1,
-    borderColor: Colors.textMutedLight,
+    borderColor: colors.textMutedLight,
     borderStyle: 'dashed',
     haptic: 'action',
   },
@@ -115,7 +111,7 @@ export default function LargeButton({
           alignSelf: 'center',
           gap: spacing.xxs * 2,
           backgroundColor: disabled
-            ? Colors.disabled
+            ? colors.disabled
             : pressed
               ? v.backgroundColorPressed
               : v.backgroundColor,

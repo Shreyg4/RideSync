@@ -1,7 +1,6 @@
-import Colors from '@/src/constants/colors';
+import { colors, radii } from '@/src/constants/theme'
 import { haptics, type HapticRole } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
-import { radii } from '@/src/constants/radii';
 import { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
 
@@ -24,8 +23,8 @@ type SmallButtonProps = {
 export default function SmallButton({
   icon: Icon,
   onPress,
-  color = Colors.tint,
-  backgroundColor = Colors.border,
+  color = colors.tint,
+  backgroundColor = colors.border,
   size = 32,
   diameter = 48,
   haptic = 'action',

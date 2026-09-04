@@ -1,4 +1,4 @@
-import Colors from '@/src/constants/colors';
+import { colors, fontSize as fontSizes, radii, contentWidth } from '@/src/constants/theme'
 import { useState } from 'react';
 import {
   StyleProp,
@@ -10,9 +10,6 @@ import {
   DimensionValue,
 } from 'react-native';
 import { haptics } from '@/src/constants/haptics';
-import { contentWidth } from '@/src/constants/layout';
-import { radii } from '@/src/constants/radii';
-import { fontSize as fontSizes } from '@/src/constants/typography';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 // Reusable single-line text field (e.g. trip name, destination).
@@ -50,15 +47,15 @@ export default function TextBox({
   value,
   onChangeText,
   placeholder,
-  placeholderTextColor = Colors.textMuted,
-  color = Colors.text,
-  backgroundColor = Colors.card,
+  placeholderTextColor = colors.textMuted,
+  color = colors.text,
+  backgroundColor = colors.card,
   width = contentWidth,
   height = 60,
   borderRadius = radii.lg,
   borderWidth = 1,
-  borderColor = Colors.textMutedLight,
-  borderColorSelected = Colors.tint,
+  borderColor = colors.textMutedLight,
+  borderColorSelected = colors.tint,
   marginVertical = 10,
   fontSize = fontSizes.body,
   editable = true,
@@ -68,7 +65,7 @@ export default function TextBox({
   maxLength,
   style,
   error,
-  borderColorError = Colors.error,
+  borderColorError = colors.error,
   testID,
   accessibilityLabel,
   accessibilityHint,
@@ -137,9 +134,9 @@ export default function TextBox({
           accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
         >
           {revealed ? (
-            <EyeOff size={20} color={Colors.textMutedLight} />
+            <EyeOff size={20} color={colors.textMutedLight} />
           ) : (
-            <Eye size={20} color={Colors.textMutedLight} />
+            <Eye size={20} color={colors.textMutedLight} />
           )}
         </Pressable>
       ) : null}

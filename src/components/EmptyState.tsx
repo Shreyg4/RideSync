@@ -1,6 +1,4 @@
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
-import { fontSize, fontWeight } from '@/src/constants/typography';
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import { StyleSheet, Text, View } from 'react-native';
 
 type EmptyStateProps = {
@@ -27,13 +25,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   title: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.section,
     fontWeight: fontWeight.medium,
     textAlign: 'center',
   },
   subtitle: {
-    color: Colors.textMutedLight,
+    color: colors.textMutedLight,
     fontSize: fontSize.caption,
     fontWeight: fontWeight.regular,
     textAlign: 'center',

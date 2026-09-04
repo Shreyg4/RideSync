@@ -3,7 +3,7 @@ module.exports = {
   blue2: '#082444',
   blue3: '#073C75',
   blue4: '#225B9F',
-  blue5: '#1B8AFF',
+  blue5: '#1B8AFF', //Primary Color
   blue6: '#75B7FF',
   blue7: '#CAE3FF',
 

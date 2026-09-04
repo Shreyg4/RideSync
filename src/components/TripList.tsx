@@ -1,5 +1,5 @@
 import type { Trip } from '@/src/types/trip';
-import { spacing } from '@/src/constants/spacing';
+import { spacing } from '@/src/constants/theme'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { FlatList, StyleSheet, View } from 'react-native';
 import EmptyState from './EmptyState';

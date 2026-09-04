@@ -6,12 +6,9 @@ import LargeButton from '@/src/components/LargeButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/src/constants/colors';
-import { spacing } from '@/src/constants/spacing';
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
-import { fontSize, fontWeight } from '@/src/constants/typography';
-import { copy } from '@/src/constants/copy';
 import { useAuth } from '@/src/context/AuthProvider';
 import { reportAndDescribe } from '@/src/services/errors';
 import {
@@ -73,7 +70,7 @@ const LoginScreen = () => {
           value={email}
           onChangeText={updateField('email', setEmail)}
           error={!!errors.email}
-          placeholder={copy.fields.email}
+          placeholder="Email"
           autoCapitalize="none"
           keyboardType="email-address"
           testID="email-input"
@@ -84,7 +81,7 @@ const LoginScreen = () => {
           value={password}
           onChangeText={updateField('password', setPassword)}
           error={!!errors.password}
-          placeholder={copy.fields.password}
+          placeholder="Password"
           secureTextEntry={true}
           testID="password-input"
         />
@@ -111,7 +108,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   text: {
-    color: Colors.text,
+    color: colors.text,
     fontSize: fontSize.screenTitle,
     marginBottom: spacing.md,
     fontWeight: fontWeight.heavy,
