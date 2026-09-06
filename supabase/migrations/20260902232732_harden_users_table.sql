@@ -1,7 +1,9 @@
+-- Restricting sensitive columns from being updated
 revoke update on table public.users from authenticated;
 grant update (first_name, last_name, show_full_name, avatar_path)
   on table public.users to authenticated;
 
+-- handle_new_user gets fallbacks in case the sign up does not have the proper metadata
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql

@@ -1,3 +1,4 @@
+-- Renaming profiles table to users
 alter table public.profiles rename to users;
 alter table public.users rename column avatar_image to avatar_path;
 

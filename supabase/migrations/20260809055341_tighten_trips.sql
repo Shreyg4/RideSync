@@ -1,3 +1,4 @@
+-- Strengthening trips table so user can only update/change sensitive columns
 CREATE INDEX trips_owner_id_idx ON public.trips (owner_id);
 ALTER TABLE public.trips alter column id set generated always;
 REVOKE UPDATE ON TABLE public.trips FROM authenticated;

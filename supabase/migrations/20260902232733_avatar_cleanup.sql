@@ -1,3 +1,5 @@
+-- A Temporary table that holds avatar image of deleted user accounts to be handled later
+-- Will not need this once there once account deletion flow is set up
 create table public.deleted_avatars (
   path        text primary key,
   user_id     uuid not null,
