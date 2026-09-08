@@ -1,3 +1,8 @@
+/**
+ * @file _layout.tsx
+ * @description The composition root for the UI. Fonts, providers, theme, splash timing, 
+ * and route registration all get decided once here.
+ */
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
@@ -14,14 +19,13 @@ export {
   ErrorBoundary,
 } from 'expo-router';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete. It rejects if
-// the splash screen is already gone, which is survivable - but an unhandled rejection here is
-// invisible, so it goes through the logger instead.
+// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync().catch((error) =>
   reportError(error, { scope: 'RootLayout.preventAutoHide' })
 );
 
 export default function RootLayout() {
+  // blocks startup until fonts load
   const [loaded, error] = useFonts({
     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
@@ -36,6 +40,7 @@ export default function RootLayout() {
     return null;
   }
 
+  // Entire app is wrapped in AuthProvider so all screens know current auth state
   return (
     <AuthProvider>
       <RootLayoutNav />
@@ -46,6 +51,7 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { session, loading } = useAuth();
 
+  // waiting until stored session is read before showing any screen
   useEffect(() => {
     if (loading) return;
     SplashScreen.hideAsync().catch((error) =>

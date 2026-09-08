@@ -1,14 +1,21 @@
+/**
+ * @file authService.ts
+ * @description The boundary layer between the app and Supabase's auth API 
+ * and is the only file that touches supabase.auth
+ */
 import { supabase } from '@/src/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
 export type AuthEvent = Parameters<Parameters<typeof supabase.auth.onAuthStateChange>[0]>[0];
 
+// gets currently stored session once
 export const getSession = async (): Promise<Session | null> => {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
   return data.session;
 };
 
+// This fires on every later auth state change (sign in, sign out, and token refresh)
 export const onAuthStateChange = (handler: (event: AuthEvent, session: Session | null) => void) => {
   const {
     data: { subscription },
