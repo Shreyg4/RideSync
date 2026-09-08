@@ -1,6 +1,12 @@
+/**
+ * @file createSupabaseClient.ts
+ * @description A wrapper file around supabase-js's create client,
+ * that creates the client with the app's authentication policy set up
+ */
 import { createClient, type SupabaseClientOptions } from '@supabase/supabase-js';
 import type { Database } from '@/src/types/database';
 
+// Storage contract pulled from supabase-js's own options - what encryptedStorage Implements
 export type SessionStorage = NonNullable<
   NonNullable<SupabaseClientOptions<'public'>['auth']>['storage']
 >;
@@ -28,4 +34,5 @@ export const createSupabaseClient = ({
     },
   });
 
+// The configured client type - what sessionAutoRefresh consumes
 export type AppSupabaseClient = ReturnType<typeof createSupabaseClient>;

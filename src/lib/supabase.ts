@@ -1,3 +1,8 @@
+/**
+ * @file supabase.ts
+ * @description the composition root for supabase in this app, 
+ * and where the real client is constructed with the chosen dependencies
+ */
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import { Platform } from 'react-native';
