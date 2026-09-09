@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AvatarImage from '@/src/components/AvatarImage';
 import { uploadAvatar } from '@/src/services/avatarService';
 import { isUsernameAvailable } from '@/src/services/userService';
-import { reportAndDescribe } from '@/src/services/errors';
+import { toUserMessage } from '@/src/services/errors';
 import { USERNAME_MAX_LENGTH } from '@/src/domain/rules';
 import { availabilityIndicator, type UsernameState } from '@/src/domain/usernameAvailability';
 import {
@@ -134,9 +134,9 @@ const SignUpScreen = () => {
       if (user && avatarAsset) {
         try {
           await uploadAvatar(user.id, avatarAsset.uri, avatarAsset.mimeType);
-        } catch (e) {
+        } catch {
+          // The account exists either way; the alert below tells them to retry in Settings.
           avatarFailed = true;
-          reportAndDescribe(e, { scope: 'SignUp.uploadAvatar' });
         }
       }
       Alert.alert(
@@ -152,7 +152,7 @@ const SignUpScreen = () => {
       if (stillFree === false) {
         setErrors((prev) => ({ ...prev, username: 'Username already taken' }));
       } else {
-        setFormError(reportAndDescribe(e, { scope: 'SignUp.signUp' }));
+        setFormError(toUserMessage(e));
       }
     } finally {
       setLoading(false);

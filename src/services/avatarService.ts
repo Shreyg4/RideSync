@@ -1,4 +1,3 @@
-import { reportError } from '@/src/lib/logger';
 import {
   avatarObjectPath,
   avatarUrl,
@@ -30,8 +29,8 @@ export const uploadAvatar = async (
   if (previousPath && previousPath !== path) {
     try {
       await removeAvatarFile(previousPath);
-    } catch (error) {
-      reportError(error, { scope: 'avatarService.uploadAvatar.removePrevious', previousPath });
+    } catch {
+      // Best effort: the new avatar is already saved, so a stale file is not worth failing over.
     }
   }
 

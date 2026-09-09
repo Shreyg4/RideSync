@@ -10,7 +10,7 @@ import AvatarImage from '@/src/components/AvatarImage';
 import { avatarUrl } from '@/src/services/avatarService';
 import { useCallback, useState } from 'react';
 import { getUserAvatarPath } from '@/src/services/userService';
-import { reportAndDescribe } from '@/src/services/errors';
+import { toUserMessage } from '@/src/services/errors';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
@@ -24,14 +24,14 @@ export default function SettingsScreen() {
     data: photoPath,
     error: avatarError,
     reload: reloadAvatar,
-  } = useAsync(loadAvatarPath, [user?.id], 'SettingsScreen.getUserAvatarPath');
+  } = useAsync(loadAvatarPath, [user?.id]);
 
   const handleSignOut = async () => {
     setSignOutError(undefined);
     try {
       await signOut();
     } catch (error) {
-      setSignOutError(reportAndDescribe(error, { scope: 'SettingsScreen.signOut' }));
+      setSignOutError(toUserMessage(error));
     }
   };
 

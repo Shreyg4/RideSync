@@ -10,7 +10,7 @@ import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
 import { useAuth } from '@/src/context/AuthProvider';
-import { reportAndDescribe } from '@/src/services/errors';
+import { toUserMessage } from '@/src/services/errors';
 import {
   normalizeEmail,
   validateLoginForm,
@@ -50,7 +50,7 @@ const LoginScreen = () => {
       await signIn(cleanEmail, password);
       // No navigation here: RootLayoutNav watches the session and redirects once it lands.
     } catch (e) {
-      setFormError(reportAndDescribe(e, { scope: 'Login.signIn' }));
+      setFormError(toUserMessage(e));
     } finally {
       setLoading(false);
     }

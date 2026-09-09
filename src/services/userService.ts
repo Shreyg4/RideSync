@@ -1,12 +1,8 @@
 import { supabase } from '@/src/lib/supabase';
-import { reportError } from '@/src/lib/logger';
 
 export const isUsernameAvailable = async (candidate: string): Promise<boolean | null> => {
   const { data, error } = await supabase.rpc('username_available', { candidate });
-  if (error) {
-    reportError(error, { scope: 'userService.isUsernameAvailable' });
-    return null;
-  }
+  if (error) return null;
   return data;
 };
 
@@ -19,10 +15,7 @@ export const getUserAvatarPath = async (userId: string | undefined): Promise<str
     .eq('id', userId)
     .single();
 
-  if (error) {
-    reportError(error, { scope: 'userService.getUserAvatarPath' });
-    throw error;
-  }
+  if (error) throw error;
   return data.avatar_path;
 };
 
