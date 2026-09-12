@@ -6,6 +6,7 @@
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import * as authService from '@/src/services/authService';
+import { logger, reportError } from '@/src/lib/logger';
 
 export interface AuthContextType {
   session: Session | null;
@@ -40,15 +41,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const stored = await authService.getSession();
         setSession(stored);
         setUser(stored?.user ?? null);
-      } catch {
-        // No readable stored session: fall through as signed out.
+      } catch (error) {
+        reportError(error, { scope: 'AuthProvider.initializeSession' });
       } finally {
         setLoading(false);
       }
     };
     initializeSession();
 
-    const unsubscribe = authService.onAuthStateChange((_event, next) => {
+    const unsubscribe = authService.onAuthStateChange((event, next) => {
+      logger.info('auth state changed', { event, hasSession: !!next });
       setSession(next);
       setUser(next?.user ?? null);
       setLoading(false);

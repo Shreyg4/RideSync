@@ -1,10 +1,6 @@
-/**
- * @file errors.ts
- * @description The translation layer between what actually broke and what the user is told.
- * Every screen level failure is funneled through this file.
- */
+import { reportError } from '@/src/lib/logger';
+import type { LogContext } from '@/src/lib/logger';
 
-// A lookup table from error code -> sentence
 const FRIENDLY_BY_CODE: Record<string, string> = {
   invalid_credentials: 'That email and password do not match an account.',
   email_not_confirmed: 'Confirm your email address before signing in.',
@@ -21,15 +17,18 @@ const FRIENDLY_BY_CODE: Record<string, string> = {
 
 const GENERIC = 'Something went wrong. Please try again.';
 
-// Only provides error code if it is a string
 const codeOf = (error: unknown): string | undefined => {
   if (typeof error !== 'object' || error === null) return undefined;
   const { code } = error as { code?: unknown };
   return typeof code === 'string' ? code : undefined;
 };
 
-// translates code to sentance or fall backs to generic sentence if code is not listed
 export const toUserMessage = (error: unknown): string => {
   const code = codeOf(error);
   return (code && FRIENDLY_BY_CODE[code]) || GENERIC;
+};
+
+export const reportAndDescribe = (error: unknown, context: LogContext = {}): string => {
+  reportError(error, context);
+  return toUserMessage(error);
 };

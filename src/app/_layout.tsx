@@ -12,6 +12,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/src/context/AuthProvider';
+import { reportError } from '@/src/lib/logger';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -19,8 +20,9 @@ export {
 } from 'expo-router';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-// Swallowed: a splash screen that already auto hid is not a failure worth surfacing.
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync().catch((error) =>
+  reportError(error, { scope: 'RootLayout.preventAutoHide' })
+);
 
 export default function RootLayout() {
   // blocks startup until fonts load
@@ -52,7 +54,9 @@ function RootLayoutNav() {
   // waiting until stored session is read before showing any screen
   useEffect(() => {
     if (loading) return;
-    SplashScreen.hideAsync().catch(() => {});
+    SplashScreen.hideAsync().catch((error) =>
+      reportError(error, { scope: 'RootLayoutNav.hideSplash' })
+    );
   }, [loading]);
 
   return (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { toUserMessage } from '@/src/services/errors';
+import { reportAndDescribe } from '@/src/services/errors';
 
 export type AsyncState<T> = {
   data: T | null;
@@ -8,7 +8,11 @@ export type AsyncState<T> = {
   reload: () => void;
 };
 
-export const useAsync = <T>(run: () => Promise<T>, deps: readonly unknown[]): AsyncState<T> => {
+export const useAsync = <T>(
+  run: () => Promise<T>,
+  deps: readonly unknown[],
+  scope: string
+): AsyncState<T> => {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +30,7 @@ export const useAsync = <T>(run: () => Promise<T>, deps: readonly unknown[]): As
         if (!cancelled) setData(value);
       })
       .catch((caught) => {
-        if (!cancelled) setError(toUserMessage(caught));
+        if (!cancelled) setError(reportAndDescribe(caught, { scope }));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
