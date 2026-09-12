@@ -2,10 +2,11 @@
 // call. These cover the shapes a Supabase failure actually arrives in.
 
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { logger, redact, reportError, setErrorReporter } from '../logger';
+import { logger, redact, reportError, setBreadcrumbSink, setErrorReporter } from '../logger';
 
 const consoleSpies = {
   log: jest.spyOn(console, 'log').mockImplementation(() => {}),
+  info: jest.spyOn(console, 'info').mockImplementation(() => {}),
   warn: jest.spyOn(console, 'warn').mockImplementation(() => {}),
   error: jest.spyOn(console, 'error').mockImplementation(() => {}),
 };
@@ -16,6 +17,7 @@ beforeEach(() => {
 
 afterEach(() => {
   setErrorReporter(null);
+  setBreadcrumbSink(null);
 });
 
 describe('redact', () => {
@@ -128,5 +130,53 @@ describe('reportError', () => {
       '[error] Unknown error',
       expect.objectContaining({ scope: 'userService.create' })
     );
+  });
+});
+
+// The breadcrumb sink is the one path that runs in release builds, so what reaches it is
+// what reaches Sentry. These pin the redaction down at that boundary.
+describe('breadcrumb sink', () => {
+  it('receives the level and the redacted message and context', () => {
+    const sink = jest.fn();
+    setBreadcrumbSink(sink);
+
+    logger.info('signing in rider@example.com', { accessToken: 'abc', attempt: 2 });
+
+    expect(sink).toHaveBeenCalledWith('info', 'signing in [redacted]', {
+      accessToken: '[redacted]',
+      attempt: 2,
+    });
+  });
+
+  it('passes no context rather than an empty object', () => {
+    const sink = jest.fn();
+    setBreadcrumbSink(sink);
+
+    logger.debug('no context here');
+
+    expect(sink).toHaveBeenCalledWith('debug', 'no context here', undefined);
+  });
+
+  it('fires for reportError too, carrying the redacted error', () => {
+    const sink = jest.fn();
+    setBreadcrumbSink(sink);
+
+    reportError(new Error('signup failed for rider@example.com'), { scope: 'authService' });
+
+    expect(sink).toHaveBeenCalledWith(
+      'error',
+      'signup failed for [redacted]',
+      expect.objectContaining({ scope: 'authService' })
+    );
+  });
+
+  it('survives a sink that throws', () => {
+    setBreadcrumbSink(() => {
+      throw new Error('sink is down');
+    });
+
+    expect(() => logger.info('still fine')).not.toThrow();
+    // The console line is still written: a broken sink must not cost us the log.
+    expect(consoleSpies.info).toHaveBeenCalledWith('[info] still fine');
   });
 });

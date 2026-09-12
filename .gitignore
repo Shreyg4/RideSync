@@ -43,3 +43,5 @@ yarn-error.*
 
 # Test coverage
 coverage/
+
+.env.local

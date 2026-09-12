@@ -55,6 +55,14 @@ const config: ExpoConfig = {
         },
       },
     ],
+    [
+      '@sentry/react-native/expo',
+      {
+        url: 'https://sentry.io/',
+        project: 'ride-sync',
+        organization: 'shreyas-7d',
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

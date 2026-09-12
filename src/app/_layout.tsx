@@ -1,8 +1,9 @@
 /**
  * @file _layout.tsx
- * @description The composition root for the UI. Fonts, providers, theme, splash timing, 
+ * @description The composition root for the UI. Fonts, providers, theme, splash timing,
  * and route registration all get decided once here.
  */
+import '@/src/lib/reporting';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
@@ -13,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/src/context/AuthProvider';
 import { reportError } from '@/src/lib/logger';
+import * as Sentry from '@sentry/react-native';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -24,7 +26,7 @@ SplashScreen.preventAutoHideAsync().catch((error) =>
   reportError(error, { scope: 'RootLayout.preventAutoHide' })
 );
 
-export default function RootLayout() {
+function RootLayout() {
   // blocks startup until fonts load
   const [loaded, error] = useFonts({
     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
@@ -47,6 +49,7 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+export default Sentry.wrap(RootLayout);
 
 function RootLayoutNav() {
   const { session, loading } = useAuth();

@@ -1,4 +1,9 @@
-/** Severity of a log line. `debug` is for breadcrumbs, `error` for failures worth reporting. */
+/**
+ * @file logger.ts
+ * @description handles all logs/errors funnels through this file which
+ * redacts sensitive information before logging anything
+ */
+
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 /** Structured data attached to a log line. Redacted before it is printed or reported. */
@@ -6,6 +11,16 @@ export type LogContext = Record<string, unknown>;
 
 /** Sink for reportError(). Swap Sentry's captureException in here via setErrorReporter(). */
 export type ErrorReporter = (error: unknown, context: LogContext) => void;
+
+/** Sink for logger.* breadcrumbs. Swap Sentry's addBreadcrumb in here via setBreadcrumbSink(). */
+export type BreadcrumbSink = (level: LogLevel, message: string, context?: LogContext) => void;
+
+let breadcrumbSink: BreadcrumbSink | null = null;
+
+/** Installs the breadcrumb sink (Sentry, etc.). Pass null to remove it. */
+export const setBreadcrumbSink = (sink: BreadcrumbSink | null) => {
+  breadcrumbSink = sink;
+};
 
 const REDACTED = '[redacted]';
 const TRUNCATED = '[truncated]';
@@ -53,7 +68,7 @@ const EMAIL_PATTERN = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
 const JWT_PATTERN = /\beyJ[\w-]+\.[\w-]+\.[\w-]+/g;
 const AUTH_SCHEME_PATTERN = /\b(bearer|basic)\s+[\w\-._~+/]+=*/gi;
 
-const redactString = (value: string) => {
+export const redactString = (value: string) => {
   const clean = value
     .replace(JWT_PATTERN, REDACTED)
     .replace(AUTH_SCHEME_PATTERN, (_match, scheme: string) => `${scheme} ${REDACTED}`)
@@ -115,19 +130,28 @@ const CONSOLE_METHOD: Record<LogLevel, 'log' | 'info' | 'warn' | 'error'> = {
   error: 'error',
 };
 
-// Release builds have no console anyone can read, so nothing is printed there. Production
-// visibility is reportError()'s job, not the console's.
+// Redaction happens first, so both sinks below receive already-scrubbed values. The
+// breadcrumb sink fires in every build - it is the trail leading to whatever reportError()
+// later captures. Only the console is gated on __DEV__: release builds have no console
+// anyone can read, so nothing is printed there.
 const write = (level: LogLevel, message: string, context?: LogContext) => {
+  const safeMessage = redactString(message);
+  const safeContext = context && Object.keys(context).length > 0 ? redact(context) : undefined;
+
+  if (breadcrumbSink) {
+    try {
+      breadcrumbSink(level, safeMessage, safeContext);
+    } catch {
+      // A sink that throws must not break the code path that was logging.
+    }
+  }
+
   if (!__DEV__) return;
 
-  const line = `[${level}] ${redactString(message)}`;
   const method = CONSOLE_METHOD[level];
-
-  if (context && Object.keys(context).length > 0) {
-    console[method](line, redact(context));
-  } else {
-    console[method](line);
-  }
+  const line = `[${level}] ${safeMessage}`;
+  if (safeContext) console[method](line, safeContext);
+  else console[method](line);
 };
 
 export const logger = {

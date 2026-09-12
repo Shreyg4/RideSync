@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import Colors from '@/src/constants/colors';
+import { colors } from '@/src/constants/theme';
 import { availabilityIndicator, type UsernameState } from '../usernameAvailability';
 
 describe('availabilityIndicator', () => {
@@ -8,9 +8,9 @@ describe('availabilityIndicator', () => {
   });
 
   it('uses the palette, not raw colours', () => {
-    expect(availabilityIndicator('free')?.color).toBe(Colors.success);
-    expect(availabilityIndicator('taken')?.color).toBe(Colors.error);
-    expect(availabilityIndicator('checking')?.color).toBe(Colors.textMuted);
+    expect(availabilityIndicator('free')?.color).toBe(colors.success);
+    expect(availabilityIndicator('taken')?.color).toBe(colors.error);
+    expect(availabilityIndicator('checking')?.color).toBe(colors.textMuted);
   });
 
   it('has an entry for every state', () => {
