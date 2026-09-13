@@ -1,3 +1,7 @@
+/**
+ * @file tripService.ts
+ * @description The data-access layer for the trip table
+ */
 import { supabase } from '@/src/lib/supabase';
 import type { Database } from '@/src/types/database';
 

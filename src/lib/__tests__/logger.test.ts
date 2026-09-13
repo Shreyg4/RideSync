@@ -39,6 +39,33 @@ describe('redact', () => {
     });
   });
 
+  it('catches plural key names as well as singular ones', () => {
+    expect(
+      redact({ apiKeys: ['a', 'b'], tokens: { access: 'x' }, secrets: 'shh', count: 2 })
+    ).toEqual({
+      apiKeys: '[redacted]',
+      tokens: '[redacted]',
+      secrets: '[redacted]',
+      count: 2,
+    });
+  });
+
+  it('splits acronym-led camelCase keys', () => {
+    expect(redact({ JWTToken: 'abc', OTPCode: '123456', APIKeyName: 'primary' })).toEqual({
+      JWTToken: '[redacted]',
+      OTPCode: '[redacted]',
+      APIKeyName: '[redacted]',
+    });
+  });
+
+  it('leaves keys that merely contain a sensitive word as a substring', () => {
+    expect(redact({ passenger: 'sam', keyboard: 'qwerty', mailingAddress: '1 Main St' })).toEqual({
+      passenger: 'sam',
+      keyboard: 'qwerty',
+      mailingAddress: '1 Main St',
+    });
+  });
+
   it('scrubs emails, JWTs and auth headers out of free text', () => {
     const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.7bXQ-signature';
 
@@ -71,12 +98,58 @@ describe('redact', () => {
     expect(scrubbed.error.message).toBe('bad email: [redacted]');
   });
 
+  // Supabase's AuthError shape: status and code hang off the Error as own properties, and
+  // they are what a sign-in failure is actually diagnosed with.
+  it('keeps custom fields hanging off an Error subclass', () => {
+    class AuthError extends Error {
+      status: number;
+      code: string;
+
+      constructor(message: string, status: number, code: string) {
+        super(message);
+        this.name = 'AuthError';
+        this.status = status;
+        this.code = code;
+      }
+    }
+
+    const scrubbed = redact({
+      error: new AuthError('Invalid login credentials', 400, 'invalid_credentials'),
+    }) as { error: Record<string, unknown> };
+
+    expect(scrubbed.error).toMatchObject({
+      name: 'AuthError',
+      message: 'Invalid login credentials',
+      status: 400,
+      code: 'invalid_credentials',
+    });
+  });
+
+  it('still redacts a sensitive custom field on an Error', () => {
+    const error = Object.assign(new Error('refresh failed'), {
+      refreshToken: 'abc123',
+      attempt: 2,
+    });
+
+    expect(redact({ error })).toMatchObject({
+      error: { message: 'refresh failed', refreshToken: '[redacted]', attempt: 2 },
+    });
+  });
+
   it('truncates past the depth cap rather than recursing forever', () => {
     const cyclic: Record<string, unknown> = { name: 'root' };
     cyclic.self = cyclic;
 
     expect(() => redact(cyclic)).not.toThrow();
     expect(JSON.stringify(redact(cyclic))).toContain('[truncated]');
+  });
+
+  it('truncates a cyclic error cause chain rather than recursing forever', () => {
+    const error = new Error('boom');
+    (error as Error & { cause?: unknown }).cause = error;
+
+    expect(() => redact({ error })).not.toThrow();
+    expect(JSON.stringify(redact({ error }))).toContain('[truncated]');
   });
 });
 

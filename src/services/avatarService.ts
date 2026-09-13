@@ -1,3 +1,7 @@
+/**
+ * @file avatarService.ts
+ * @description Connects avatarStorage bucket and userService so that both are in sync
+ */
 import { reportError } from '@/src/lib/logger';
 import {
   avatarObjectPath,

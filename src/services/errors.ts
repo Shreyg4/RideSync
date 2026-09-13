@@ -4,10 +4,10 @@
  * Every screen level failure is funneled through this file.
  */
 
-// A lookup table from error code -> sentence
 import { reportError } from '@/src/lib/logger';
 import type { LogContext } from '@/src/lib/logger';
 
+// A lookup table from error code -> sentence
 const FRIENDLY_BY_CODE: Record<string, string> = {
   invalid_credentials: 'That email and password do not match an account.',
   email_not_confirmed: 'Confirm your email address before signing in.',
@@ -31,12 +31,13 @@ const codeOf = (error: unknown): string | undefined => {
   return typeof code === 'string' ? code : undefined;
 };
 
-// Translates code to sentance or fall backs to generic sentence if code is not listed
+// Translates code to sentence or falls back to the generic sentence if code is not listed
 export const toUserMessage = (error: unknown): string => {
   const code = codeOf(error);
   return (code && FRIENDLY_BY_CODE[code]) || GENERIC;
 };
 
+// Sends raw error to installed reporter and translate error into something the user can read
 export const reportAndDescribe = (error: unknown, context: LogContext = {}): string => {
   reportError(error, context);
   return toUserMessage(error);

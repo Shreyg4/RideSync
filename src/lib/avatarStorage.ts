@@ -1,7 +1,13 @@
+/**
+ * @file avatarStorage.ts
+ * @description The wrapper around the supabase storage 
+ * bucket named avatars which stores the users profile image
+ */
 import { supabase } from './supabase';
 
 const BUCKET = 'avatars';
 
+// Builds the storage key for an avatar file
 export const avatarObjectPath = (userId: string, mimeType?: string, now: Date = new Date()) => {
   const ext = mimeType?.split('/')[1] ?? 'jpg';
   return `${userId}/${now.getTime()}.${ext}`;
@@ -22,5 +28,6 @@ export const removeAvatarFile = async (path: string) => {
   if (error) throw error;
 };
 
+// Turns a stored path into a renderable public URL
 export const avatarUrl = (path: string | null | undefined): string | null =>
   path ? supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl : null;
