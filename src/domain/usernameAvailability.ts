@@ -1,3 +1,7 @@
+/**
+ * @file usernameAvailablity.ts
+ * @description Turn the username lookup into something the user can see.
+ */
 import { CircleCheck, CircleX, LoaderCircle } from 'lucide-react-native';
 import { colors } from '@/src/constants/theme'
 

@@ -1,3 +1,8 @@
+/**
+ * @file rules.ts
+ * @description The app's single source of truth for the values that dfine
+ * what's valid or allowed.
+ */
 import type { TripType } from '@/src/types/trip';
 
 export const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;

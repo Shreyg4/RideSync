@@ -1,3 +1,8 @@
+/**
+ * @file useAsync.ts
+ * @description Anytime a screen needs data from a database or API, 
+ * this file is used to run the process of getting that data or handling failures.
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { reportAndDescribe } from '@/src/services/errors';
 

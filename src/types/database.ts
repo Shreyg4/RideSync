@@ -1,3 +1,7 @@
+/**
+ * @file database.ts
+ * @description A generated file that mirrors the supabase prostgeres schema in typescript
+ */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {

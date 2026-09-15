@@ -1,3 +1,7 @@
+/**
+ * @file signUp.ts
+ * @description This is the screen where user creates their account
+ */
 import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import SmallButton from '@/src/components/SmallButton';
@@ -25,12 +29,6 @@ import {
   type SignUpForm,
 } from '@/src/validation/userForms';
 import { haptics } from '@/src/constants/haptics';
-
-// Account creation screen.
-// Validation happens in two layers:
-//  - validate() is the gate. It runs on submit and decides whether we call Supabase at all.
-//  - the hint/availability text under the username box is derived during render, so it
-//    updates live as the user types. Nothing is stored for it.
 
 const SignUpScreen = () => {
   const insets = useSafeAreaInsets();

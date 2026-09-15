@@ -1,3 +1,8 @@
+/**
+ * @file userForms.ts
+ * @description This file holds everything about the sign-up/login forms
+ * that can be tested without rendering a screen.
+ */
 import { PASSWORD_MIN_LENGTH, USERNAME_MIN_LENGTH, USERNAME_PATTERN } from '@/src/domain/rules';
 
 export type SignUpForm = {

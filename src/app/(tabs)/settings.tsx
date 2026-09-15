@@ -1,3 +1,7 @@
+/**
+ * @file settings.ts
+ * @description Screen where user can manage their profile preferences and app settings
+ */
 import { Text, View, StyleSheet } from 'react-native';
 import LargeButton from '@/src/components/LargeButton';
 import ErrorText from '@/src/components/ErrorText';
@@ -47,7 +51,7 @@ export default function SettingsScreen() {
           style={styles.error}
         />
 
-        <Text style={styles.text}>Settings that will come soon</Text>
+        <Text style={styles.text}>Settings coming soon</Text>
 
         <View style={styles.spacer} />
 
