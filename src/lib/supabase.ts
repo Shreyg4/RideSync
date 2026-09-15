@@ -1,6 +1,6 @@
 /**
  * @file supabase.ts
- * @description the composition root for supabase in this app, 
+ * @description the composition root for supabase in this app,
  * and where the real client is constructed with the chosen dependencies
  */
 import 'react-native-get-random-values';

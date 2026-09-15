@@ -3,7 +3,7 @@
  * @description Turn the username lookup into something the user can see.
  */
 import { CircleCheck, CircleX, LoaderCircle } from 'lucide-react-native';
-import { colors } from '@/src/constants/theme'
+import { colors } from '@/src/constants/theme';
 
 export type UsernameState = 'idle' | 'checking' | 'free' | 'taken';
 

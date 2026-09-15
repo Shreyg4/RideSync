@@ -1,4 +1,4 @@
-import { colors } from '@/src/constants/theme'
+import { colors } from '@/src/constants/theme';
 import { User } from 'lucide-react-native';
 import { StyleProp, View, ViewStyle, Image, StyleSheet } from 'react-native';
 

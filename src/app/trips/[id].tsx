@@ -5,7 +5,7 @@ import React from 'react';
 import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
-import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme'
+import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';

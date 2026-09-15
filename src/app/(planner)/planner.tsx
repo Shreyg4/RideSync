@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SmallButton from '@/src/components/SmallButton';
 import LargeButton from '@/src/components/LargeButton';
 import ScreenHeader from '@/src/components/ScreenHeader';
-import { colors, spacing, radii, gradients } from '@/src/constants/theme'
+import { colors, spacing, radii, gradients } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import StopListItem from '@/src/components/StopListItem';
 import locations from '@/src/__fixtures__/locations';

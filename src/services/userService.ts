@@ -1,6 +1,6 @@
 /**
  * @file userService.ts
- * @description The data-access layer for the users table. 
+ * @description The data-access layer for the users table.
  * Only place in the app that talks directly to the users table in supabase.
  */
 import { supabase } from '@/src/lib/supabase';

@@ -7,7 +7,7 @@ import LargeButton from '@/src/components/LargeButton';
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
 import TopFade from '@/src/components/TopFade';
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
 import { router } from 'expo-router';
 import { useAuth } from '@/src/context/AuthProvider';
 import AvatarImage from '@/src/components/AvatarImage';

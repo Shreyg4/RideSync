@@ -3,13 +3,12 @@
  * @description Essential styling is listed here for easy access and consistency across the app
  */
 import palette from './palette';
-import type { TextStyle } from 'react-native';
-import type { DimensionValue } from 'react-native';
+import type { TextStyle, DimensionValue } from 'react-native';
 
 export { palette };
 
 export const colors = {
-  tint: palette.blue5, //Primary Color
+  tint: palette.blue5, // Primary Color
   tintDark: palette.blue2,
   tintPressed: palette.blue3,
   tintMid: palette.blue6,

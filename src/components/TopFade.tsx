@@ -1,4 +1,4 @@
-import { spacing, gradients } from '@/src/constants/theme'
+import { spacing, gradients } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
 

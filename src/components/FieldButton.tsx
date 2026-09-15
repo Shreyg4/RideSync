@@ -1,4 +1,4 @@
-import { colors, spacing, fontSize, radii, contentWidth } from '@/src/constants/theme'
+import { colors, spacing, fontSize, radii, contentWidth } from '@/src/constants/theme';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
 import { LucideIcon } from 'lucide-react-native';

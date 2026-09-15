@@ -1,4 +1,4 @@
-import { colors, spacing } from '@/src/constants/theme'
+import { colors, spacing } from '@/src/constants/theme';
 import React from 'react';
 import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';

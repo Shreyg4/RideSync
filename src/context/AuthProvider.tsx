@@ -1,6 +1,6 @@
 /**
  * @file AuthProvider.tsx
- * @description This component is the single source of truth for the auth state 
+ * @description This component is the single source of truth for the auth state
  * so that no other component has to contact Supabase to figure that out.
  */
 import { Session, User } from '@supabase/supabase-js';

@@ -1,4 +1,4 @@
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 type ErrorTextProps = {

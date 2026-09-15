@@ -1,4 +1,4 @@
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
 import { ChevronLeft } from 'lucide-react-native';
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';

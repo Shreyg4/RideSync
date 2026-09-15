@@ -3,7 +3,7 @@ import { Dot } from 'lucide-react-native';
 import type { Location } from '@/src/types/trip';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
-import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme'
+import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 
 type StopListItemProps = {
   location: Location;

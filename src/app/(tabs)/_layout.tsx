@@ -1,6 +1,6 @@
 import SmallButton from '@/src/components/SmallButton';
 import { useClientOnlyValue } from '@/src/hooks/useClientOnlyValue';
-import { colors, fontWeight, radii, gradients } from '@/src/constants/theme'
+import { colors, fontWeight, radii, gradients } from '@/src/constants/theme';
 import { haptics } from '@/src/constants/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs, router } from 'expo-router';

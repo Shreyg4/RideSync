@@ -1,4 +1,4 @@
-import { colors, fontSize as fontSizes, radii, contentWidth } from '@/src/constants/theme'
+import { colors, fontSize as fontSizes, radii, contentWidth } from '@/src/constants/theme';
 import { useState } from 'react';
 import {
   StyleProp,

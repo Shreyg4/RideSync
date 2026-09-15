@@ -1,6 +1,6 @@
 /**
  * @file encryptedStorage.ts
- * @description An encrypted replacement for AsyncStorage that supabase-js uses to persist the login session, 
+ * @description An encrypted replacement for AsyncStorage that supabase-js uses to persist the login session,
  * so that the JWT and refresh token never sit in plaintext on the device
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';

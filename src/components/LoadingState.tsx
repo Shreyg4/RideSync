@@ -1,4 +1,4 @@
-import { colors } from '@/src/constants/theme'
+import { colors } from '@/src/constants/theme';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 type LoadingStateProps = {

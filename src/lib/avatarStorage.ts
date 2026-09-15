@@ -1,6 +1,6 @@
 /**
  * @file avatarStorage.ts
- * @description The wrapper around the supabase storage 
+ * @description The wrapper around the supabase storage
  * bucket named avatars which stores the users profile image
  */
 import { supabase } from './supabase';

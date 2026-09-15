@@ -1,7 +1,15 @@
 import { View, Text, StyleSheet, Pressable, Platform, Modal } from 'react-native';
 import React, { useState } from 'react';
 import TextBox from '@components/TextBox';
-import { colors, spacing, fontSize, fontWeight, radii, gradients, contentWidth } from '@/src/constants/theme'
+import {
+  colors,
+  spacing,
+  fontSize,
+  fontWeight,
+  radii,
+  gradients,
+  contentWidth,
+} from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ImagePlus, MapPin, Repeat, Calendar, Clock } from 'lucide-react-native';
 import { haptics } from '../constants/haptics';
@@ -133,9 +141,7 @@ const CreateTripScreen = () => {
           onPress={() => {
             haptics.action();
           }}
-          style={({ pressed }) => [
-            [styles.imageBox, pressFeedback.card(pressed), { margin: 10 }]
-          ]}
+          style={({ pressed }) => [[styles.imageBox, pressFeedback.card(pressed), { margin: 10 }]]}
         >
           <ImagePlus color={colors.textMutedLight} style={{ marginBottom: 10 }} />
           <Text style={{ color: colors.textMutedLight }}>Add cover image (optional)</Text>

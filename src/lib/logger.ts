@@ -198,7 +198,7 @@ export const reportError = (error: unknown, context: LogContext = {}) => {
   if (!errorReporter) return;
   try {
     // The raw error goes to reporter unredacted so stacks symbolicate; only context is scrubbed.
-    errorReporter(error, redact(context)); 
+    errorReporter(error, redact(context));
   } catch (reporterError) {
     // A reporter that throws must not take down the code path that was already failing.
     write('warn', 'error reporter threw', { error: reporterError });

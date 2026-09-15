@@ -1,6 +1,6 @@
 /**
  * @file authService.ts
- * @description The boundary layer between the app and Supabase's auth API 
+ * @description The boundary layer between the app and Supabase's auth API
  * and is the only file that touches supabase.auth
  */
 import { supabase } from '@/src/lib/supabase';

@@ -1,4 +1,4 @@
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
 
 type EmptyStateProps = {

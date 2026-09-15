@@ -8,7 +8,7 @@ import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme'
+import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
 import TextBox from '@/src/components/TextBox';

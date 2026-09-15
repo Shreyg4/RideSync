@@ -5,7 +5,7 @@ import { pressFeedback } from '@/src/constants/pressFeedback';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Calendar, Dot, Users } from 'lucide-react-native';
-import { colors, fontWeight, radii, gradients } from '@/src/constants/theme'
+import { colors, fontWeight, radii, gradients } from '@/src/constants/theme';
 import { tripImageSource } from '@/src/constants/tripImage';
 
 type TripListItemProps = {
