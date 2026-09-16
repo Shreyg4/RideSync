@@ -1,5 +1,5 @@
 /**
- * @file settings.ts
+ * @file settings.tsx
  * @description Screen where user can manage their profile preferences and app settings
  */
 import { Text, View, StyleSheet } from 'react-native';

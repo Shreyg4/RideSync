@@ -1,3 +1,7 @@
+/**
+ * @file _layout.ts
+ * @description The home screen of the app where users enter when they login or sign-up
+ */
 import SmallButton from '@/src/components/SmallButton';
 import { useClientOnlyValue } from '@/src/hooks/useClientOnlyValue';
 import { colors, fontWeight, radii, gradients } from '@/src/constants/theme';
@@ -66,7 +70,7 @@ export default function TabLayout() {
         headerBackground: () => (
           <LinearGradient
             pointerEvents="none"
-            {...gradients.cardToBackground}
+            {...gradients.cardToBackground()}
             style={StyleSheet.absoluteFill}
           />
         ),

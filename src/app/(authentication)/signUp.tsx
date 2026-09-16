@@ -1,14 +1,10 @@
-/**
- * @file signUp.ts
- * @description This is the screen where user creates their account
- */
 import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
+import { colors, spacing, fontSize, fontWeight, gradients } from '@/src/constants/theme';
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
 import TextBox from '@/src/components/TextBox';
@@ -29,6 +25,7 @@ import {
   type SignUpForm,
 } from '@/src/validation/userForms';
 import { haptics } from '@/src/constants/haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const SignUpScreen = () => {
   const insets = useSafeAreaInsets();
@@ -165,7 +162,7 @@ const SignUpScreen = () => {
         accessibilityLabel="Go back"
         style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
       />
-      <Screen scroll bottomOffset={spacing.xxl * 2} contentContainerStyle={styles.content}>
+      <Screen scroll gradient bottomOffset={spacing.xxl * 2} contentContainerStyle={styles.content}>
         <Text style={styles.text}>Create Account</Text>
         {/* Avatar Image Picker */}
         <Pressable
@@ -298,7 +295,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   content: {
-    paddingTop: spacing.xxl * 2,
+    paddingTop: spacing.xxl * 2.5,
   },
   availabilityRow: {
     flexDirection: 'row',

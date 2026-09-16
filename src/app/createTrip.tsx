@@ -64,16 +64,12 @@ const CreateTripScreen = () => {
   };
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        pointerEvents="none"
-        {...gradients.cardToBackground}
-        style={StyleSheet.absoluteFill}
-      />
-      <Screen scroll bottomOffset={spacing.lg}>
+      <Screen scroll gradient bottomOffset={spacing.lg}>
         <ScreenHeader
           title="Create Trip"
           onBack={Platform.OS === 'android' ? () => router.dismiss() : undefined}
           applyTopInset={Platform.OS === 'android'}
+          style={{paddingVertical: 25}}
         />
 
         <TextBox

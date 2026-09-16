@@ -1,13 +1,14 @@
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import React from 'react';
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
+import { colors, spacing, fontSize, fontWeight, gradients } from '@/src/constants/theme';
 import LargeButton from '@/src/components/LargeButton';
 import Screen from '@/src/components/Screen';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function WelcomeScreen() {
   return (
-    <Screen scroll={false} applyTopInset style={styles.container}>
+    <Screen scroll={false} gradient applyTopInset style={styles.container}>
       <View style={styles.titleBlock}>
         <Text style={styles.text}>Welcome to{'\n'}Ride Sync</Text>
       </View>

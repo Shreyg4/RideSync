@@ -1,11 +1,13 @@
-import { colors, spacing } from '@/src/constants/theme';
+import { colors, spacing, gradients } from '@/src/constants/theme';
 import React from 'react';
 import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type ScreenProps = {
   children: React.ReactNode;
+  gradient?: boolean;
   scroll?: boolean;
   applyTopInset?: boolean;
   bottomOffset?: number;
@@ -17,6 +19,7 @@ type ScreenProps = {
 
 export default function Screen({
   children,
+  gradient = false,
   scroll = true,
   applyTopInset = false,
   bottomOffset = 0,
@@ -27,7 +30,7 @@ export default function Screen({
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
-  const container = [styles.container, applyTopInset && { paddingTop: insets.top }, style];
+  const container = [styles.container, gradient && styles.transparent, applyTopInset && { paddingTop: insets.top }, style];
 
   const content = [
     { paddingBottom: insets.bottom + bottomOffset + spacing.sm },
@@ -35,16 +38,10 @@ export default function Screen({
     contentContainerStyle,
   ];
 
-  if (!scroll) {
-    return (
-      <View testID={testID} style={[container, content]}>
-        {children}
-      </View>
-    );
-  }
-
-  return (
-    <KeyboardAwareScrollView
+  const body = !scroll ? (
+    <View testID={testID} style={[container, content]}>{children}</View>
+  ) : (
+    <KeyboardAwareScrollView 
       testID={testID}
       style={container}
       contentContainerStyle={content}
@@ -56,11 +53,31 @@ export default function Screen({
       {children}
     </KeyboardAwareScrollView>
   );
+
+  if (!gradient) return body;
+
+  return (
+    <View style={styles.root}>
+      <LinearGradient
+        pointerEvents="none"
+        {...gradients.cardToBackground()}
+        style={StyleSheet.absoluteFill}
+      />
+      {body}
+    </View>
+  );
 }
 
 export { ScrollView };
 
 const styles = StyleSheet.create({
+  root: { 
+    flex: 1, 
+    backgroundColor: colors.background 
+  },
+  transparent: { 
+    backgroundColor: 'transparent' 
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,

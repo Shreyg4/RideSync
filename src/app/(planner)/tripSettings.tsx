@@ -10,7 +10,7 @@ const TripSettingsScreen = () => {
     <View style={{ flex: 1 }}>
       <LinearGradient
         pointerEvents="none"
-        {...gradients.cardToBackground}
+        {...gradients.cardToBackground(0.2)}
         style={StyleSheet.absoluteFill}
       />
       <ScreenHeader title="Trip Settings" onBack={() => router.back()} />

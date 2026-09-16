@@ -20,7 +20,7 @@ const PlannerScreen = () => {
       <View>
         <LinearGradient
           pointerEvents="none"
-          {...gradients.cardToBackground}
+          {...gradients.cardToBackground()}
           style={StyleSheet.absoluteFill}
         />
         <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
@@ -72,7 +72,7 @@ const PlannerScreen = () => {
       <LinearGradient
         colors={[colors.background, 'transparent']}
         pointerEvents="none"
-        style={[styles.headerFade, { top: insets.top + headerHeight }]}
+        style={[styles.headerFade, { top: headerHeight }]}
       />
     </View>
   );

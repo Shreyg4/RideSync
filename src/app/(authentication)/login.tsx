@@ -6,7 +6,7 @@ import LargeButton from '@/src/components/LargeButton';
 import { ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
+import { colors, spacing, fontSize, fontWeight, gradients } from '@/src/constants/theme';
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
 import { useAuth } from '@/src/context/AuthProvider';
@@ -16,10 +16,8 @@ import {
   validateLoginForm,
   type LoginFieldErrors,
 } from '@/src/validation/userForms';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Sign-in screen. Errors come in two tiers:
-//  - errors: per-field problems we can spot locally (missing password, malformed email)
-//  - formError: whatever the server said, shown once above the button and never pinned to a field.
 const LoginScreen = () => {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
@@ -64,7 +62,7 @@ const LoginScreen = () => {
         accessibilityLabel="Go back"
         style={[styles.back, { top: insets.top }]}
       />
-      <Screen scroll bottomOffset={spacing.xxl}>
+      <Screen scroll center gradient bottomOffset={spacing.xxl}>
         <Text style={styles.text}>Login</Text>
         <TextBox
           value={email}
@@ -113,7 +111,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     fontWeight: fontWeight.heavy,
     textAlign: 'center',
-    marginTop: spacing.xxl * 2,
   },
   fieldError: {
     marginLeft: spacing.md,

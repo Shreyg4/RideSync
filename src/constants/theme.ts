@@ -49,11 +49,11 @@ export const radii = {
 } as const;
 
 export const gradients = {
-  cardToBackground: {
+  cardToBackground: (endY: number = 1) => ({
     colors: [colors.card, colors.background] as const,
     start: { x: 0, y: 0 },
-    end: { x: 0, y: 0.7 },
-  },
+    end: { x: 0, y: endY },
+  }),
   topFade: {
     colors: [colors.background, colors.background, 'transparent'] as const,
     locations: [0, 0, 1] as const,
