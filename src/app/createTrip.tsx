@@ -1,16 +1,7 @@
 import { View, Text, StyleSheet, Pressable, Platform, Modal } from 'react-native';
 import React, { useState } from 'react';
 import TextBox from '@components/TextBox';
-import {
-  colors,
-  spacing,
-  fontSize,
-  fontWeight,
-  radii,
-  gradients,
-  contentWidth,
-} from '@/src/constants/theme';
-import { LinearGradient } from 'expo-linear-gradient';
+import { colors, spacing, fontSize, fontWeight, radii, contentWidth } from '@/src/constants/theme';
 import { ImagePlus, MapPin, Repeat, Calendar, Clock } from 'lucide-react-native';
 import { haptics } from '../constants/haptics';
 import { pressFeedback } from '../constants/pressFeedback';
@@ -69,7 +60,7 @@ const CreateTripScreen = () => {
           title="Create Trip"
           onBack={Platform.OS === 'android' ? () => router.dismiss() : undefined}
           applyTopInset={Platform.OS === 'android'}
-          style={{paddingVertical: 25}}
+          style={{ paddingVertical: spacing.xl }}
         />
 
         <TextBox
