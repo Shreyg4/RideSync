@@ -63,6 +63,7 @@ const config: ExpoConfig = {
         organization: 'shreyas-7d',
       },
     ],
+    './plugins/withPodsDeploymentTarget',
   ],
   experiments: {
     typedRoutes: true,
