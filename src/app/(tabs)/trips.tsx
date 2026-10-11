@@ -1,12 +1,32 @@
+import { useCallback, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import TripList from '@/src/components/TripList';
-import trips from '@/src/__fixtures__/trips';
+import { useAsync } from '@/src/hooks/useAsync';
+import { listTrips } from '@/src/services/tripService';
+import { toTrip } from '@/src/lib/tripMapper';
+
+const loadTrips = async () => (await listTrips()).map(toTrip);
 
 export default function TripsScreen() {
+  const { data, loading, error, reload } = useAsync(loadTrips, [], 'TripsScreen.listTrips');
+
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      reload();
+    }, [reload])
+  );
+
   return (
     <TripList
-      data={trips}
-      emptyTitle="No upcoming trips"
-      emptySubtitle="Press the + button to create a trip or join one"
+      data={data ?? []}
+      loading={loading && !data}
+      emptyTitle={error ? "Couldn't load trips" : 'No upcoming trips'}
+      emptySubtitle={error ?? 'Press the + button to create a trip or join one'}
       testID="trips-list"
     />
   );

@@ -19,3 +19,5 @@ export const TRIP_STATUSES = ['planning', 'in-trip', 'completed'] as const;
 export type TripStatus = (typeof TRIP_STATUSES)[number];
 
 export const tripTypeLabel = (value: TripType) => value.charAt(0).toUpperCase() + value.slice(1);
+export const tripStatusLabel = (value: TripStatus) =>
+  (value.charAt(0).toUpperCase() + value.slice(1)).replace('-', ' ');

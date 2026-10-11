@@ -26,11 +26,15 @@ import {
   normalizeTripName,
   validateCreateTripForm,
 } from '../validation/tripForms';
+import { useAuth } from '../context/AuthProvider';
+import { createTripWithImage } from '../services/tripCreationService';
+import { reportAndDescribe } from '../services/errors';
 
 const TRIP_TYPE_ICONS = { 'one-way': MapPin, 'round-trip': Repeat } as const;
 
 const CreateTripScreen = () => {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   const [tripName, setTripName] = useState('');
   const [startsAt, setStartsAt] = useState<Date | null>(null);
@@ -111,11 +115,29 @@ const CreateTripScreen = () => {
       timePicked: picked.time,
     });
     setErrors(found);
-    if (Object.keys(found).length > 0) {
+    if (Object.keys(found).length > 0 || !selectedType || !startsAt) return;
+
+    if (!user) {
+      setFormError('You need to be signed in to create a trip.');
       return;
     }
+
     setLoading(true);
-    router.replace('/(tabs)/trips');
+    try {
+      await createTripWithImage({
+        userId: user.id,
+        name,
+        tripType: selectedType,
+        startsAt,
+        image: tripImageAsset
+          ? { uri: tripImageAsset.uri, mimeType: tripImageAsset.mimeType }
+          : null,
+      });
+      router.replace('/(tabs)/trips');
+    } catch (error) {
+      setFormError(reportAndDescribe(error, { scope: 'createTrip.handleCreateTrip' }));
+      setLoading(false);
+    }
   };
 
   return (
@@ -242,7 +264,7 @@ const CreateTripScreen = () => {
         </Pressable>
         <ErrorText message={formError} style={styles.formError} />
 
-        <LargeButton label="Create Trip" disabled={false} onPress={handleCreateTrip} />
+        <LargeButton label="Create Trip" disabled={loading} onPress={handleCreateTrip} />
       </Screen>
       {/* iOS only - Android opens its own dialog from openPicker() above. */}
       {Platform.OS === 'ios' && (

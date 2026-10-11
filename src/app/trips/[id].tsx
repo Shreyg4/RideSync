@@ -1,32 +1,75 @@
-import trips from '@/src/__fixtures__/trips';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import React from 'react';
-import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import SmallButton from '@/src/components/SmallButton';
-import { ChevronLeft, Dot, Pencil } from 'lucide-react-native';
+import { ChevronLeft, Dot, Pencil, Share2 } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
+import LoadingState from '@/src/components/LoadingState';
+import EmptyState from '@/src/components/EmptyState';
+import { useAsync } from '@/src/hooks/useAsync';
+import { getTrip } from '@/src/services/tripService';
+import { toTrip } from '@/src/lib/tripMapper';
+import { reportError } from '@/src/lib/logger';
+import { tripStatusLabel, tripTypeLabel, type TripStatus } from '@/src/domain/rules';
 
 const TripDetailsScreen = () => {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
-  const tripId = Array.isArray(id) ? id[0] : id;
-  const trip = trips.find((t) => t.id.toString() === tripId);
+  const tripId = Number(Array.isArray(id) ? id[0] : id);
 
-  if (!trip) {
-    return <Text>Trip not Found</Text>;
+  const {
+    data: row,
+    loading,
+    error,
+  } = useAsync(
+    () => (Number.isInteger(tripId) ? getTrip(tripId) : Promise.resolve(null)),
+    [tripId],
+    'TripDetailsScreen.getTrip'
+  );
+
+  const backButton = (
+    <SmallButton
+      icon={ChevronLeft}
+      onPress={() => router.back()}
+      accessibilityLabel="Go back"
+      style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
+    />
+  );
+
+  if (loading || !row) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        {loading ? (
+          <LoadingState testID="trip-details-loading" />
+        ) : (
+          <EmptyState
+            title={error ? "Couldn't load trip" : 'Trip not found'}
+            subtitle={error ?? undefined}
+          />
+        )}
+        {backButton}
+      </View>
+    );
   }
+
+  const trip = toTrip(row);
+  const inviteUrl = Linking.createURL(`invite/${row.invite_link}`);
+
+  const shareInvite = () => {
+    Share.share({ message: `Join my trip "${trip.name}" on RideSync: ${inviteUrl}` }).catch(
+      (shareError) => reportError(shareError, { scope: 'TripDetailsScreen.shareInvite' })
+    );
+  };
 
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -43,25 +86,33 @@ const TripDetailsScreen = () => {
             locations={[0, 0.7, 0.85]}
             style={StyleSheet.absoluteFill}
           />
-          <Text style={styles.title}>{trip?.name}</Text>
+          <Text style={styles.title}>{trip.name}</Text>
         </ImageBackground>
 
-        {/* Date, Time, Type, Form are listed here */}
+        {/* Date, Time, Type are listed here */}
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Date & Time</Text>
           <Text style={styles.text}>
-            {trip.departureDate} <Dot {...iconProps} /> {trip.departureTime}{' '}
+            {trip.departureDate} <Dot {...iconProps} /> {trip.departureTime}
           </Text>
           <Text style={[styles.subHeading, { marginTop: 10 }]}>Type</Text>
-          <Text style={styles.text}>
-            {trip.duration} <Dot {...iconProps} /> {trip.tripType}{' '}
-          </Text>
+          <Text style={styles.text}>{tripTypeLabel(trip.tripType)}</Text>
+          <Text style={[styles.subHeading, { marginTop: 10 }]}>Status</Text>
+          <Text style={styles.text}>{tripStatusLabel(row.trip_status as TripStatus)}</Text>
         </View>
 
-        {/* Shows who is a part of the trip */}
+        {/* Shows who is a part of the trip, and how to invite more */}
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Members</Text>
-          <Text style={styles.text}>There are {trip?.numMembers} on this trip</Text>
+          <Text style={[styles.text, { paddingBottom: spacing.lg }]}>
+            {trip.numMembers} {trip.numMembers === 1 ? 'person is' : 'people are'} on this trip
+          </Text>
+          <LargeButton
+            icon={Share2}
+            label="Invite friends"
+            variant="dashed"
+            onPress={shareInvite}
+          />
         </View>
 
         {/* Where itinerary will be listed */}
@@ -88,12 +139,7 @@ const TripDetailsScreen = () => {
         locations={[0, 0.15]}
         style={StyleSheet.absoluteFill}
       />
-      <SmallButton
-        icon={ChevronLeft}
-        onPress={() => router.back()}
-        accessibilityLabel="Go back"
-        style={{ position: 'absolute', left: 15, top: insets.top, zIndex: 10 }}
-      />
+      {backButton}
     </View>
   );
 };

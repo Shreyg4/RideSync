@@ -6,9 +6,9 @@ import { supabase } from '@/src/lib/supabase';
 import type { Database } from '@/src/types/database';
 
 export type TripRow = Database['public']['Tables']['trips']['Row'];
-export type NewTrip = Omit<
+export type NewTrip = Pick<
   Database['public']['Tables']['trips']['Insert'],
-  'id' | 'owner_id' | 'created_at' | 'updated_at'
+  'name' | 'starts_at' | 'trip_type' | 'image_url'
 >;
 
 export const listTrips = async (): Promise<TripRow[]> => {
@@ -21,7 +21,7 @@ export const listTrips = async (): Promise<TripRow[]> => {
 };
 
 export const getTrip = async (id: number): Promise<TripRow | null> => {
-  const { data, error } = await supabase.from('trips').select('*').eq('id', id).single();
+  const { data, error } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   return data;
 };

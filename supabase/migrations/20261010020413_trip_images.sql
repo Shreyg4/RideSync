@@ -9,7 +9,7 @@ values (
 on conflict (id) do nothing;
 
 create policy "upload trip image" 
-on storage.objects for insert in authenticated
+on storage.objects for insert to authenticated
 with check (
   bucket_id = 'trip-images'
   and (storage.foldername(name))[1] = (select auth.uid())::text

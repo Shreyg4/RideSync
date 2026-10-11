@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { Calendar, Dot, Users } from 'lucide-react-native';
 import { colors, fontWeight, radii, gradients } from '@/src/constants/theme';
 import { tripImageSource } from '@/src/constants/tripImage';
+import { tripTypeLabel } from '../domain/rules';
 
 type TripListItemProps = {
   trip: Trip;
@@ -39,11 +40,14 @@ const TripListItem = ({ trip }: TripListItemProps) => {
         {/* Meta row: members | time | type, separated by Dot icons */}
         <View style={styles.infoContainer}>
           <Users {...iconProps} />
-          <Text style={styles.info}> {trip.numMembers} members</Text>
+          <Text style={styles.info}>
+            {' '}
+            {trip.numMembers} {trip.numMembers === 1 ? 'member' : 'members'}
+          </Text>
           <Dot {...iconProps} />
           <Text style={styles.info}>{trip.departureTime}</Text>
           <Dot {...iconProps} />
-          <Text style={styles.info}>{trip.duration}</Text>
+          <Text style={styles.info}>{tripTypeLabel(trip.tripType)}</Text>
         </View>
       </ImageBackground>
     </Pressable>

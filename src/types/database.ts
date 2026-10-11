@@ -1,7 +1,3 @@
-/**
- * @file database.ts
- * @description A generated file that mirrors the supabase prostgeres schema in typescript
- */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
@@ -67,7 +63,7 @@ export type Database = {
           created_at?: string;
           id?: never;
           image_url?: string | null;
-          invite_link: string;
+          invite_link?: string;
           name: string;
           owner_id?: string;
           starts_at: string;
