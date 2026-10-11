@@ -9,6 +9,7 @@ type FieldButtonProps = {
   placeholder: string;
   icon?: LucideIcon;
   onPress: () => void;
+  active?: boolean; // highlights the border while this field's picker is open, matching TextBox's focus ring
   testID?: string;
   style?: StyleProp<ViewStyle>;
 };
@@ -18,6 +19,7 @@ export default function FieldButton({
   placeholder,
   icon: Icon,
   onPress,
+  active = false,
   testID,
   style,
 }: FieldButtonProps) {
@@ -37,7 +39,7 @@ export default function FieldButton({
           height: 60,
           borderRadius: radii.lg,
           borderWidth: 1,
-          borderColor: colors.textMutedLight,
+          borderColor: active ? colors.tint : colors.textMutedLight,
           backgroundColor: colors.card,
           marginVertical: spacing.sm,
           alignSelf: 'center',

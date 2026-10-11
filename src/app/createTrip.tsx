@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, Pressable, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, Modal, Image, Keyboard } from 'react-native';
 import React, { useState } from 'react';
 import TextBox from '@components/TextBox';
 import { colors, spacing, fontSize, fontWeight, radii, contentWidth } from '@/src/constants/theme';
-import { ImagePlus, MapPin, Repeat, Calendar, Clock } from 'lucide-react-native';
+import { ImagePlus, MapPin, Repeat, Calendar, Clock, X } from 'lucide-react-native';
 import { haptics } from '../constants/haptics';
 import { pressFeedback } from '../constants/pressFeedback';
 import LargeButton from '@/src/components/LargeButton';
@@ -15,8 +15,17 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import FieldButton from '@/src/components/FieldButton';
-import { TRIP_TYPES, tripTypeLabel } from '@/src/domain/rules';
+import { TRIP_NAME_MAX_LENGTH, TRIP_TYPES, tripTypeLabel } from '@/src/domain/rules';
 import { mergeDateTime } from '@/src/lib/dateTime';
+import * as ImagePicker from 'expo-image-picker';
+import SmallButton from '../components/SmallButton';
+import ErrorText from '../components/ErrorText';
+import { TripType } from '../types/trip';
+import {
+  CreateTripFieldErrors,
+  normalizeTripName,
+  validateCreateTripForm,
+} from '../validation/tripForms';
 
 const TRIP_TYPE_ICONS = { 'one-way': MapPin, 'round-trip': Repeat } as const;
 
@@ -24,35 +33,91 @@ const CreateTripScreen = () => {
   const insets = useSafeAreaInsets();
 
   const [tripName, setTripName] = useState('');
-
   const [startsAt, setStartsAt] = useState<Date | null>(null);
+  const [picked, setPicked] = useState({ date: false, time: false });
   const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<TripType | null>(null);
+  const [errors, setErrors] = useState<CreateTripFieldErrors>({});
+  const [formError, setFormError] = useState<string>();
+  const [tripImageAsset, setTripImageAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Drops the given fields' errors once the user changes them, so stale messages don't linger until the next submit.
+  const clearErrors = (...keys: (keyof CreateTripFieldErrors)[]) =>
+    setErrors((prev) =>
+      keys.some((k) => prev[k])
+        ? { ...prev, ...Object.fromEntries(keys.map((k) => [k, undefined])) }
+        : prev
+    );
 
   // Mode arrives as an argument instead of being read out of state
-  const handlePicked = (which: 'date' | 'time') => (event: DateTimePickerEvent, picked?: Date) => {
-    if (event.type === 'dismissed' || !picked) return;
-    setStartsAt((prev) => mergeDateTime(prev, picked, which));
+  const handlePicked = (which: 'date' | 'time') => (event: DateTimePickerEvent, value?: Date) => {
+    if (event.type === 'dismissed' || !value) return;
+    setStartsAt((prev) => mergeDateTime(prev, value, which));
+    setPicked((p) => ({ ...p, [which]: true }));
+    clearErrors('date', 'time');
   };
 
   // Android's picker is a system dialog, not a view, so it's opened imperatively and
-  // dismisses itself. iOS renders inline, so there `pickerMode` drives the Modal below.
+  // dismisses itself.
   const openPicker = (which: 'date' | 'time') => {
+    Keyboard.dismiss();
+    setPickerMode(which);
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         value: startsAt ?? new Date(),
         mode: which,
         display: which === 'date' ? 'calendar' : 'spinner',
-        onChange: handlePicked(which),
+        minimumDate: which === 'date' ? new Date() : undefined,
+        // Fires on both set and dismiss, so the field's highlight clears either way
+        onChange: (event, value) => {
+          setPickerMode(null);
+          handlePicked(which)(event, value);
+        },
       });
-      return;
     }
-    setPickerMode(which);
   };
 
   const closePicker = () => {
     setPickerMode(null);
   };
+
+  const pickTripImage = async () => {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) {
+      setFormError('Photo access is off. Enable it in Settings to pick a picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true, // gives user crop step
+      aspect: [5, 3], // box crop
+      quality: 0.7, // JPEG compression
+    });
+
+    if (result.canceled) return;
+    setTripImageAsset(result.assets[0]);
+  };
+
+  const handleCreateTrip = async () => {
+    setFormError(undefined);
+    const name = normalizeTripName(tripName);
+    const found = validateCreateTripForm({
+      name,
+      tripType: selectedType,
+      startsAt,
+      datePicked: picked.date,
+      timePicked: picked.time,
+    });
+    setErrors(found);
+    if (Object.keys(found).length > 0) {
+      return;
+    }
+    setLoading(true);
+    router.replace('/(tabs)/trips');
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Screen scroll gradient bottomOffset={spacing.lg}>
@@ -65,10 +130,16 @@ const CreateTripScreen = () => {
 
         <TextBox
           value={tripName}
-          onChangeText={setTripName}
+          onChangeText={(text) => {
+            setTripName(text);
+            clearErrors('name');
+          }}
+          error={!!errors.name}
           placeholder="Enter trip name"
+          maxLength={TRIP_NAME_MAX_LENGTH}
           style={{ marginTop: 0 }}
         />
+        <ErrorText message={errors.name} style={styles.fieldError} />
 
         {/* Select which type of trip this will be */}
         <View style={[styles.types, { margin: 10 }]}>
@@ -79,6 +150,7 @@ const CreateTripScreen = () => {
                 key={tripType}
                 onPress={() => {
                   setSelectedType(tripType);
+                  clearErrors('tripType');
                   haptics.action();
                 }}
                 // Styling of selected pill
@@ -99,46 +171,78 @@ const CreateTripScreen = () => {
             );
           })}
         </View>
+        <ErrorText message={errors.tripType} style={styles.fieldError} />
 
         <FieldButton
           text={
-            startsAt &&
-            startsAt.toLocaleDateString(undefined, {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-            })
+            picked.date && startsAt
+              ? startsAt.toLocaleDateString(undefined, {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : null
           }
           placeholder="Start Date"
           icon={Calendar}
+          active={pickerMode === 'date'}
           onPress={() => openPicker('date')}
         />
+        <ErrorText message={errors.date} style={styles.fieldError} />
 
         <FieldButton
           text={
-            startsAt &&
-            startsAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+            picked.time && startsAt
+              ? startsAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+              : null
           }
           placeholder="Start Time"
           icon={Clock}
+          active={pickerMode === 'time'}
           onPress={() => openPicker('time')}
         />
+        <ErrorText message={errors.time} style={styles.fieldError} />
         {/* Button for user to include an image */}
         <Pressable
           onPress={() => {
             haptics.action();
+            pickTripImage();
           }}
-          style={({ pressed }) => [[styles.imageBox, pressFeedback.card(pressed), { margin: 10 }]]}
+          style={({ pressed }) => [
+            styles.imageBox,
+            tripImageAsset && styles.imageBoxFilled,
+            pressFeedback.card(pressed),
+            { margin: 10 },
+          ]}
         >
-          <ImagePlus color={colors.textMutedLight} style={{ marginBottom: 10 }} />
-          <Text style={{ color: colors.textMutedLight }}>Add cover image (optional)</Text>
+          {tripImageAsset ? (
+            <>
+              <Image
+                source={{ uri: tripImageAsset.uri }}
+                style={styles.imagePreview}
+                resizeMode="cover"
+              />
+              <SmallButton
+                icon={X}
+                onPress={() => setTripImageAsset(null)}
+                accessibilityLabel="Remove cover image"
+                diameter={32}
+                size={18}
+                color={colors.text}
+                backgroundColor="rgba(0, 0, 0, 0.6)"
+                style={styles.removeImage}
+              />
+            </>
+          ) : (
+            <>
+              <ImagePlus color={colors.textMutedLight} style={{ marginBottom: 10 }} />
+              <Text style={{ color: colors.textMutedLight }}>Add cover image (optional)</Text>
+            </>
+          )}
         </Pressable>
+        <ErrorText message={formError} style={styles.formError} />
 
-        <LargeButton
-          label="Create Trip"
-          disabled={false}
-          onPress={() => router.replace('/planner')}
-        />
+        <LargeButton label="Create Trip" disabled={false} onPress={handleCreateTrip} />
       </Screen>
       {/* iOS only - Android opens its own dialog from openPicker() above. */}
       {Platform.OS === 'ios' && (
@@ -168,6 +272,7 @@ const CreateTripScreen = () => {
                 mode={pickerMode ?? 'date'} // required prop; `visible` is false when null anyway
                 display={pickerMode === 'date' ? 'inline' : 'spinner'}
                 themeVariant="dark"
+                minimumDate={pickerMode === 'date' ? new Date() : undefined}
                 onChange={handlePicked(pickerMode ?? 'date')}
                 style={{ alignSelf: 'center' }}
               />
@@ -198,13 +303,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderColor: colors.textMutedLight,
     width: contentWidth,
-    aspectRatio: 1.6,
+    aspectRatio: 5 / 3,
     borderWidth: 1,
     borderRadius: radii.lg,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
+    overflow: 'hidden',
   },
   types: {
     backgroundColor: colors.card,
@@ -227,6 +333,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 90,
     paddingVertical: 10,
     borderRadius: radii.lg,
+  },
+  imageBoxFilled: {
+    borderStyle: 'solid',
+    borderColor: colors.border,
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeImage: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+  },
+  formError: {
+    alignSelf: 'center',
+  },
+  fieldError: {
+    marginLeft: spacing.md,
   },
 });
 export default CreateTripScreen;
