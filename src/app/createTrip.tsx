@@ -44,6 +44,7 @@ const CreateTripScreen = () => {
   const [errors, setErrors] = useState<CreateTripFieldErrors>({});
   const [formError, setFormError] = useState<string>();
   const [tripImageAsset, setTripImageAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [pickingImage, setPickingImage] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Drops the given fields' errors once the user changes them, so stale messages don't linger until the next submit.
@@ -87,21 +88,20 @@ const CreateTripScreen = () => {
   };
 
   const pickTripImage = async () => {
-    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!granted) {
-      setFormError('Photo access is off. Enable it in Settings to pick a picture.');
-      return;
+    if (pickingImage) return;
+    setPickingImage(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [5, 3],
+        quality: 0.7,
+      });
+      if (result.canceled) return;
+      setTripImageAsset(result.assets[0]);
+    } finally {
+      setPickingImage(false);
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true, // gives user crop step
-      aspect: [5, 3], // box crop
-      quality: 0.7, // JPEG compression
-    });
-
-    if (result.canceled) return;
-    setTripImageAsset(result.assets[0]);
   };
 
   const handleCreateTrip = async () => {
