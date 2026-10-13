@@ -23,6 +23,7 @@ export interface AuthContextType {
   ) => Promise<User | null>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signIn: authService.signIn,
         signUp: authService.signUp,
         signOut: authService.signOut,
+        deleteAccount: authService.deleteAccount,
       }}
     >
       {children}

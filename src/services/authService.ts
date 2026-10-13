@@ -48,3 +48,12 @@ export const signOut = async (): Promise<void> => {
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) throw error;
 };
+
+export const deleteAccount = async (): Promise<void> => {
+  const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+  if (error) throw error;
+
+  // The session is already dead on the server; this clears encrypted storage and fires SIGNED_OUT
+  const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
+  if (signOutError) throw signOutError;
+};
