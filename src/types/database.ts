@@ -28,23 +28,97 @@ export type Database = {
   };
   public: {
     Tables: {
-      deleted_avatars: {
+      saved_trips: {
         Row: {
-          path: string;
-          queued_at: string;
+          id: number;
+          image_url: string | null;
+          name: string;
+          saved_at: string;
+          stops: Json;
+          trip_type: string;
           user_id: string;
         };
         Insert: {
-          path: string;
-          queued_at?: string;
+          id?: never;
+          image_url?: string | null;
+          name: string;
+          saved_at?: string;
+          stops?: Json;
+          trip_type: string;
           user_id: string;
         };
         Update: {
-          path?: string;
-          queued_at?: string;
+          id?: never;
+          image_url?: string | null;
+          name?: string;
+          saved_at?: string;
+          stops?: Json;
+          trip_type?: string;
           user_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'saved_trips_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      storage_cleanup_queue: {
+        Row: {
+          bucket_id: string;
+          path: string;
+          queued_at: string;
+        };
+        Insert: {
+          bucket_id: string;
+          path: string;
+          queued_at?: string;
+        };
+        Update: {
+          bucket_id?: string;
+          path?: string;
+          queued_at?: string;
+        };
         Relationships: [];
+      };
+      trip_members: {
+        Row: {
+          joined_at: string;
+          role: string;
+          trip_id: number;
+          user_id: string;
+        };
+        Insert: {
+          joined_at?: string;
+          role?: string;
+          trip_id: number;
+          user_id: string;
+        };
+        Update: {
+          joined_at?: string;
+          role?: string;
+          trip_id?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'trip_members_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'trips';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'trip_members_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       trips: {
         Row: {
@@ -134,6 +208,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      cancel_trip: { Args: { target_trip_id: number }; Returns: undefined };
+      generate_join_code: { Args: never; Returns: string };
+      join_trip: { Args: { code: string }; Returns: number };
+      start_saved_trip: {
+        Args: { new_starts_at: string; saved_trip_id: number };
+        Returns: number;
+      };
+      transfer_trip_ownership: {
+        Args: { new_owner_id: string; target_trip_id: number };
+        Returns: undefined;
+      };
+      trip_role: { Args: { target_trip_id: number }; Returns: string };
       username_available: { Args: { candidate: string }; Returns: boolean };
     };
     Enums: {

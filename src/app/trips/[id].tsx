@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import SmallButton from '@/src/components/SmallButton';
-import { ChevronLeft, Dot, Pencil, Share2 } from 'lucide-react-native';
+import { ChevronLeft, Pencil, Share2 } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
@@ -15,7 +15,7 @@ import { useAsync } from '@/src/hooks/useAsync';
 import { getTrip } from '@/src/services/tripService';
 import { toTrip } from '@/src/lib/tripMapper';
 import { reportError } from '@/src/lib/logger';
-import { tripStatusLabel, tripTypeLabel, type TripStatus } from '@/src/domain/rules';
+import { formatJoinCode, tripTypeLabel } from '@/src/domain/rules';
 
 const TripDetailsScreen = () => {
   const insets = useSafeAreaInsets();
@@ -59,12 +59,13 @@ const TripDetailsScreen = () => {
   }
 
   const trip = toTrip(row);
+  const joinCode = formatJoinCode(row.invite_link);
   const inviteUrl = Linking.createURL(`invite/${row.invite_link}`);
 
   const shareInvite = () => {
-    Share.share({ message: `Join my trip "${trip.name}" on RideSync: ${inviteUrl}` }).catch(
-      (shareError) => reportError(shareError, { scope: 'TripDetailsScreen.shareInvite' })
-    );
+    Share.share({
+      message: `Join my trip "${trip.name}" on RideSync with code ${joinCode}\n${inviteUrl}`,
+    }).catch((shareError) => reportError(shareError, { scope: 'TripDetailsScreen.shareInvite' }));
   };
 
   return (
@@ -90,19 +91,36 @@ const TripDetailsScreen = () => {
         </ImageBackground>
 
         {/* Date, Time, Type are listed here */}
-        <View style={styles.subContainer}>
-          <Text style={styles.subHeading}>Date & Time</Text>
-          <Text style={styles.text}>
-            {trip.departureDate} <Dot {...iconProps} /> {trip.departureTime}
+        <View style={styles.subContainerInfo}>
+          <View style={styles.row}>
+            <Text
+              style={[styles.infoText, styles.inlineInfo]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {trip.departureDate}
+            </Text>
+            <View style={styles.verticalLine} />
+            <Text
+              style={[styles.infoText, styles.inlineInfo]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {trip.departureTime}
+            </Text>
+          </View>
+
+          <Text style={[styles.infoText, styles.centerText]} numberOfLines={1} adjustsFontSizeToFit>
+            {tripTypeLabel(trip.tripType)}
           </Text>
-          <Text style={[styles.subHeading, { marginTop: 10 }]}>Type</Text>
-          <Text style={styles.text}>{tripTypeLabel(trip.tripType)}</Text>
-          <Text style={[styles.subHeading, { marginTop: 10 }]}>Status</Text>
-          <Text style={styles.text}>{tripStatusLabel(row.trip_status as TripStatus)}</Text>
         </View>
 
         {/* Shows who is a part of the trip, and how to invite more */}
         <View style={styles.subContainer}>
+          <Text style={[styles.text, styles.centerText]}>Join Code</Text>
+          <Text style={[styles.centerText, styles.infoText]} selectable testID="trip-join-code">
+            {joinCode}
+          </Text>
           <Text style={styles.subHeading}>Members</Text>
           <Text style={[styles.text, { paddingBottom: spacing.lg }]}>
             {trip.numMembers} {trip.numMembers === 1 ? 'person is' : 'people are'} on this trip
@@ -155,7 +173,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.screenTitle,
     fontWeight: fontWeight.heavy,
-    marginTop: 210,
+    marginTop: 'auto',
     textAlign: 'center',
   },
   subContainer: {
@@ -164,11 +182,38 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     backgroundColor: colors.card,
   },
+  subContainerInfo: {
+    margin: 20,
+  },
   subHeading: {
     color: colors.text,
     fontSize: fontSize.sheetTitle,
     fontWeight: fontWeight.heavy,
     marginBottom: 10,
+  },
+  centerText: {
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  inlineInfo: {
+    flexShrink: 1,
+  },
+  verticalLine: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: colors.textMutedLight,
+    marginHorizontal: spacing.md,
+  },
+  infoText: {
+    color: colors.tint,
+    fontSize: fontSize.sheetTitle,
+    fontWeight: fontWeight.heavy,
   },
   text: {
     color: colors.tintSubtle,
@@ -176,8 +221,3 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.regular,
   },
 });
-
-const iconProps = {
-  color: colors.tintSubtle,
-  size: 15,
-};

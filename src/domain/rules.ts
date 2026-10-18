@@ -21,3 +21,8 @@ export type TripStatus = (typeof TRIP_STATUSES)[number];
 export const tripTypeLabel = (value: TripType) => value.charAt(0).toUpperCase() + value.slice(1);
 export const tripStatusLabel = (value: TripStatus) =>
   (value.charAt(0).toUpperCase() + value.slice(1)).replace('-', ' ');
+
+export const JOIN_CODE_LENGTH = 8;
+
+export const formatJoinCode = (code: string) =>
+  code.length > 4 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;

@@ -31,3 +31,10 @@ export const createTrip = async (trip: NewTrip): Promise<TripRow> => {
   if (error) throw error;
   return data;
 };
+
+export const joinTrip = async (code: string): Promise<number | null> => {
+  const { data, error } = await supabase.rpc('join_trip', { code });
+  if (error?.code === 'P0002') return null;
+  if (error) throw error;
+  return data;
+};

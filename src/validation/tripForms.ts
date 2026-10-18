@@ -4,7 +4,7 @@
  * without rendering a screen.
  */
 
-import { TRIP_NAME_MIN_LENGTH, TRIP_NAME_MAX_LENGTH } from '../domain/rules';
+import { TRIP_NAME_MIN_LENGTH, TRIP_NAME_MAX_LENGTH, JOIN_CODE_LENGTH } from '../domain/rules';
 import type { TripType } from '../types/trip';
 
 export type CreateTripForm = {
@@ -46,3 +46,11 @@ export const validateCreateTripForm = (
 
   return next;
 };
+
+export const normalizeJoinCode = (raw: string) =>
+  raw
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .replace(/O/g, '0')
+    .replace(/[IL]/g, '1')
+    .slice(0, JOIN_CODE_LENGTH);

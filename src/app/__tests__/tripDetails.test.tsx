@@ -27,6 +27,6 @@ describe('TripDetailsScreen', () => {
     withParams({ id: '9999' });
     const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
 
-    expect(view.getByText('Trip not Found')).toBeTruthy();
+    expect(view.getByText('Trip not found')).toBeTruthy();
   });
 });
