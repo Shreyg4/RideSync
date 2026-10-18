@@ -211,6 +211,16 @@ export type Database = {
       cancel_trip: { Args: { target_trip_id: number }; Returns: undefined };
       generate_join_code: { Args: never; Returns: string };
       join_trip: { Args: { code: string }; Returns: number };
+      list_trip_members: {
+        Args: { target_trip_id: number };
+        Returns: {
+          avatar_path: string;
+          display_name: string;
+          joined_at: string;
+          role: string;
+          user_id: string;
+        }[];
+      };
       start_saved_trip: {
         Args: { new_starts_at: string; saved_trip_id: number };
         Returns: number;

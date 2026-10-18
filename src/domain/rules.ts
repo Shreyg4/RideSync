@@ -3,7 +3,7 @@
  * @description The app's single source of truth for the values that dfine
  * what's valid or allowed.
  */
-import type { TripType } from '@/src/types/trip';
+import type { TripType, TripMemberRole } from '@/src/types/trip';
 
 export const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
 export const USERNAME_MIN_LENGTH = 5;
@@ -26,3 +26,6 @@ export const JOIN_CODE_LENGTH = 8;
 
 export const formatJoinCode = (code: string) =>
   code.length > 4 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
+
+export const memberRoleLabel = (value: TripMemberRole) =>
+  value.charAt(0).toUpperCase() + value.slice(1);

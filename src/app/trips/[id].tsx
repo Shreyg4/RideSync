@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import React from 'react';
+import TripMemberList from '@/src/components/TripMemberList';
 import { ImageBackground, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
@@ -12,8 +13,8 @@ import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
 import { useAsync } from '@/src/hooks/useAsync';
-import { getTrip } from '@/src/services/tripService';
-import { toTrip } from '@/src/lib/tripMapper';
+import { getTrip, listTripMembers } from '@/src/services/tripService';
+import { toTrip, toTripMember } from '@/src/lib/tripMapper';
 import { reportError } from '@/src/lib/logger';
 import { formatJoinCode, tripTypeLabel } from '@/src/domain/rules';
 
@@ -30,6 +31,12 @@ const TripDetailsScreen = () => {
     () => (Number.isInteger(tripId) ? getTrip(tripId) : Promise.resolve(null)),
     [tripId],
     'TripDetailsScreen.getTrip'
+  );
+
+  const { data: members } = useAsync(
+    async () => (Number.isInteger(tripId) ? (await listTripMembers(tripId)).map(toTripMember) : []),
+    [tripId],
+    'TripDetailsScreen.listTripMembers'
   );
 
   const backButton = (
@@ -121,10 +128,8 @@ const TripDetailsScreen = () => {
           <Text style={[styles.centerText, styles.infoText]} selectable testID="trip-join-code">
             {joinCode}
           </Text>
-          <Text style={styles.subHeading}>Members</Text>
-          <Text style={[styles.text, { paddingBottom: spacing.lg }]}>
-            {trip.numMembers} {trip.numMembers === 1 ? 'person is' : 'people are'} on this trip
-          </Text>
+          <Text style={[styles.subHeading, { alignSelf: 'center' }]}>Members</Text>
+          <TripMemberList members={members ?? []} testID="trip-members" />
           <LargeButton
             icon={Share2}
             label="Invite friends"

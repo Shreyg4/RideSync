@@ -2,8 +2,9 @@
  * @file tripMapper.ts
  * @description Turns a trips table row on supabase into the Trip shape the list components render
  */
-import type { Trip, TripType } from '../types/trip';
-import type { TripRow } from '../services/tripService';
+import type { Trip, TripType, TripMember, TripMemberRole } from '../types/trip';
+import type { TripRow, TripMemberRow } from '../services/tripService';
+import { avatarUrl } from './avatarStorage';
 import { tripImageUrl } from './tripImageStorage';
 
 export const toTrip = (row: TripRow): Trip => {
@@ -22,3 +23,10 @@ export const toTrip = (row: TripRow): Trip => {
     tripType: row.trip_type as TripType,
   };
 };
+
+export const toTripMember = (row: TripMemberRow): TripMember => ({
+  id: row.user_id,
+  name: row.display_name,
+  avatar: avatarUrl(row.avatar_path),
+  role: row.role as TripMemberRole,
+});

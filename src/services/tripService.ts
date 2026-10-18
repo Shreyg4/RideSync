@@ -38,3 +38,12 @@ export const joinTrip = async (code: string): Promise<number | null> => {
   if (error) throw error;
   return data;
 };
+
+export type TripMemberRow = Database['public']['Functions']['list_trip_members']['Returns'][number];
+
+// Everyone on the trip, owner first, then in the order they joined
+export const listTripMembers = async (tripId: number): Promise<TripMemberRow[]> => {
+  const { data, error } = await supabase.rpc('list_trip_members', { target_trip_id: tripId });
+  if (error) throw error;
+  return data ?? [];
+};
