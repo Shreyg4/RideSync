@@ -211,6 +211,7 @@ export type Database = {
       cancel_trip: { Args: { target_trip_id: number }; Returns: undefined };
       generate_join_code: { Args: never; Returns: string };
       join_trip: { Args: { code: string }; Returns: number };
+      leave_trip: { Args: { target_trip_id: number }; Returns: undefined };
       list_trip_members: {
         Args: { target_trip_id: number };
         Returns: {
@@ -220,6 +221,10 @@ export type Database = {
           role: string;
           user_id: string;
         }[];
+      };
+      pass_trip_ownership: {
+        Args: { old_owner_id: string; target_trip_id: number };
+        Returns: boolean;
       };
       start_saved_trip: {
         Args: { new_starts_at: string; saved_trip_id: number };

@@ -1,14 +1,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import * as Linking from 'expo-linking';
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import TripMemberList from '@/src/components/TripMemberList';
 import { ImageBackground, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import SmallButton from '@/src/components/SmallButton';
-import { ChevronLeft, Pencil, Share2 } from 'lucide-react-native';
+import { ChevronLeft, Pencil, Share2, UserCog } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
@@ -33,10 +33,21 @@ const TripDetailsScreen = () => {
     'TripDetailsScreen.getTrip'
   );
 
-  const { data: members } = useAsync(
+  const { data: members, reload: reloadMembers } = useAsync(
     async () => (Number.isInteger(tripId) ? (await listTripMembers(tripId)).map(toTripMember) : []),
     [tripId],
     'TripDetailsScreen.listTripMembers'
+  );
+
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      reloadMembers();
+    }, [reloadMembers])
   );
 
   const backButton = (
@@ -163,6 +174,12 @@ const TripDetailsScreen = () => {
         style={StyleSheet.absoluteFill}
       />
       {backButton}
+      <SmallButton
+        icon={UserCog}
+        onPress={() => router.push(`/trips/${tripId}/memberSettings`)}
+        accessibilityLabel="Member settings"
+        style={{ position: 'absolute', right: 15, top: insets.top, zIndex: 10 }}
+      />
     </View>
   );
 };
