@@ -121,12 +121,23 @@ const applyAuthDefaults = () => {
   auth.signOut.mockResolvedValue({ data: null, error: null });
 };
 
+const functions = {
+  invoke: jest.fn<(...args: unknown[]) => Promise<Result>>(),
+};
+
+// Edge Function calls succeed with an empty body unless a test stages otherwise
+const applyFunctionDefaults = () => {
+  functions.invoke.mockResolvedValue(emptyResult());
+};
+
 applyAuthDefaults();
+applyFunctionDefaults();
 
 export const supabase = {
   from: jest.fn((table: string) => mockTable(table)),
   rpc: jest.fn(async (fn: string, ..._args: unknown[]) => rpcResults.get(fn) ?? emptyResult()),
   auth,
+  functions,
   storage: { from: jest.fn((bucket: string) => mockBucket(bucket)) },
 };
 
@@ -147,5 +158,7 @@ export const resetSupabaseMock = () => {
   auth.signUp.mockReset();
   auth.signInWithPassword.mockReset();
   auth.signOut.mockReset();
+  functions.invoke.mockReset();
   applyAuthDefaults();
+  applyFunctionDefaults();
 };

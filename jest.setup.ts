@@ -35,13 +35,19 @@ jest.mock('expo-router', () => {
       replace: jest.fn(),
       back: jest.fn(),
       dismiss: jest.fn(),
+      dismissTo: jest.fn(),
     },
     useLocalSearchParams: jest.fn(() => ({})),
     useSegments: jest.fn(() => []),
     // Runs the callback once on mount, the way a screen's first focus would.
     useFocusEffect: (effect: React.EffectCallback) => React.useEffect(effect, [effect]),
-    Redirect: ({ href }: { href: string }) =>
-      React.createElement(Text, { testID: 'redirect' }, String(href)),
+    // An object href ({ pathname, params }) prints as JSON so a test can read its params
+    Redirect: ({ href }: { href: unknown }) =>
+      React.createElement(
+        Text,
+        { testID: 'redirect' },
+        typeof href === 'string' ? href : JSON.stringify(href)
+      ),
     Link: ({ children }: { children: React.ReactNode }) => children,
     Stack: Object.assign(({ children }: { children?: React.ReactNode }) => children ?? null, {
       Screen: () => null,

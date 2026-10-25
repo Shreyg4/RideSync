@@ -8,7 +8,6 @@ const trips: Trip[] = [
     name: 'Mount Rainier',
     departureDate: '07/10/2026',
     departureTime: '7:00 AM',
-    duration: 'single-day',
     tripType: 'round-trip',
   },
   {
@@ -19,7 +18,6 @@ const trips: Trip[] = [
     name: 'World Cup Trip',
     departureDate: '07/19/2026',
     departureTime: '7:00 AM',
-    duration: 'multi-day',
     tripType: 'round-trip',
   },
   {
@@ -29,7 +27,6 @@ const trips: Trip[] = [
     name: 'A Road Trip',
     departureDate: '09/2/2026',
     departureTime: '9:00 AM',
-    duration: 'multi-day',
     tripType: 'one-way',
   },
   {
@@ -40,7 +37,6 @@ const trips: Trip[] = [
     name: 'A Trip',
     departureDate: '10/8/2026',
     departureTime: '2:00 PM',
-    duration: 'multi-day',
     tripType: 'one-way',
   },
 ];

@@ -1,7 +1,10 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { Share } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import TripDetailsScreen from '../trips/[id]';
+import { setErrorReporter } from '@/src/lib/logger';
 import type { TripMemberRow, TripRow } from '@/src/services/tripService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockRpc, mockTable } from '@/src/test/supabase';
@@ -34,6 +37,10 @@ const memberRow = (overrides: Partial<TripMemberRow> = {}): TripMemberRow => ({
 const withParams = (params: Record<string, unknown>) => {
   (useLocalSearchParams as jest.Mock).mockReturnValue(params);
 };
+
+afterEach(() => {
+  setErrorReporter(null);
+});
 
 describe('TripDetailsScreen', () => {
   it('loads the trip named by the id param', async () => {
@@ -83,5 +90,48 @@ describe('TripDetailsScreen', () => {
 
     expect(await view.findByText("Couldn't load trip")).toBeTruthy();
     expect(view.getByText('We could not find that.')).toBeTruthy();
+  });
+
+  it('shares the formatted join code and the invite link', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    await fireEvent.press(await view.findByLabelText('Invite friends'));
+
+    expect(share).toHaveBeenCalledWith({
+      message:
+        'Join my trip "Coast Run" on RideSync with code ABCD-2345\nridesync://invite/ABCD2345',
+    });
+  });
+
+  it('reports a failed share and stays on the trip', async () => {
+    const reporter = jest.fn();
+    setErrorReporter(reporter);
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const shareError = new Error('share sheet unavailable');
+    jest.spyOn(Share, 'share').mockRejectedValueOnce(shareError);
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    await fireEvent.press(await view.findByLabelText('Invite friends'));
+
+    await waitFor(() =>
+      expect(reporter).toHaveBeenCalledWith(shareError, { scope: 'TripDetailsScreen.shareInvite' })
+    );
+    expect(view.getByText('Coast Run')).toBeTruthy();
+  });
+
+  it('opens member settings for this trip', async () => {
+    (router.push as jest.Mock).mockClear();
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    await fireEvent.press(await view.findByLabelText('Member settings'));
+
+    expect(router.push).toHaveBeenCalledWith('/trips/1/memberSettings');
   });
 });
