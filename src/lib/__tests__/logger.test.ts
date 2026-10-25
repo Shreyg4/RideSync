@@ -151,6 +151,30 @@ describe('redact', () => {
     expect(() => redact({ error })).not.toThrow();
     expect(JSON.stringify(redact({ error }))).toContain('[truncated]');
   });
+
+  it('caps a long string at 512 characters', () => {
+    expect(redact({ exact: 'a'.repeat(512), long: 'a'.repeat(600) })).toEqual({
+      exact: 'a'.repeat(512),
+      long: `${'a'.repeat(512)}…`,
+    });
+  });
+
+  it('keeps the first 20 array items and counts the rest', () => {
+    const ids = Array.from({ length: 25 }, (_, i) => i);
+
+    expect(redact({ exact: ids.slice(0, 20), long: ids })).toEqual({
+      exact: ids.slice(0, 20),
+      long: [...ids.slice(0, 20), '[truncated] (5 more)'],
+    });
+  });
+
+  it('turns bigints, functions and symbols into strings', () => {
+    expect(redact({ big: BigInt(10), fn: () => {}, sym: Symbol('x') })).toEqual({
+      big: '10',
+      fn: '[function]',
+      sym: '[symbol]',
+    });
+  });
 });
 
 describe('logger', () => {
@@ -167,6 +191,12 @@ describe('logger', () => {
     logger.debug('checking rider@example.com');
 
     expect(consoleSpies.log).toHaveBeenCalledWith('[debug] checking [redacted]');
+  });
+
+  it('prints errors through console.error', () => {
+    logger.error('save failed', { tripId: 3 });
+
+    expect(consoleSpies.error).toHaveBeenCalledWith('[error] save failed', { tripId: 3 });
   });
 });
 

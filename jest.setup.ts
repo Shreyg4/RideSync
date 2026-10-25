@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { afterEach, beforeEach, jest } from '@jest/globals';
 import { cleanup } from '@testing-library/react-native';
 import * as supabaseModule from '@/src/lib/supabase';
@@ -16,6 +17,11 @@ jest.mock('react-native-keyboard-controller', () =>
   require('react-native-keyboard-controller/jest')
 );
 
+// The real createURL reads the scheme from the app manifest, which Jest never loads.
+jest.mock('expo-linking', () => ({
+  createURL: (path: string) => `ridesync://${path}`,
+}));
+
 jest.mock('@react-navigation/bottom-tabs', () => ({
   useBottomTabBarHeight: () => 60,
 }));
@@ -32,6 +38,8 @@ jest.mock('expo-router', () => {
     },
     useLocalSearchParams: jest.fn(() => ({})),
     useSegments: jest.fn(() => []),
+    // Runs the callback once on mount, the way a screen's first focus would.
+    useFocusEffect: (effect: React.EffectCallback) => React.useEffect(effect, [effect]),
     Redirect: ({ href }: { href: string }) =>
       React.createElement(Text, { testID: 'redirect' }, String(href)),
     Link: ({ children }: { children: React.ReactNode }) => children,

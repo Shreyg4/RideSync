@@ -21,7 +21,9 @@ export interface QueryBuilderMock {
   upsert: ChainFn;
   delete: ChainFn;
   eq: ChainFn;
+  order: ChainFn;
   single: ChainFn;
+  maybeSingle: ChainFn;
   then: <R1 = Result, R2 = never>(
     resolve?: ((value: Result) => R1 | PromiseLike<R1>) | null,
     reject?: ((reason: unknown) => R2 | PromiseLike<R2>) | null
@@ -40,7 +42,9 @@ const makeQueryBuilder = (): QueryBuilderMock => {
     upsert: chain(),
     delete: chain(),
     eq: chain(),
+    order: chain(),
     single: chain(),
+    maybeSingle: chain(),
     // A real builder is a thenable, not a promise: awaiting it is what runs the query.
     // Forwarding `reject` too keeps .catch()/.finally() working alongside await.
     then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),

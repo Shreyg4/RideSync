@@ -31,10 +31,11 @@ const codeOf = (error: unknown): string | undefined => {
   return typeof code === 'string' ? code : undefined;
 };
 
-// Translates code to sentence or falls back to the generic sentence if code is not listed
+// Translates code to sentence or falls back to the generic sentence if code is not listed.
+// hasOwn keeps inherited keys like 'toString' from matching
 export const toUserMessage = (error: unknown): string => {
   const code = codeOf(error);
-  return (code && FRIENDLY_BY_CODE[code]) || GENERIC;
+  return code && Object.hasOwn(FRIENDLY_BY_CODE, code) ? FRIENDLY_BY_CODE[code] : GENERIC;
 };
 
 // Sends raw error to installed reporter and translate error into something the user can read

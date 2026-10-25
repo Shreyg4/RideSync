@@ -1,7 +1,7 @@
 /**
  * @file memberSettings.tsx
  * @description Who is on a trip and what they can do. The owner gives editor access, removes members,
- * hands over ownership, and cancels or deletes the trip. Anyone can leave
+ * hands over ownership, and cancels the trip. Anyone can leave
  */
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -31,7 +31,6 @@ import { toTripMember } from '@/src/lib/tripMapper';
 import { reportAndDescribe } from '@/src/services/errors';
 import {
   cancelTrip,
-  deleteTrip,
   leaveTrip,
   listTripMembers,
   removeTripMember,
@@ -146,14 +145,6 @@ const MemberSettingsScreen = () => {
       'Keep Trip'
     );
 
-  const confirmDelete = () =>
-    confirmAction(
-      'Delete trip?',
-      'The trip is permanently deleted for everyone. Nobody keeps a copy.',
-      'Delete',
-      () => run('deleteTrip', () => deleteTrip(tripId), exitTrip)
-    );
-
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -210,13 +201,6 @@ const MemberSettingsScreen = () => {
                 onPress={confirmCancel}
                 disabled={busy}
                 testID="cancel-trip-button"
-              />
-              <LargeButton
-                label="Delete Trip"
-                variant="danger"
-                onPress={confirmDelete}
-                disabled={busy}
-                testID="delete-trip-button"
               />
             </>
           ) : null}
