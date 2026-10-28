@@ -15,6 +15,14 @@ export type Trip = {
   tripType: TripType;
 };
 
+export type SavedTrip = {
+  id: number;
+  image: string | null;
+  imagePath: string | null;
+  name: string;
+  tripType: TripType;
+};
+
 export type Location = {
   id: number;
   name: string;
@@ -28,3 +36,6 @@ export type TripMember = {
   avatar: string | null;
   role: TripMemberRole;
 };
+
+export type TripImageInput =
+  { kind: 'stored'; path: string } | { kind: 'local'; uri: string; mimeType?: string };

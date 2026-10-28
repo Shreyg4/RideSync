@@ -1,14 +1,13 @@
-import type { Trip } from '@/src/types/trip';
 import { spacing } from '@/src/constants/theme';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { FlatList, StyleSheet, View } from 'react-native';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
 import TopFade from './TopFade';
-import TripListItem from './TripListItem';
 
-type TripListProps = {
-  data: Trip[];
+type TripListProps<T extends { id: number }> = {
+  data: T[];
+  renderItem: (item: T) => React.ReactElement;
   emptyTitle: string;
   emptySubtitle?: string;
   loading?: boolean;
@@ -16,14 +15,15 @@ type TripListProps = {
   testID?: string;
 };
 
-export default function TripList({
+export default function TripList<T extends { id: number }>({
   data,
+  renderItem,
   emptyTitle,
   emptySubtitle,
   loading = false,
   bottomOffset,
   testID,
-}: TripListProps) {
+}: TripListProps<T>) {
   const tabBarHeight = useBottomTabBarHeight();
   const paddingBottom = (bottomOffset ?? tabBarHeight) + spacing.sm;
   const isEmpty = data.length === 0;
@@ -42,8 +42,8 @@ export default function TripList({
       <FlatList
         testID={testID}
         data={data}
-        keyExtractor={(trip) => trip.id.toString()}
-        renderItem={({ item }) => <TripListItem trip={item} />}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => renderItem(item)}
         contentContainerStyle={[
           { gap: spacing.sm, padding: spacing.sm, paddingBottom },
           isEmpty && styles.emptyContent,

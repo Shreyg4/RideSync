@@ -11,6 +11,7 @@ export type NewTrip = Pick<
   Database['public']['Tables']['trips']['Insert'],
   'name' | 'starts_at' | 'trip_type' | 'image_url'
 >;
+export type SavedTripRow = Database['public']['Tables']['saved_trips']['Row'];
 
 export const listTrips = async (): Promise<TripRow[]> => {
   const { data, error } = await supabase
@@ -23,6 +24,21 @@ export const listTrips = async (): Promise<TripRow[]> => {
 
 export const getTrip = async (id: number): Promise<TripRow | null> => {
   const { data, error } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
+export const listSavedTrips = async (): Promise<SavedTripRow[]> => {
+  const { data, error } = await supabase
+    .from('saved_trips')
+    .select('*')
+    .order('saved_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const getSavedTrip = async (id: number): Promise<SavedTripRow | null> => {
+  const { data, error } = await supabase.from('saved_trips').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   return data;
 };
@@ -104,6 +120,13 @@ export const cancelTrip = async (tripId: number): Promise<void> => {
 // Ends the trip for everyone with no saved copies
 export const deleteTrip = async (tripId: number): Promise<void> => {
   const { data, error } = await supabase.from('trips').delete().eq('id', tripId).select('id');
+  if (error) throw error;
+  assertChanged(data);
+};
+
+// Ends the trip for everyone with no saved copies
+export const deleteSavedTrip = async (tripId: number): Promise<void> => {
+  const { data, error } = await supabase.from('saved_trips').delete().eq('id', tripId).select('id');
   if (error) throw error;
   assertChanged(data);
 };

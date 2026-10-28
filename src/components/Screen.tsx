@@ -30,7 +30,12 @@ export default function Screen({
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
-  const container = [styles.container, gradient && styles.transparent, applyTopInset && { paddingTop: insets.top }, style];
+  const container = [
+    styles.container,
+    gradient && styles.transparent,
+    applyTopInset && { paddingTop: insets.top },
+    style,
+  ];
 
   const content = [
     { paddingBottom: insets.bottom + bottomOffset + spacing.sm },
@@ -39,9 +44,11 @@ export default function Screen({
   ];
 
   const body = !scroll ? (
-    <View testID={testID} style={[container, content]}>{children}</View>
+    <View testID={testID} style={[container, content]}>
+      {children}
+    </View>
   ) : (
-    <KeyboardAwareScrollView 
+    <KeyboardAwareScrollView
       testID={testID}
       style={container}
       contentContainerStyle={content}
@@ -71,12 +78,12 @@ export default function Screen({
 export { ScrollView };
 
 const styles = StyleSheet.create({
-  root: { 
-    flex: 1, 
-    backgroundColor: colors.background 
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  transparent: { 
-    backgroundColor: 'transparent' 
+  transparent: {
+    backgroundColor: 'transparent',
   },
   container: {
     flex: 1,
