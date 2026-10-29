@@ -39,3 +39,10 @@ export type TripMember = {
 
 export type TripImageInput =
   { kind: 'stored'; path: string } | { kind: 'local'; uri: string; mimeType?: string };
+
+export type TripFormValues = {
+  name: string;
+  tripType: TripType;
+  startsAt: Date;
+  image: TripImageInput | null;
+};

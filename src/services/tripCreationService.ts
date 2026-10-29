@@ -8,8 +8,8 @@ import {
   tripImageObjectPath,
   uploadTripImageFile,
 } from '../lib/tripImageStorage';
-import type { TripType } from '../types/trip';
-import { createTrip, type TripRow } from './tripService';
+import type { TripFormValues, TripType } from '../types/trip';
+import { createTrip, updateTrip, type NewTrip, type TripRow } from './tripService';
 
 export type CreateTripInput = {
   userId: string;
@@ -45,6 +45,44 @@ export const createTripWithImage = async ({
         reportError(cleanupError, {
           scope: 'tripCreationService.createTripWithImage.cleanup',
           imagePath,
+        })
+      );
+    }
+    throw error;
+  }
+};
+
+export const updateTripWithImage = async (
+  userId: string,
+  trip: TripRow,
+  values: TripFormValues
+) => {
+  const changes: Partial<NewTrip> = {};
+  if (values.name !== trip.name) changes.name = values.name;
+  if (values.tripType !== trip.trip_type) changes.trip_type = values.tripType;
+  if (values.startsAt.getTime() !== new Date(trip.starts_at).getTime()) {
+    changes.starts_at = values.startsAt.toISOString();
+  }
+
+  let uploaded: string | null = null;
+  if (values.image?.kind === 'local') {
+    uploaded = tripImageObjectPath(userId, values.image.mimeType);
+    await uploadTripImageFile(uploaded, values.image.uri, values.image.mimeType);
+    changes.image_url = uploaded;
+  } else if (!values.image && trip.image_url) {
+    changes.image_url = null;
+  }
+
+  if (Object.keys(changes).length === 0) return;
+
+  try {
+    await updateTrip(trip.id, changes);
+  } catch (error) {
+    if (uploaded) {
+      removeTripImageFile(uploaded).catch((cleanupError) =>
+        reportError(cleanupError, {
+          scope: 'tripCreationService.updateTripWithImage.cleanup',
+          uploaded,
         })
       );
     }

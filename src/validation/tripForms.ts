@@ -21,8 +21,9 @@ export const normalizeTripName = (name: string) => name.trim().replace(/\s+/g, '
 
 export const validateCreateTripForm = (
   form: CreateTripForm,
-  now: Date = new Date()
-): CreateTripFieldErrors => {
+  now = new Date(),
+  originalStartsAt?: Date | null
+) => {
   const next: CreateTripFieldErrors = {};
   if (!form.name) next.name = 'Required';
   else if (form.name.length < TRIP_NAME_MIN_LENGTH)
@@ -35,8 +36,10 @@ export const validateCreateTripForm = (
   if (!form.datePicked || !form.startsAt) next.date = 'Required';
   if (!form.timePicked || !form.startsAt) next.time = 'Required';
 
-  // Only check "in the past" once both parts are set, otherwise the half-filled date is misleading
-  if (form.startsAt && form.datePicked && form.timePicked) {
+  // Only check "in the past" once both parts are set, otherwise the half-filled date is misleading.
+  // An edit that keeps the saved start is let through, since a trip can still be edited after it starts
+  const unchanged = !!originalStartsAt && form.startsAt?.getTime() === originalStartsAt.getTime();
+  if (form.startsAt && form.datePicked && form.timePicked && !unchanged) {
     const startOfToday = new Date(now);
     startOfToday.setHours(0, 0, 0, 0);
 

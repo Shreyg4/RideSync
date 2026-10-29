@@ -130,3 +130,9 @@ export const deleteSavedTrip = async (tripId: number): Promise<void> => {
   if (error) throw error;
   assertChanged(data);
 };
+
+export const updateTrip = async (id: number, changes: Partial<NewTrip>): Promise<void> => {
+  const { data, error } = await supabase.from('trips').update(changes).eq('id', id).select('id');
+  if (error) throw error;
+  assertChanged(data);
+};

@@ -1,11 +1,11 @@
 // Member settings is where one person changes what everyone else on a trip can do, so these
 // check that only the owner gets those controls and that every destructive action asks first.
+// Leaving and cancelling the trip are covered in tripSettings.test.tsx
 
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, waitFor } from '@testing-library/react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Alert } from 'react-native';
 import MemberSettingsScreen from '../trips/[id]/memberSettings';
 import type { AuthContextType } from '@/src/context/AuthProvider';
 import type { TripMemberRow } from '@/src/services/tripService';
@@ -63,7 +63,6 @@ describe('MemberSettingsScreen', () => {
     expect(view.getByLabelText('Manage Cal')).toBeTruthy();
     expect(view.queryByLabelText('Editor access for Ana')).toBeNull();
     expect(view.queryByLabelText('Manage Ana')).toBeNull();
-    expect(view.getByTestId('cancel-trip-button')).toBeTruthy();
   });
 
   it.each([
@@ -75,8 +74,6 @@ describe('MemberSettingsScreen', () => {
     expect(view.getByText(`${name} (you)`)).toBeTruthy();
     expect(view.queryAllByLabelText(/^Editor access for/)).toHaveLength(0);
     expect(view.queryAllByLabelText(/^Manage /)).toHaveLength(0);
-    expect(view.queryByTestId('cancel-trip-button')).toBeNull();
-    expect(view.getByTestId('leave-trip-button')).toBeTruthy();
   });
 
   it.each([
@@ -127,80 +124,37 @@ describe('MemberSettingsScreen', () => {
     );
   });
 
-  it.each([
-    [
-      'a member who is not the owner',
-      'user-3',
-      [ANA, BEA, CAL],
-      "You'll need the join code to get back in.",
-    ],
-    // Cal joined before Bea, but an editor takes over ahead of a viewer
-    ['the owner who takes over', 'user-1', [ANA, CAL, BEA], 'Bea becomes the owner.'],
-    [
-      'a sole owner that the trip will be deleted',
-      'user-1',
-      [ANA],
-      "You're the only member, so the trip will be deleted.",
-    ],
-  ])('tells %s before they leave', async (_, userId, members, message) => {
-    const view = await renderAs(userId, members);
-
-    await fireEvent.press(view.getByTestId('leave-trip-button'));
-
-    expect(Alert.alert).toHaveBeenCalledWith('Leave trip?', message, expect.any(Array));
-  });
-
-  it('leaves the trip once confirmed and goes back to the trips list', async () => {
-    const view = await renderAs('user-3');
-
-    await fireEvent.press(view.getByTestId('leave-trip-button'));
-    await pressAlertButton('Leave');
-
-    await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/trips'));
-    expect(rpcCalls('leave_trip')).toEqual([['leave_trip', { target_trip_id: 7 }]]);
-  });
-
-  it('cancels the trip once confirmed and goes back to the trips list', async () => {
+  it('shows why an action failed and stays on the screen', async () => {
+    mockRpc('transfer_trip_ownership', { error: { code: '42501', message: 'permission denied' } });
     const view = await renderAs('user-1');
 
-    await fireEvent.press(view.getByTestId('cancel-trip-button'));
-    expect(lastAlert().buttons.map((button) => button.text)).toEqual(['Keep Trip', 'Cancel Trip']);
-    await pressAlertButton('Cancel Trip');
-
-    await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/trips'));
-    expect(rpcCalls('cancel_trip')).toEqual([['cancel_trip', { target_trip_id: 7 }]]);
-  });
-
-  it('shows why an action failed and stays on the screen', async () => {
-    mockRpc('leave_trip', { error: { code: '42501', message: 'permission denied' } });
-    const view = await renderAs('user-3');
-
-    await fireEvent.press(view.getByTestId('leave-trip-button'));
-    await pressAlertButton('Leave');
+    await fireEvent.press(view.getByLabelText('Manage Bea'));
+    await pressAlertButton('Make Owner');
+    await pressAlertButton('Make Owner');
 
     await waitFor(() =>
       expect(view.getByTestId('member-settings-error')).toHaveTextContent(
         'You do not have permission to do that.'
       )
     );
-    expect(router.dismissTo).not.toHaveBeenCalled();
+    expect(rpcCalls('list_trip_members')).toHaveLength(1);
   });
 
   it('disables every control while an action is running', async () => {
     const view = await renderAs('user-1');
-    const leaving = deferred<{ data: unknown; error: unknown }>();
-    mockSupabase.rpc.mockImplementationOnce(() => leaving.promise);
+    const transferring = deferred<{ data: unknown; error: unknown }>();
+    mockSupabase.rpc.mockImplementationOnce(() => transferring.promise);
 
-    await fireEvent.press(view.getByTestId('leave-trip-button'));
-    await pressAlertButton('Leave');
+    await fireEvent.press(view.getByLabelText('Manage Bea'));
+    await pressAlertButton('Make Owner');
+    await pressAlertButton('Make Owner');
 
-    expect(view.getByTestId('leave-trip-button')).toBeDisabled();
-    expect(view.getByTestId('cancel-trip-button')).toBeDisabled();
     expect(view.getByLabelText('Manage Bea')).toBeDisabled();
+    expect(view.getByLabelText('Manage Cal')).toBeDisabled();
     // iOS's Switch hands `disabled` straight to the native view, not through accessibilityState
     expect(view.getByLabelText('Editor access for Bea')).toHaveProp('disabled', true);
 
-    await act(async () => leaving.resolve({ data: null, error: null }));
+    await act(async () => transferring.resolve({ data: null, error: null }));
   });
 
   it('says so when the members cannot be loaded', async () => {

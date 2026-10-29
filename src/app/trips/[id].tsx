@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import SmallButton from '@/src/components/SmallButton';
-import { ChevronLeft, Pencil, Share2, UserCog } from 'lucide-react-native';
+import { ChevronLeft, Pencil, Share2, Settings } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
@@ -27,6 +27,7 @@ const TripDetailsScreen = () => {
     data: row,
     loading,
     error,
+    reload: reloadTrip,
   } = useAsync(
     () => (Number.isInteger(tripId) ? getTrip(tripId) : Promise.resolve(null)),
     [tripId],
@@ -39,6 +40,7 @@ const TripDetailsScreen = () => {
     'TripDetailsScreen.listTripMembers'
   );
 
+  // Coming back from trip settings may mean new details or members
   const firstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -46,8 +48,9 @@ const TripDetailsScreen = () => {
         firstFocus.current = false;
         return;
       }
+      reloadTrip();
       reloadMembers();
-    }, [reloadMembers])
+    }, [reloadTrip, reloadMembers])
   );
 
   const backButton = (
@@ -59,7 +62,8 @@ const TripDetailsScreen = () => {
     />
   );
 
-  if (loading || !row) {
+  // Keeps showing the trip during a reload instead of flashing the spinner
+  if (!row) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -175,9 +179,9 @@ const TripDetailsScreen = () => {
       />
       {backButton}
       <SmallButton
-        icon={UserCog}
-        onPress={() => router.push(`/trips/${tripId}/memberSettings`)}
-        accessibilityLabel="Member settings"
+        icon={Settings}
+        onPress={() => router.push(`/trips/${tripId}/tripSettings`)}
+        accessibilityLabel="Trip settings"
         style={{ position: 'absolute', right: 15, top: insets.top, zIndex: 10 }}
       />
     </View>

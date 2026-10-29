@@ -3,8 +3,11 @@ import { fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { router } from 'expo-router';
 import TripList from '../TripList';
+import TripListItem from '../TripListItem';
 import { renderScreen } from '@/src/test/render';
 import type { Trip } from '@/src/types/trip';
+
+const renderTrip = (item: Trip) => <TripListItem trip={item} />;
 
 const trip = (overrides: Partial<Trip> = {}): Trip => ({
   id: 1,
@@ -20,7 +23,12 @@ const trip = (overrides: Partial<Trip> = {}): Trip => ({
 describe('TripList', () => {
   it('renders the empty state when there are no trips', async () => {
     const view = await renderScreen(
-      <TripList data={[]} emptyTitle="No upcoming trips" emptySubtitle="Press the + button" />
+      <TripList
+        data={[]}
+        renderItem={renderTrip}
+        emptyTitle="No upcoming trips"
+        emptySubtitle="Press the + button"
+      />
     );
 
     expect(view.getByText('No upcoming trips')).toBeTruthy();
@@ -28,7 +36,9 @@ describe('TripList', () => {
   });
 
   it('omits the subtitle when none is given', async () => {
-    const view = await renderScreen(<TripList data={[]} emptyTitle="No saved trips" />);
+    const view = await renderScreen(
+      <TripList data={[]} renderItem={renderTrip} emptyTitle="No saved trips" />
+    );
 
     expect(view.getByText('No saved trips')).toBeTruthy();
     expect(view.queryByText('Press the + button')).toBeNull();
@@ -38,6 +48,7 @@ describe('TripList', () => {
     const view = await renderScreen(
       <TripList
         data={[trip(), trip({ id: 2, name: 'World Cup Trip' })]}
+        renderItem={renderTrip}
         emptyTitle="No upcoming trips"
       />
     );
@@ -49,7 +60,13 @@ describe('TripList', () => {
 
   it('shows the loading state instead of the empty state', async () => {
     const view = await renderScreen(
-      <TripList data={[]} emptyTitle="No upcoming trips" loading testID="trips" />
+      <TripList
+        data={[]}
+        renderItem={renderTrip}
+        emptyTitle="No upcoming trips"
+        loading
+        testID="trips"
+      />
     );
 
     expect(view.getByTestId('trips-loading')).toBeTruthy();
@@ -58,7 +75,9 @@ describe('TripList', () => {
 
   it('opens a trip under /trips/:id', async () => {
     (router.push as jest.Mock).mockClear();
-    const view = await renderScreen(<TripList data={[trip({ id: 7 })]} emptyTitle="empty" />);
+    const view = await renderScreen(
+      <TripList data={[trip({ id: 7 })]} renderItem={renderTrip} emptyTitle="empty" />
+    );
 
     await fireEvent.press(view.getByText('Mount Rainier'));
 

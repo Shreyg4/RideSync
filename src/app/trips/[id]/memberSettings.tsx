@@ -1,7 +1,7 @@
 /**
  * @file memberSettings.tsx
- * @description Who is on a trip and what they can do. The owner gives editor access, removes members,
- * hands over ownership, and cancels the trip. Anyone can leave
+ * @description Who is on a trip and what they can do. The owner gives editor access, removes members
+ * and hands over ownership. Leaving and cancelling the trip live on the trip settings screen
  */
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -20,18 +20,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AvatarImage from '@/src/components/AvatarImage';
 import EmptyState from '@/src/components/EmptyState';
 import ErrorText from '@/src/components/ErrorText';
-import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import ScreenHeader from '@/src/components/ScreenHeader';
 import { colors, fontSize, fontWeight, gradients, radii, spacing } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthProvider';
-import { memberRoleLabel, nextOwner } from '@/src/domain/rules';
+import { memberRoleLabel } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
 import { toTripMember } from '@/src/lib/tripMapper';
 import { reportAndDescribe } from '@/src/services/errors';
 import {
-  cancelTrip,
-  leaveTrip,
   listTripMembers,
   removeTripMember,
   setMemberRole,
@@ -40,6 +37,7 @@ import {
 import type { TripMember } from '@/src/types/trip';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
+import TopFade from '@/src/components/TopFade';
 
 const AVATAR_SIZE = 44;
 
@@ -77,21 +75,19 @@ const MemberSettingsScreen = () => {
 
   const isOwner = !!members?.some((member) => member.id === user?.id && member.role === 'owner');
 
-  // Member changes reload the list; leaving, cancelling and deleting end on the Trips tab instead
-  const run = async (scope: string, action: () => Promise<void>, onDone: () => void = reload) => {
+  // Every member change reloads the list so roles and the owner stay current
+  const run = async (scope: string, action: () => Promise<void>) => {
     setActionError(undefined);
     setBusy(true);
     try {
       await action();
-      onDone();
+      reload();
     } catch (caught) {
       setActionError(reportAndDescribe(caught, { scope: `MemberSettingsScreen.${scope}` }));
     } finally {
       setBusy(false);
     }
   };
-
-  const exitTrip = () => router.dismissTo('/trips');
 
   const toggleEditor = (member: TripMember, editor: boolean) =>
     run('setMemberRole', () => setMemberRole(tripId, member.id, editor ? 'editor' : 'viewer'));
@@ -124,88 +120,53 @@ const MemberSettingsScreen = () => {
       { cancelable: true }
     );
 
-  const confirmLeave = () => {
-    const successor = nextOwner(members ?? []);
-    const message = !isOwner
-      ? "You'll need the join code to get back in."
-      : successor
-        ? `${successor.name} becomes the owner.`
-        : "You're the only member, so the trip will be deleted.";
-    confirmAction('Leave trip?', message, 'Leave', () =>
-      run('leaveTrip', () => leaveTrip(tripId), exitTrip)
-    );
-  };
-
-  const confirmCancel = () =>
-    confirmAction(
-      'Cancel trip?',
-      'The trip ends for everyone. Each member keeps a copy in Saved Trips to reuse later.',
-      'Cancel Trip',
-      () => run('cancelTrip', () => cancelTrip(tripId), exitTrip),
-      'Keep Trip'
-    );
-
   return (
     <View style={styles.root}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        pointerEvents="none"
-        {...gradients.cardToBackground(0.2)}
-        style={StyleSheet.absoluteFill}
-      />
-      <ScreenHeader title="Member Settings" onBack={() => router.back()} />
+      <View>
+        <Stack.Screen options={{ headerShown: false }} />
+        <LinearGradient
+          pointerEvents="none"
+          {...gradients.cardToBackground(0.2)}
+          style={StyleSheet.absoluteFill}
+        />
+        <ScreenHeader title="Member Settings" onBack={() => router.back()} />
+      </View>
 
-      {!members ? (
-        loading ? (
-          <LoadingState testID="member-settings-loading" />
+      <View style={{ flex: 1, paddingBottom: insets.bottom }}>
+        {!members ? (
+          loading ? (
+            <LoadingState testID="member-settings-loading" />
+          ) : (
+            <EmptyState title="Couldn't load members" subtitle={error ?? undefined} />
+          )
         ) : (
-          <EmptyState title="Couldn't load members" subtitle={error ?? undefined} />
-        )
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.sm }}
-        >
-          <View style={styles.card} testID="member-settings-list">
-            <Text style={styles.subHeading}>Members</Text>
-            {isOwner ? (
-              <Text style={styles.hint}>Editors can change the itinerary and trip details.</Text>
-            ) : null}
-            {members.map((member) => (
-              <MemberRow
-                key={member.id}
-                member={member}
-                isSelf={member.id === user?.id}
-                canManage={isOwner && member.role !== 'owner'}
-                disabled={busy}
-                onToggleEditor={(editor) => toggleEditor(member, editor)}
-                onManage={() => manageMember(member)}
-              />
-            ))}
-          </View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: insets.bottom + spacing.sm }}
+          >
+            <View style={styles.card} testID="member-settings-list">
+              <Text style={styles.subHeading}>Members</Text>
+              {isOwner ? (
+                <Text style={styles.hint}>Editors can change the itinerary and trip details</Text>
+              ) : null}
+              {members.map((member) => (
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  isSelf={member.id === user?.id}
+                  canManage={isOwner && member.role !== 'owner'}
+                  disabled={busy}
+                  onToggleEditor={(editor) => toggleEditor(member, editor)}
+                  onManage={() => manageMember(member)}
+                />
+              ))}
+            </View>
 
-          <ErrorText message={actionError} style={styles.error} testID="member-settings-error" />
-
-          <LargeButton
-            label="Leave Trip"
-            variant="danger"
-            onPress={confirmLeave}
-            disabled={busy}
-            testID="leave-trip-button"
-          />
-          {isOwner ? (
-            <>
-              <LargeButton
-                label="Cancel Trip"
-                variant="danger"
-                onPress={confirmCancel}
-                disabled={busy}
-                testID="cancel-trip-button"
-              />
-            </>
-          ) : null}
-        </ScrollView>
-      )}
+            <ErrorText message={actionError} style={styles.error} testID="member-settings-error" />
+          </ScrollView>
+        )}
+        <TopFade height={12} />
+      </View>
     </View>
   );
 };
@@ -278,6 +239,7 @@ function MemberRow({
         accessibilityLabel={`Editor access for ${member.name}`}
         style={Platform.select({ ios: { marginTop: 7 }, default: {} })}
       />
+      <TopFade height={120} />
     </View>
   );
 }

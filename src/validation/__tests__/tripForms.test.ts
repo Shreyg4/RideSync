@@ -100,6 +100,20 @@ describe('validateCreateTripForm', () => {
       validateCreateTripForm({ ...form, startsAt: new Date(2026, 8, 2, 9, 30, 0, 0) }, NOW).time
     ).toBe('Time has already passed');
   });
+
+  it('lets an edit keep a start time that has already passed', () => {
+    const startsAt = new Date(2026, 8, 2, 3, 30, 0, 0);
+    expect(validateCreateTripForm({ ...form, startsAt }, NOW, new Date(startsAt))).toEqual({});
+  });
+
+  it('still rejects an edit that moves the start into the past', () => {
+    const errors = validateCreateTripForm(
+      { ...form, startsAt: new Date(2026, 8, 1, 9, 30, 0, 0) },
+      NOW,
+      form.startsAt
+    );
+    expect(errors.date).toBe('Date is in the past');
+  });
 });
 
 describe('normalizeTripName', () => {

@@ -124,14 +124,14 @@ describe('TripDetailsScreen', () => {
     expect(view.getByText('Coast Run')).toBeTruthy();
   });
 
-  it('opens member settings for this trip', async () => {
+  it('opens trip settings for this trip', async () => {
     (router.push as jest.Mock).mockClear();
     withParams({ id: '1' });
     mockTable('trips').__setResult({ data: tripRow(), error: null });
     const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
 
-    await fireEvent.press(await view.findByLabelText('Member settings'));
+    await fireEvent.press(await view.findByLabelText('Trip settings'));
 
-    expect(router.push).toHaveBeenCalledWith('/trips/1/memberSettings');
+    expect(router.push).toHaveBeenCalledWith('/trips/1/tripSettings');
   });
 });
