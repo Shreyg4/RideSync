@@ -2,10 +2,20 @@
  * @file tripMapper.ts
  * @description Turns a trips table row on supabase into the Trip shape the list components render
  */
-import type { Trip, TripType, TripMember, TripMemberRole, SavedTrip } from '../types/trip';
+import type {
+  Trip,
+  TripType,
+  TripMember,
+  TripMemberRole,
+  SavedTrip,
+  TripStop,
+  StopType,
+  StopCategory,
+} from '../types/trip';
 import type { TripRow, TripMemberRow, SavedTripRow } from '../services/tripService';
 import { avatarUrl } from './avatarStorage';
 import { tripImageUrl } from './tripImageStorage';
+import type { TripStopRow } from '../services/tripStopService';
 
 export const toTrip = (row: TripRow): Trip => {
   const startsAt = new Date(row.starts_at);
@@ -39,4 +49,19 @@ export const toTripMember = (row: TripMemberRow): TripMember => ({
   name: row.display_name,
   avatar: avatarUrl(row.avatar_path),
   role: row.role as TripMemberRole,
+});
+
+export const toTripStop = (row: TripStopRow): TripStop => ({
+  id: row.id,
+  tripId: row.trip_id,
+  position: row.position,
+  name: row.name,
+  address: row.address,
+  lat: row.lat,
+  lng: row.lng,
+  mapboxId: row.mapbox_id,
+  stopType: row.stop_type as StopType,
+  stopCategory: row.category as StopCategory,
+  notes: row.notes,
+  departsAt: row.departs_at ? new Date(row.departs_at) : null,
 });

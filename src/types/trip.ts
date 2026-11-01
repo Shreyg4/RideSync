@@ -4,6 +4,8 @@
  */
 export type TripType = 'one-way' | 'round-trip';
 export type TripMemberRole = 'owner' | 'editor' | 'viewer';
+export type StopType = 'start' | 'stop' | 'overnight' | 'end';
+export type StopCategory = 'gas' | 'food' | 'coffee' | 'rest' | 'lodging' | 'attraction' | 'other';
 
 export type Trip = {
   id: number;
@@ -45,4 +47,19 @@ export type TripFormValues = {
   tripType: TripType;
   startsAt: Date;
   image: TripImageInput | null;
+};
+
+export type TripStop = {
+  id: number;
+  tripId: number;
+  position: number;
+  name: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+  mapboxId: string | null;
+  stopType: StopType;
+  stopCategory: StopCategory;
+  notes: string | null;
+  departsAt: Date | null;
 };

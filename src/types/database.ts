@@ -120,6 +120,65 @@ export type Database = {
           },
         ];
       };
+      trip_stops: {
+        Row: {
+          address: string | null;
+          category: string;
+          created_at: string;
+          departs_at: string | null;
+          id: number;
+          lat: number;
+          lng: number;
+          mapbox_id: string | null;
+          name: string;
+          notes: string | null;
+          position: number;
+          stop_type: string;
+          trip_id: number;
+          updated_at: string;
+        };
+        Insert: {
+          address?: string | null;
+          category?: string;
+          created_at?: string;
+          departs_at?: string | null;
+          id?: never;
+          lat: number;
+          lng: number;
+          mapbox_id?: string | null;
+          name: string;
+          notes?: string | null;
+          position: number;
+          stop_type?: string;
+          trip_id: number;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string | null;
+          category?: string;
+          created_at?: string;
+          departs_at?: string | null;
+          id?: never;
+          lat?: number;
+          lng?: number;
+          mapbox_id?: string | null;
+          name?: string;
+          notes?: string | null;
+          position?: number;
+          stop_type?: string;
+          trip_id?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'trip_stops_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: false;
+            referencedRelation: 'trips';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       trips: {
         Row: {
           created_at: string;
@@ -208,6 +267,44 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_trip_stop: {
+        Args: {
+          at_position?: number;
+          new_stop_type?: string;
+          stop_address?: string;
+          stop_category?: string;
+          stop_lat: number;
+          stop_lng: number;
+          stop_mapbox_id?: string;
+          stop_name: string;
+          stop_notes?: string;
+          target_trip_id: number;
+        };
+        Returns: {
+          address: string | null;
+          category: string;
+          created_at: string;
+          departs_at: string | null;
+          id: number;
+          lat: number;
+          lng: number;
+          mapbox_id: string | null;
+          name: string;
+          notes: string | null;
+          position: number;
+          stop_type: string;
+          trip_id: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'trip_stops';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      archive_stale_trips: { Args: never; Returns: undefined };
+      archive_trip: { Args: { target_trip_id: number }; Returns: undefined };
       cancel_trip: { Args: { target_trip_id: number }; Returns: undefined };
       generate_join_code: { Args: never; Returns: string };
       join_trip: { Args: { code: string }; Returns: number };
@@ -225,6 +322,11 @@ export type Database = {
       pass_trip_ownership: {
         Args: { old_owner_id: string; target_trip_id: number };
         Returns: boolean;
+      };
+      remove_trip_stop: { Args: { target_stop_id: number }; Returns: undefined };
+      reorder_trip_stops: {
+        Args: { ordered_ids: number[]; target_trip_id: number };
+        Returns: undefined;
       };
       start_saved_trip: {
         Args: { new_starts_at: string; saved_trip_id: number };

@@ -3,6 +3,7 @@
  * @description The data-access layer for the trip table
  */
 import { supabase } from '@/src/lib/supabase';
+import { assertChanged } from '@/src/services/assertChanged';
 import type { Database } from '@/src/types/database';
 import type { TripMemberRole } from '../types/trip';
 
@@ -63,11 +64,6 @@ export const listTripMembers = async (tripId: number): Promise<TripMemberRow[]> 
   const { data, error } = await supabase.rpc('list_trip_members', { target_trip_id: tripId });
   if (error) throw error;
   return data ?? [];
-};
-
-// RLS turns a write the caller isn't allowed to make into a silent no-op, so zero rows means denied
-const assertChanged = (rows: readonly unknown[] | null) => {
-  if (!rows?.length) throw Object.assign(new Error('nothing was changed'), { code: '42501' });
 };
 
 export const setMemberRole = async (
