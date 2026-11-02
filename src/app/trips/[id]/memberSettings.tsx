@@ -239,7 +239,6 @@ function MemberRow({
         accessibilityLabel={`Editor access for ${member.name}`}
         style={Platform.select({ ios: { marginTop: 7 }, default: {} })}
       />
-      <TopFade height={120} />
     </View>
   );
 }
