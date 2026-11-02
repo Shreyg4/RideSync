@@ -8,7 +8,7 @@ import {
   tripImageObjectPath,
   uploadTripImageFile,
 } from '../lib/tripImageStorage';
-import type { TripFormValues, TripType } from '../types/trip';
+import type { TripFormValues, TripImageInput, TripType } from '../types/trip';
 import { createTrip, updateTrip, type NewTrip, type TripRow } from './tripService';
 
 export type CreateTripInput = {
@@ -16,7 +16,7 @@ export type CreateTripInput = {
   name: string;
   tripType: TripType;
   startsAt: Date;
-  image?: { uri: string; mimeType?: string } | null;
+  image?: TripImageInput | null;
 };
 
 export const createTripWithImage = async ({
@@ -26,11 +26,13 @@ export const createTripWithImage = async ({
   startsAt,
   image,
 }: CreateTripInput): Promise<TripRow> => {
-  let imagePath: string | null = null;
-  if (image) {
-    imagePath = tripImageObjectPath(userId, image.mimeType);
-    await uploadTripImageFile(imagePath, image.uri, image.mimeType);
+  let uploaded: string | null = null;
+  if (image?.kind === 'local') {
+    uploaded = tripImageObjectPath(userId, image.mimeType);
+    await uploadTripImageFile(uploaded, image.uri, image.mimeType);
   }
+  // A stored image is reused from a saved trip, which still needs it, so it's never removed here
+  const imagePath = uploaded ?? (image?.kind === 'stored' ? image.path : null);
 
   try {
     return await createTrip({
@@ -40,11 +42,11 @@ export const createTripWithImage = async ({
       image_url: imagePath,
     });
   } catch (error) {
-    if (imagePath) {
-      removeTripImageFile(imagePath).catch((cleanupError) =>
+    if (uploaded) {
+      removeTripImageFile(uploaded).catch((cleanupError) =>
         reportError(cleanupError, {
           scope: 'tripCreationService.createTripWithImage.cleanup',
-          imagePath,
+          imagePath: uploaded,
         })
       );
     }
