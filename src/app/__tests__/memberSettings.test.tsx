@@ -11,7 +11,7 @@ import type { AuthContextType } from '@/src/context/AuthProvider';
 import type { TripMemberRow } from '@/src/services/tripService';
 import { lastAlert, mockAlert, pressAlertButton } from '@/src/test/alert';
 import { renderScreen, signedInAuth } from '@/src/test/render';
-import { mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
+import { mockChannels, mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
 
 const JOINED = new Date(2026, 8, 2, 9, 30).toISOString();
 
@@ -55,6 +55,18 @@ beforeEach(() => {
 });
 
 describe('MemberSettingsScreen', () => {
+  it('shows a role change made on another phone without leaving the screen', async () => {
+    const view = await renderAs('user-3');
+    expect(view.getAllByText('Viewer')).toHaveLength(1);
+
+    mockRpc('list_trip_members', { data: [ANA, BEA, { ...CAL, role: 'editor' }] });
+    await act(async () =>
+      mockChannels()[0].__emit({ eventType: 'UPDATE', new: { user_id: 'user-3' }, old: {} })
+    );
+
+    await waitFor(() => expect(view.queryAllByText('Viewer')).toHaveLength(0));
+  });
+
   it('gives the owner controls for every other member, but not for themselves', async () => {
     const view = await renderAs('user-1');
 

@@ -12,6 +12,7 @@ import { colors, gradients, spacing } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthProvider';
 import { nextOwner } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
+import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { toTripMember } from '@/src/lib/tripMapper';
 import { reportAndDescribe } from '@/src/services/errors';
 import { cancelTrip, leaveTrip, listTripMembers } from '@/src/services/tripService';
@@ -52,6 +53,9 @@ const TripSettingsScreen = () => {
     [tripId],
     'TripSettingsScreen.listTripMembers'
   );
+
+  // A role change on another phone changes which rows and buttons this screen shows
+  useTripMembersRealtime(tripId, reload);
 
   // Roles can change on the members screen (handing over ownership), so reload on the way back
   const firstFocus = useRef(true);

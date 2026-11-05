@@ -2,4 +2,4 @@ import * as supabaseModule from '@/src/lib/supabase';
 
 const mock = supabaseModule as unknown as typeof import('@/src/lib/__mocks__/supabase');
 
-export const { mockTable, mockBucket, mockRpc, supabase: mockSupabase } = mock;
+export const { mockTable, mockBucket, mockRpc, mockChannels, supabase: mockSupabase } = mock;

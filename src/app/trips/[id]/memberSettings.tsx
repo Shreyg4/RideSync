@@ -26,6 +26,7 @@ import { colors, fontSize, fontWeight, gradients, radii, spacing } from '@/src/c
 import { useAuth } from '@/src/context/AuthProvider';
 import { memberRoleLabel } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
+import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { toTripMember } from '@/src/lib/tripMapper';
 import { reportAndDescribe } from '@/src/services/errors';
 import {
@@ -69,6 +70,9 @@ const MemberSettingsScreen = () => {
     [tripId],
     'MemberSettingsScreen.listTripMembers'
   );
+
+  // Joins, role changes and removals from other phones show up without leaving the screen
+  useTripMembersRealtime(tripId, reload);
 
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string>();

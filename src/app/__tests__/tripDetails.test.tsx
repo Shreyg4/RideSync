@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { Share } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -7,7 +7,7 @@ import TripDetailsScreen from '../trips/[id]';
 import { setErrorReporter } from '@/src/lib/logger';
 import type { TripMemberRow, TripRow } from '@/src/services/tripService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
-import { mockRpc, mockTable } from '@/src/test/supabase';
+import { mockChannels, mockRpc, mockTable } from '@/src/test/supabase';
 
 const NOW = new Date(2026, 8, 2, 9, 30, 0, 0).toISOString();
 
@@ -133,5 +133,36 @@ describe('TripDetailsScreen', () => {
     await fireEvent.press(await view.findByLabelText('Trip settings'));
 
     expect(router.push).toHaveBeenCalledWith('/trips/1/tripSettings');
+  });
+
+  it('shows a member who joins on another phone without leaving the screen', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockRpc('list_trip_members', { data: [memberRow()] });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+    await view.findByText('Ana');
+
+    mockRpc('list_trip_members', {
+      data: [memberRow(), memberRow({ user_id: 'user-2', display_name: 'Bea', role: 'viewer' })],
+    });
+    await act(async () =>
+      mockChannels()[0].__emit({ eventType: 'INSERT', new: { user_id: 'user-2' }, old: {} })
+    );
+
+    expect(await view.findByText('Bea')).toBeTruthy();
+  });
+
+  it('sends a member who is removed on another phone back to Trips', async () => {
+    (router.dismissTo as jest.Mock).mockClear();
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+    await view.findByText('Coast Run');
+
+    await act(async () =>
+      mockChannels()[0].__emit({ eventType: 'DELETE', new: {}, old: { user_id: 'user-1' } })
+    );
+
+    expect(router.dismissTo).toHaveBeenCalledWith('/trips');
   });
 });

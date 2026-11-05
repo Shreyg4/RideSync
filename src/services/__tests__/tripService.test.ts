@@ -1,7 +1,7 @@
 // tripService is the only code that talks to the trips tables, so these pin what each call asks
 // the database for and how it turns the answer, or the lack of one, into a result or an error.
 
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import {
   cancelTrip,
   createTrip,
@@ -13,10 +13,11 @@ import {
   listTrips,
   removeTripMember,
   setMemberRole,
+  subscribeToTripMembers,
   transferTripOwnership,
   type NewTrip,
 } from '../tripService';
-import { mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
+import { mockChannels, mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
 
 const queryError = { code: 'PGRST301', message: 'JWT expired' };
 const trip = { id: 7, name: 'Coast Run' };
@@ -114,6 +115,45 @@ describe('listTripMembers', () => {
   it('throws the query error', async () => {
     mockRpc('list_trip_members', { error: queryError });
     await expect(listTripMembers(7)).rejects.toBe(queryError);
+  });
+});
+
+describe('subscribeToTripMembers', () => {
+  it(`listens for every change to that trip's members, and only that trip`, () => {
+    subscribeToTripMembers(7, () => {});
+    const [channel] = mockChannels();
+
+    expect(channel.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'trip_members', filter: 'trip_id=eq.7' },
+      expect.any(Function)
+    );
+    expect(channel.subscribe).toHaveBeenCalled();
+  });
+
+  it('says who changed, reading the old row for a delete since it has no new one', () => {
+    const onChange = jest.fn();
+    subscribeToTripMembers(7, onChange);
+    const [channel] = mockChannels();
+
+    channel.__emit({ eventType: 'INSERT', new: { trip_id: 7, user_id: 'user-2' }, old: {} });
+    channel.__emit({ eventType: 'DELETE', new: {}, old: { trip_id: 7, user_id: 'user-3' } });
+
+    expect(onChange).toHaveBeenNthCalledWith(1, { event: 'INSERT', userId: 'user-2' });
+    expect(onChange).toHaveBeenNthCalledWith(2, { event: 'DELETE', userId: 'user-3' });
+  });
+
+  it('gives each subscription its own channel, so unsubscribing one leaves the other open', () => {
+    const unsubscribeFirst = subscribeToTripMembers(7, () => {});
+    subscribeToTripMembers(7, () => {});
+    const [first, second] = mockChannels();
+
+    expect(first.topic).not.toBe(second.topic);
+
+    unsubscribeFirst();
+
+    expect(mockSupabase.removeChannel).toHaveBeenCalledWith(first);
+    expect(mockChannels()).toEqual([second]);
   });
 });
 

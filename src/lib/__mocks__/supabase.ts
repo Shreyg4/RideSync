@@ -95,6 +95,36 @@ export const mockBucket = (bucket: string) => memo(buckets, bucket, makeStorageB
 export const mockRpc = (fn: string, result: Partial<Result>) =>
   rpcResults.set(fn, { ...emptyResult(), ...result });
 
+type RealtimeHandler = (payload: unknown) => void;
+
+export interface ChannelMock {
+  topic: string;
+  on: jest.Mock<(type: string, filter: unknown, handler: RealtimeHandler) => ChannelMock>;
+  subscribe: jest.Mock<() => ChannelMock>;
+  /** Deliver a postgres_changes payload to this channel's handlers, as Realtime would. */
+  __emit: (payload: unknown) => void;
+}
+
+const makeChannel = (topic: string): ChannelMock => {
+  const handlers: RealtimeHandler[] = [];
+  const channel: ChannelMock = {
+    topic,
+    on: jest.fn((_type: string, _filter: unknown, handler: RealtimeHandler) => {
+      handlers.push(handler);
+      return channel;
+    }),
+    subscribe: jest.fn(() => channel),
+    __emit: (payload) => handlers.forEach((handler) => handler(payload)),
+  };
+  return channel;
+};
+
+// Channels the code under test opened and hasn't removed, so a test can push events into them
+const openChannels: ChannelMock[] = [];
+
+/** Realtime channels that are open right now, oldest first. */
+export const mockChannels = () => [...openChannels];
+
 type SessionResult = Result<{ session: unknown }>;
 type UserResult = Result<{ user: unknown; session: unknown }>;
 type Subscription = { data: { subscription: { unsubscribe: jest.Mock<() => void> } } };
@@ -139,6 +169,16 @@ export const supabase = {
   auth,
   functions,
   storage: { from: jest.fn((bucket: string) => mockBucket(bucket)) },
+  channel: jest.fn((topic: string) => {
+    const channel = makeChannel(topic);
+    openChannels.push(channel);
+    return channel;
+  }),
+  removeChannel: jest.fn(async (channel: ChannelMock) => {
+    const index = openChannels.indexOf(channel);
+    if (index !== -1) openChannels.splice(index, 1);
+    return 'ok' as const;
+  }),
 };
 
 /**
@@ -150,7 +190,10 @@ export const resetSupabaseMock = () => {
   builders.clear();
   buckets.clear();
   rpcResults.clear();
+  openChannels.length = 0;
   supabase.from.mockClear();
+  supabase.channel.mockClear();
+  supabase.removeChannel.mockClear();
   supabase.rpc.mockClear();
   supabase.storage.from.mockClear();
   auth.getSession.mockReset();

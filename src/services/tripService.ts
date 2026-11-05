@@ -66,6 +66,39 @@ export const listTripMembers = async (tripId: number): Promise<TripMemberRow[]> 
   return data ?? [];
 };
 
+export type TripMemberChange = {
+  event: 'INSERT' | 'UPDATE' | 'DELETE';
+  userId?: string;
+};
+
+// supabase.channel() hands back the open channel when a name is reused, so two screens on the same
+// trip would share one and the first to unmount would close it for both
+let channelCount = 0;
+
+// Calls onChange whenever someone on the trip joins, changes role or leaves. Returns the unsubscribe
+export const subscribeToTripMembers = (
+  tripId: number,
+  onChange: (change: TripMemberChange) => void
+): (() => void) => {
+  channelCount += 1;
+  const channel = supabase
+    .channel(`trip-members:${tripId}:${channelCount}`)
+    .on<Database['public']['Tables']['trip_members']['Row']>(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'trip_members', filter: `trip_id=eq.${tripId}` },
+      (payload) =>
+        onChange({
+          event: payload.eventType,
+          userId: payload.eventType === 'DELETE' ? payload.old.user_id : payload.new.user_id,
+        })
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
 export const setMemberRole = async (
   tripId: number,
   userId: string,

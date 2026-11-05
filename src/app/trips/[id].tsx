@@ -13,10 +13,13 @@ import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
 import { useAsync } from '@/src/hooks/useAsync';
+import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { getTrip, listTripMembers } from '@/src/services/tripService';
 import { toTrip, toTripMember } from '@/src/lib/tripMapper';
 import { reportError } from '@/src/lib/logger';
 import { formatJoinCode, tripTypeLabel } from '@/src/domain/rules';
+
+const backToTrips = () => router.dismissTo('/trips');
 
 const TripDetailsScreen = () => {
   const insets = useSafeAreaInsets();
@@ -39,6 +42,9 @@ const TripDetailsScreen = () => {
     [tripId],
     'TripDetailsScreen.listTripMembers'
   );
+
+  // This screen sits under every trip screen in the stack, so it alone sends a removed member home
+  useTripMembersRealtime(tripId, reloadMembers, backToTrips);
 
   // Coming back from trip settings may mean new details or members
   const firstFocus = useRef(true);
