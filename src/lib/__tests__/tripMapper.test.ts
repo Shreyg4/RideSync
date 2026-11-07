@@ -82,6 +82,7 @@ describe('toTripStop', () => {
     category: 'lodging',
     notes: 'Late check-in',
     departs_at: '2026-09-03T15:00:00.000Z',
+    is_turnaround: true,
     created_at: '2026-09-01T00:00:00.000Z',
     updated_at: '2026-09-01T00:00:00.000Z',
   };
@@ -100,6 +101,7 @@ describe('toTripStop', () => {
       stopCategory: 'lodging',
       notes: 'Late check-in',
       departsAt: new Date('2026-09-03T15:00:00.000Z'),
+      isTurnaround: true,
     });
   });
 

@@ -13,7 +13,7 @@ import { colors, spacing, gradients } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import StopListItem from '@/src/components/StopListItem';
 import { useAuth } from '@/src/context/AuthProvider';
-import { addStopLabel, nextStopType } from '@/src/domain/rules';
+import { addStopLabel, nextStopType, startsReturnLeg } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
@@ -62,6 +62,7 @@ const PlannerScreen = () => {
 
   const myRole = data?.members.find((member) => member.id === user?.id)?.role;
   const canEdit = myRole === 'owner' || myRole === 'editor';
+  const stopType = data ? nextStopType(data.stops, data.trip.tripType) : null;
 
   return (
     <View style={{ flex: 1 }}>
@@ -101,7 +102,13 @@ const PlannerScreen = () => {
         <FlatList
           data={data.stops}
           keyExtractor={(stop) => stop.id.toString()}
-          renderItem={({ item }) => <StopListItem stop={item} testID={`stop-${item.id}`} />}
+          renderItem={({ item, index }) => (
+            <StopListItem
+              stop={item}
+              startsReturn={startsReturnLeg(data.stops, index)}
+              testID={`stop-${item.id}`}
+            />
+          )}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
@@ -123,12 +130,14 @@ const PlannerScreen = () => {
             />
           }
           ListFooterComponent={
-            canEdit ? (
+            canEdit && stopType ? (
               <LargeButton
                 icon={Plus}
-                label={addStopLabel(nextStopType(data.stops, data.trip.tripType))}
+                label={addStopLabel(stopType)}
                 variant="dashed"
-                onPress={() => router.push(`/trips/${tripId}/addStop`)}
+                onPress={() =>
+                  router.push({ pathname: '/trips/[id]/addStop', params: { id: tripId, stopType } })
+                }
               />
             ) : null
           }

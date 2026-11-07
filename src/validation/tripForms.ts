@@ -1,10 +1,16 @@
 /**
  * @file tripFroms.ts
- * @description This file holds everything about the create-trip form that can be tested
+ * @description This file holds everything about the trip and stop forms that can be tested
  * without rendering a screen.
  */
 
-import { TRIP_NAME_MIN_LENGTH, TRIP_NAME_MAX_LENGTH, JOIN_CODE_LENGTH } from '../domain/rules';
+import {
+  TRIP_NAME_MIN_LENGTH,
+  TRIP_NAME_MAX_LENGTH,
+  JOIN_CODE_LENGTH,
+  STOP_NAME_MAX_LENGTH,
+  STOP_NOTES_MAX_LENGTH,
+} from '../domain/rules';
 import type { TripType } from '../types/trip';
 
 export type CreateTripForm = {
@@ -46,6 +52,28 @@ export const validateCreateTripForm = (
     if (form.startsAt < startOfToday) next.date = 'Date is in the past';
     else if (form.startsAt <= now) next.time = 'Time has already passed';
   }
+
+  return next;
+};
+
+export type StopForm = {
+  name: string;
+  notes: string;
+};
+
+export type StopFieldErrors = Partial<Record<'name' | 'notes', string>>;
+
+// Measures the text that gets saved, since both fields are trimmed first
+export const validateStopForm = ({ name, notes }: StopForm) => {
+  const next: StopFieldErrors = {};
+  const trimmedName = name.trim();
+
+  if (!trimmedName) next.name = 'Required';
+  else if (trimmedName.length > STOP_NAME_MAX_LENGTH)
+    next.name = `${STOP_NAME_MAX_LENGTH} characters max`;
+
+  if (notes.trim().length > STOP_NOTES_MAX_LENGTH)
+    next.notes = `${STOP_NOTES_MAX_LENGTH} characters max`;
 
   return next;
 };

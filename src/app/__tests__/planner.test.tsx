@@ -41,6 +41,7 @@ const stopRow = (id: number, stop_type: string, name: string): TripStopRow => ({
   category: 'food',
   notes: null,
   departs_at: null,
+  is_turnaround: false,
   created_at: NOW,
   updated_at: NOW,
 });
@@ -98,7 +99,10 @@ describe('PlannerScreen', () => {
 
     await fireEvent.press(await view.findByLabelText('Set start'));
 
-    expect(router.push).toHaveBeenCalledWith('/trips/1/addStop');
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/trips/[id]/addStop',
+      params: { id: 1, stopType: 'start' },
+    });
   });
 
   it('gives a viewer no add button', async () => {
@@ -134,11 +138,54 @@ describe('PlannerScreen', () => {
     ['one-way', [stopRow(1, 'start', 'Home')], 'Set end'],
     ['one-way', [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')], 'Add stop'],
     ['round-trip', [] as TripStopRow[], 'Set start'],
-    ['round-trip', [stopRow(1, 'start', 'Home')], 'Add stop'],
+    ['round-trip', [stopRow(1, 'start', 'Home')], 'Set destination'],
+    [
+      'round-trip',
+      [stopRow(1, 'start', 'Home'), { ...stopRow(2, 'stop', 'Coast'), is_turnaround: true }],
+      'Add stop',
+    ],
   ])('on a %s trip with these stops, the button reads correctly', async (type, stops, label) => {
     const view = await renderPlanner({ stops, trip: tripRow({ trip_type: type }) });
 
     expect(await view.findByLabelText(label)).toBeTruthy();
+  });
+
+  it('opens search for the destination when a round trip needs one', async () => {
+    const view = await renderPlanner({
+      stops: [stopRow(1, 'start', 'Home')],
+      trip: tripRow({ trip_type: 'round-trip' }),
+    });
+
+    await fireEvent.press(await view.findByLabelText('Set destination'));
+
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/trips/[id]/addStop',
+      params: { id: 1, stopType: 'destination' },
+    });
+  });
+
+  it('puts the Return heading above the first stop after the destination', async () => {
+    const view = await renderPlanner({
+      stops: [
+        stopRow(1, 'start', 'Home'),
+        { ...stopRow(2, 'overnight', 'Coast'), is_turnaround: true },
+        stopRow(3, 'stop', 'Diner'),
+      ],
+      trip: tripRow({ trip_type: 'round-trip' }),
+    });
+
+    expect(await view.findByText('Return')).toBeTruthy();
+    expect(view.getByText('Destination (overnight)')).toBeTruthy();
+  });
+
+  it('shows no Return heading when nothing comes after the destination', async () => {
+    const view = await renderPlanner({
+      stops: [stopRow(1, 'start', 'Home'), { ...stopRow(2, 'stop', 'Coast'), is_turnaround: true }],
+      trip: tripRow({ trip_type: 'round-trip' }),
+    });
+
+    await view.findByText('Coast');
+    expect(view.queryByText('Return')).toBeNull();
   });
 
   it('removes the old placeholder buttons', async () => {

@@ -64,4 +64,5 @@ export const toTripStop = (row: TripStopRow): TripStop => ({
   stopCategory: row.category as StopCategory,
   notes: row.notes,
   departsAt: row.departs_at ? new Date(row.departs_at) : null,
+  isTurnaround: row.is_turnaround,
 });

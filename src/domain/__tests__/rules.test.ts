@@ -9,6 +9,11 @@ import {
   toStopCategory,
   nextStopType,
   addStopLabel,
+  canStayOvernight,
+  startsReturnLeg,
+  parseNextStopType,
+  parseStopPosition,
+  stopCategoryLabel,
   stopLabel,
 } from '../rules';
 
@@ -41,8 +46,47 @@ describe('nextOwner', () => {
   });
 });
 
+describe('parseNextStopType', () => {
+  it.each(['start', 'end', 'destination', 'stop'])('keeps %s', (value) => {
+    expect(parseNextStopType(value)).toBe(value);
+  });
+
+  it.each([
+    ['nothing', undefined],
+    ['a repeated param', ['start', 'end']],
+    ['overnight, which is chosen later, not searched for', 'overnight'],
+    ['an unknown value', 'nope'],
+  ])('treats %s as a normal stop', (_, value) => {
+    expect(parseNextStopType(value)).toBe('stop');
+  });
+});
+
+describe('parseStopPosition', () => {
+  it.each([
+    ['0', 0],
+    ['3', 3],
+  ])('reads %s as a position', (value, expected) => {
+    expect(parseStopPosition(value)).toBe(expected);
+  });
+
+  it.each([[undefined], [''], ['soon'], ['-1'], ['1.5'], [['1', '2']]])(
+    'has no position for %j',
+    (value) => {
+      expect(parseStopPosition(value)).toBeUndefined();
+    }
+  );
+});
+
+describe('stopCategoryLabel', () => {
+  it('capitalizes the category', () => {
+    expect(stopCategoryLabel('attraction')).toBe('Attraction');
+  });
+});
+
 describe('nextStopType', () => {
-  const stops = (...types: StopType[]) => types.map((stopType) => ({ stopType }));
+  const stops = (...types: StopType[]) =>
+    types.map((stopType) => ({ stopType, isTurnaround: false }));
+  const destination = { stopType: 'stop' as const, isTurnaround: true };
 
   it('starts every trip with the start', () => {
     expect(nextStopType([], 'one-way')).toBe('start');
@@ -58,8 +102,16 @@ describe('nextStopType', () => {
     expect(nextStopType(stops('start', 'overnight', 'end'), 'one-way')).toBe('stop');
   });
 
-  it('never asks a round trip for an end, because it finishes at the start', () => {
-    expect(nextStopType(stops('start'), 'round-trip')).toBe('stop');
+  it('asks a round trip for its destination instead of an end', () => {
+    expect(nextStopType(stops('start'), 'round-trip')).toBe('destination');
+  });
+
+  it('adds normal stops once a round trip has its destination', () => {
+    expect(nextStopType([...stops('start'), destination], 'round-trip')).toBe('stop');
+  });
+
+  it('asks again for a destination after the old one is removed, even with other stops left', () => {
+    expect(nextStopType(stops('start', 'stop', 'overnight'), 'round-trip')).toBe('destination');
   });
 
   it('asks for the start even if an end already exists', () => {
@@ -71,19 +123,64 @@ describe('addStopLabel', () => {
   it('names what the button will add', () => {
     expect(addStopLabel('start')).toBe('Set start');
     expect(addStopLabel('end')).toBe('Set end');
+    expect(addStopLabel('destination')).toBe('Set destination');
     expect(addStopLabel('stop')).toBe('Add stop');
   });
 });
 
 describe('stopLabel', () => {
   it('describes a normal stop by its category', () => {
-    expect(stopLabel({ stopType: 'stop', stopCategory: 'coffee' })).toBe('Coffee');
+    expect(stopLabel({ stopType: 'stop', stopCategory: 'coffee', isTurnaround: false })).toBe(
+      'Coffee'
+    );
   });
 
   it('describes start, end and overnight stops by their place in the trip', () => {
-    expect(stopLabel({ stopType: 'start', stopCategory: 'lodging' })).toBe('Start');
-    expect(stopLabel({ stopType: 'end', stopCategory: 'lodging' })).toBe('End');
-    expect(stopLabel({ stopType: 'overnight', stopCategory: 'lodging' })).toBe('Overnight');
+    const label = (stopType: StopType) =>
+      stopLabel({ stopType, stopCategory: 'lodging', isTurnaround: false });
+
+    expect(label('start')).toBe('Start');
+    expect(label('end')).toBe('End');
+    expect(label('overnight')).toBe('Overnight');
+  });
+
+  it('calls out the destination, and whether the group sleeps there', () => {
+    const label = (stopType: StopType) =>
+      stopLabel({ stopType, stopCategory: 'food', isTurnaround: true });
+
+    expect(label('stop')).toBe('Destination');
+    expect(label('overnight')).toBe('Destination (overnight)');
+  });
+});
+
+describe('canStayOvernight', () => {
+  it('allows a night at a normal stop or the destination', () => {
+    expect(canStayOvernight('stop')).toBe(true);
+    expect(canStayOvernight('destination')).toBe(true);
+  });
+
+  it('does not allow one at the start or end', () => {
+    expect(canStayOvernight('start')).toBe(false);
+    expect(canStayOvernight('end')).toBe(false);
+  });
+});
+
+describe('startsReturnLeg', () => {
+  const stops = [false, true, false, false].map((isTurnaround) => ({ isTurnaround }));
+
+  it('is true only for the stop right after the destination', () => {
+    expect(stops.map((_, index) => startsReturnLeg(stops, index))).toEqual([
+      false,
+      false,
+      true,
+      false,
+    ]);
+  });
+
+  it('is false everywhere on a trip with no destination', () => {
+    const oneWay = [{ isTurnaround: false }, { isTurnaround: false }];
+
+    expect(oneWay.map((_, index) => startsReturnLeg(oneWay, index))).toEqual([false, false]);
   });
 });
 

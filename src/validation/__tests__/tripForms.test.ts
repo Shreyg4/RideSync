@@ -1,5 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
-import { validateCreateTripForm, normalizeTripName, normalizeJoinCode } from '../tripForms';
+import {
+  validateCreateTripForm,
+  validateStopForm,
+  normalizeTripName,
+  normalizeJoinCode,
+} from '../tripForms';
 import type { CreateTripForm } from '../tripForms';
 
 const NOW = new Date(2026, 8, 2, 9, 30, 0, 0);
@@ -113,6 +118,34 @@ describe('validateCreateTripForm', () => {
       form.startsAt
     );
     expect(errors.date).toBe('Date is in the past');
+  });
+});
+
+describe('validateStopForm', () => {
+  it('accepts a name with no notes', () => {
+    expect(validateStopForm({ name: 'Space Needle', notes: '' })).toEqual({});
+  });
+
+  it.each(['', '   '])('requires a name, so %j is not enough', (name) => {
+    expect(validateStopForm({ name, notes: '' }).name).toBe('Required');
+  });
+
+  it('accepts a name and notes right at their limits', () => {
+    expect(validateStopForm({ name: 'a'.repeat(100), notes: 'b'.repeat(500) })).toEqual({});
+  });
+
+  it('rejects a name or notes over their limits', () => {
+    expect(validateStopForm({ name: 'a'.repeat(101), notes: 'b'.repeat(501) })).toEqual({
+      name: '100 characters max',
+      notes: '500 characters max',
+    });
+  });
+
+  it('does not count the outer spaces that get trimmed before saving', () => {
+    const padded = (text: string) => `  ${text}  `;
+    const form = { name: padded('a'.repeat(100)), notes: padded('b'.repeat(500)) };
+
+    expect(validateStopForm(form)).toEqual({});
   });
 });
 

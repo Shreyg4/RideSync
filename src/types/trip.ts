@@ -55,6 +55,7 @@ export type TripStop = {
   stopCategory: StopCategory;
   notes: string | null;
   departsAt: Date | null;
+  isTurnaround: boolean; // a round trip's destination
 };
 
 export type Coordinates = {

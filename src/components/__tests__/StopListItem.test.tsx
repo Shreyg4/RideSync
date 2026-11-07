@@ -17,10 +17,26 @@ const stop = (overrides: Partial<TripStop> = {}): TripStop => ({
   stopCategory: 'food',
   notes: null,
   departsAt: null,
+  isTurnaround: false,
   ...overrides,
 });
 
 describe('StopListItem', () => {
+  it('shows the Return heading only on the stop that starts the drive home', async () => {
+    const first = await render(<StopListItem stop={stop()} startsReturn />);
+    expect(first.getByText('Return')).toBeTruthy();
+
+    const other = await render(<StopListItem stop={stop()} />);
+    expect(other.queryByText('Return')).toBeNull();
+  });
+
+  it('labels the destination instead of its category', async () => {
+    const view = await render(<StopListItem stop={stop({ isTurnaround: true })} />);
+
+    expect(view.getByText('Destination')).toBeTruthy();
+    expect(view.queryByText('Food')).toBeNull();
+  });
+
   it('shows the name, address and category', async () => {
     const view = await render(<StopListItem stop={stop()} />);
 

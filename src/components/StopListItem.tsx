@@ -8,46 +8,61 @@ import { stopLabel } from '@/src/domain/rules';
 
 type StopListItemProps = {
   stop: TripStop;
+  startsReturn?: boolean; // shows the "Return" heading above this stop
   onPress?: () => void;
   testID?: string;
 };
 
-const StopListItem = ({ stop, onPress, testID }: StopListItemProps) => {
+const StopListItem = ({ stop, startsReturn = false, onPress, testID }: StopListItemProps) => {
   const label = stopLabel(stop);
 
   return (
-    <Pressable
-      disabled={!onPress}
-      onPress={() => {
-        haptics.action();
-        onPress?.();
-      }}
-      testID={testID}
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={[stop.name, stop.address, label].filter(Boolean).join(', ')}
-      style={({ pressed }) => [pressFeedback.card(pressed)]}
-    >
-      <View style={styles.container}>
-        <Text style={styles.name}>{stop.name}</Text>
-        <View style={styles.infoRow}>
-          {stop.address ? (
-            <>
-              <Text style={[styles.subtext, styles.address]} numberOfLines={1}>
-                {stop.address}
-              </Text>
-              <Dot {...iconProps} />
-            </>
-          ) : null}
-          <Text style={styles.subtext}>{label}</Text>
+    <>
+      {startsReturn ? (
+        <Text style={styles.returnHeading} accessibilityRole="header">
+          Return
+        </Text>
+      ) : null}
+      <Pressable
+        disabled={!onPress}
+        onPress={() => {
+          haptics.action();
+          onPress?.();
+        }}
+        testID={testID}
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={[stop.name, stop.address, label].filter(Boolean).join(', ')}
+        style={({ pressed }) => [pressFeedback.card(pressed)]}
+      >
+        <View style={styles.container}>
+          <Text style={styles.name}>{stop.name}</Text>
+          <View style={styles.infoRow}>
+            {stop.address ? (
+              <>
+                <Text style={[styles.subtext, styles.address]} numberOfLines={1}>
+                  {stop.address}
+                </Text>
+                <Dot {...iconProps} />
+              </>
+            ) : null}
+            <Text style={styles.subtext}>{label}</Text>
+          </View>
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </>
   );
 };
 
 export default StopListItem;
 
 const styles = StyleSheet.create({
+  returnHeading: {
+    color: colors.text,
+    fontSize: fontSize.body,
+    fontWeight: fontWeight.semibold,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
   container: {
     backgroundColor: colors.card,
     borderRadius: radii.lg,

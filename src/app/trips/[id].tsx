@@ -20,7 +20,7 @@ import { getTrip, listTripMembers } from '@/src/services/tripService';
 import { listTripStops } from '@/src/services/tripStopService';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
 import { reportError } from '@/src/lib/logger';
-import { formatJoinCode, tripTypeLabel } from '@/src/domain/rules';
+import { formatJoinCode, startsReturnLeg, tripTypeLabel } from '@/src/domain/rules';
 
 const backToTrips = () => router.dismissTo('/trips');
 
@@ -180,8 +180,13 @@ const TripDetailsScreen = () => {
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Itinerary</Text>
           {stops?.length ? (
-            stops.map((stop) => (
-              <StopListItem key={stop.id} stop={stop} testID={`stop-${stop.id}`} />
+            stops.map((stop, index) => (
+              <StopListItem
+                key={stop.id}
+                stop={stop}
+                startsReturn={startsReturnLeg(stops, index)}
+                testID={`stop-${stop.id}`}
+              />
             ))
           ) : (
             <Text style={[styles.text, { paddingBottom: spacing.lg }]}>

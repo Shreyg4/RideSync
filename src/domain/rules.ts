@@ -42,33 +42,73 @@ export const nextOwner = (members: readonly TripMember[]): TripMember | undefine
   members.find((member) => member.role === 'viewer');
 
 export const STOP_NAME_MAX_LENGTH = 100;
+export const STOP_NOTES_MAX_LENGTH = 500;
 
-type NextStopType = Exclude<StopType, 'overnight'>;
+export const STOP_CATEGORIES = [
+  'gas',
+  'food',
+  'coffee',
+  'rest',
+  'lodging',
+  'attraction',
+  'other',
+] as const satisfies readonly StopCategory[];
 
-// add_trip_stop rejects normal stops until the start exists, and the end too on a one-way trip.
-// Round trips finish back at the start, so they never get an end stop
+export const stopCategoryLabel = (value: StopCategory) =>
+  value.charAt(0).toUpperCase() + value.slice(1);
+
+// Mapbox rejects a longer search
+export const PLACE_QUERY_MAX_LENGTH = 256;
+
+// A destination isn't a stop type of its own: it's a normal or overnight stop marked as the turnaround
+export type NextStopType = Exclude<StopType, 'overnight'> | 'destination';
+
+// add_trip_stop rejects normal stops until the start exists, then the end on a one-way trip or the
+// destination on a round trip. Round trips finish back at the start, so they never get an end stop
 export const nextStopType = (
-  stops: readonly Pick<TripStop, 'stopType'>[],
+  stops: readonly Pick<TripStop, 'stopType' | 'isTurnaround'>[],
   tripType: TripType
 ): NextStopType => {
   if (!stops.some((stop) => stop.stopType === 'start')) return 'start';
   if (tripType === 'one-way' && !stops.some((stop) => stop.stopType === 'end')) return 'end';
+  if (tripType === 'round-trip' && !stops.some((stop) => stop.isTurnaround)) return 'destination';
   return 'stop';
 };
 
 const ADD_STOP_LABELS: Record<NextStopType, string> = {
   start: 'Set start',
   end: 'Set end',
+  destination: 'Set destination',
   stop: 'Add stop',
 };
 
 export const addStopLabel = (value: NextStopType) => ADD_STOP_LABELS[value];
 
+// Start and end have a fixed place in the trip, but the group can sleep anywhere else
+export const canStayOvernight = (value: NextStopType) =>
+  value === 'stop' || value === 'destination';
+
+// Reads a route param, which can hold anything. add_trip_stop has the final say on what's allowed
+export const parseNextStopType = (value: unknown): NextStopType =>
+  value === 'start' || value === 'end' || value === 'destination' ? value : 'stop';
+
+// True for the first stop after the destination, where the drive home begins
+export const startsReturnLeg = (stops: readonly Pick<TripStop, 'isTurnaround'>[], index: number) =>
+  index > 0 && stops[index - 1].isTurnaround;
+
+// Also a route param. Without a usable position, add_trip_stop puts the stop at the end of the list
+export const parseStopPosition = (value: unknown): number | undefined => {
+  const position = typeof value === 'string' && value !== '' ? Number(value) : NaN;
+  return Number.isInteger(position) && position >= 0 ? position : undefined;
+};
+
 // A normal stop is described by what it is. Start, end and overnight stops by their place in the trip
 export const stopLabel = ({
   stopType,
   stopCategory,
-}: Pick<TripStop, 'stopType' | 'stopCategory'>) => {
+  isTurnaround,
+}: Pick<TripStop, 'stopType' | 'stopCategory' | 'isTurnaround'>) => {
+  if (isTurnaround) return stopType === 'overnight' ? 'Destination (overnight)' : 'Destination';
   const value = stopType === 'stop' ? stopCategory : stopType;
   return value.charAt(0).toUpperCase() + value.slice(1);
 };

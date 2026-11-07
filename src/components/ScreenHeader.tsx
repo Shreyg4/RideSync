@@ -1,5 +1,5 @@
 import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import SmallButton from './SmallButton';
 type ScreenHeaderProps = {
   title: string;
   onBack?: () => void;
+  backIcon?: LucideIcon;
+  backLabel?: string;
   rightAction?: React.ReactNode;
   applyTopInset?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -16,6 +18,8 @@ type ScreenHeaderProps = {
 export default function ScreenHeader({
   title,
   onBack,
+  backIcon = ChevronLeft,
+  backLabel = 'Go back',
   rightAction,
   applyTopInset = true,
   style,
@@ -27,7 +31,7 @@ export default function ScreenHeader({
       <Text style={styles.title}>{title}</Text>
       {onBack ? (
         <View style={styles.left}>
-          <SmallButton icon={ChevronLeft} onPress={onBack} accessibilityLabel="Go back" />
+          <SmallButton icon={backIcon} onPress={onBack} accessibilityLabel={backLabel} />
         </View>
       ) : null}
       {rightAction ? <View style={styles.right}>{rightAction}</View> : null}

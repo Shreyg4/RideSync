@@ -35,6 +35,9 @@ type TextBoxProps = {
   autoCapitalize?: TextInput['props']['autoCapitalize'];
   secureTextEntry?: boolean; // mask input for passwords
   maxLength?: number;
+  multiline?: boolean; // wraps long text and lets return add a line; pair with a taller height
+  onFocus?: () => void;
+  onBlur?: () => void;
   style?: StyleProp<ViewStyle & TextStyle>; // per-use overrides (win over defaults)
   error?: boolean;
   borderColorError?: string;
@@ -63,6 +66,9 @@ export default function TextBox({
   autoCapitalize = 'sentences',
   secureTextEntry = false,
   maxLength,
+  multiline = false,
+  onFocus,
+  onBlur,
   style,
   error,
   borderColorError = colors.error,
@@ -89,6 +95,7 @@ export default function TextBox({
         autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry && !revealed} // The prop says "this is a password field"; `revealed` says "but show it right now".
         maxLength={maxLength}
+        multiline={multiline}
         testID={testID}
         accessibilityLabel={accessibilityLabel ?? placeholder}
         accessibilityHint={accessibilityHint}
@@ -96,8 +103,12 @@ export default function TextBox({
         onFocus={() => {
           setFocused(true);
           haptics.selection();
+          onFocus?.();
         }}
-        onBlur={() => setFocused(false)}
+        onBlur={() => {
+          setFocused(false);
+          onBlur?.();
+        }}
         style={[
           {
             width: '100%',

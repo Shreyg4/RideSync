@@ -49,6 +49,7 @@ const stopRow: TripStopRow = {
   category: 'other',
   notes: null,
   departs_at: null,
+  is_turnaround: false,
   created_at: NOW,
   updated_at: NOW,
 };

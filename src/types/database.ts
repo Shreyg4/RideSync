@@ -127,6 +127,7 @@ export type Database = {
           created_at: string;
           departs_at: string | null;
           id: number;
+          is_turnaround: boolean;
           lat: number;
           lng: number;
           mapbox_id: string | null;
@@ -143,6 +144,7 @@ export type Database = {
           created_at?: string;
           departs_at?: string | null;
           id?: never;
+          is_turnaround?: boolean;
           lat: number;
           lng: number;
           mapbox_id?: string | null;
@@ -159,6 +161,7 @@ export type Database = {
           created_at?: string;
           departs_at?: string | null;
           id?: never;
+          is_turnaround?: boolean;
           lat?: number;
           lng?: number;
           mapbox_id?: string | null;
@@ -273,6 +276,7 @@ export type Database = {
           new_stop_type?: string;
           stop_address?: string;
           stop_category?: string;
+          stop_is_turnaround?: boolean;
           stop_lat: number;
           stop_lng: number;
           stop_mapbox_id?: string;
@@ -286,6 +290,7 @@ export type Database = {
           created_at: string;
           departs_at: string | null;
           id: number;
+          is_turnaround: boolean;
           lat: number;
           lng: number;
           mapbox_id: string | null;
