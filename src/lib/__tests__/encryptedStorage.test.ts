@@ -117,6 +117,15 @@ describe('encryptedStorage', () => {
     expect(mockKeychain.has(SECURE_KEY)).toBe(false);
   });
 
+  it('drops both halves when a valid key is the wrong one, instead of returning garbage', async () => {
+    await encryptedStorage.setItem(KEY, SESSION);
+    mockKeychain.set(SECURE_KEY, 'ab'.repeat(32)); // a real 32-byte key, just not this session's
+
+    await expect(encryptedStorage.getItem(KEY)).resolves.toBeNull();
+    await expect(AsyncStorage.getItem(KEY)).resolves.toBeNull();
+    expect(mockKeychain.has(SECURE_KEY)).toBe(false);
+  });
+
   it('removes both halves, so logging out leaves nothing behind', async () => {
     await encryptedStorage.setItem(KEY, SESSION);
     await encryptedStorage.removeItem(KEY);

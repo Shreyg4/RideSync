@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/src/context/AuthProvider';
 import { reportError } from '@/src/lib/logger';
+import { setupMapbox } from '@/src/lib/mapbox';
 import * as Sentry from '@sentry/react-native';
 
 export {
@@ -25,6 +26,8 @@ export {
 SplashScreen.preventAutoHideAsync().catch((error) =>
   reportError(error, { scope: 'RootLayout.preventAutoHide' })
 );
+
+setupMapbox();
 
 function RootLayout() {
   // blocks startup until fonts load
@@ -69,7 +72,6 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Protected guard={!!session}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(planner)" options={{ headerShown: false }} />
             <Stack.Screen
               name="createTrip"
               options={{

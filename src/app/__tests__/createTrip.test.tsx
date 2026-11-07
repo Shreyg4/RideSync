@@ -176,7 +176,9 @@ describe('CreateTripScreen', () => {
     await submit(view);
 
     await waitFor(() =>
-      expect(createTripWithImage).toHaveBeenCalledWith(expect.objectContaining({ image: cover }))
+      expect(createTripWithImage).toHaveBeenCalledWith(
+        expect.objectContaining({ image: { kind: 'local', ...cover } })
+      )
     );
   });
 

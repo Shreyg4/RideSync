@@ -63,6 +63,14 @@ const config: ExpoConfig = {
         organization: 'shreyas-7d',
       },
     ],
+    '@rnmapbox/maps',
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          'Allow $(PRODUCT_NAME) to use your location to find stops near you.',
+      },
+    ],
     './plugins/withPodsDeploymentTarget',
   ],
   experiments: {

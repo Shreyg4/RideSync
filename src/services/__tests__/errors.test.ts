@@ -6,6 +6,7 @@ const FRIENDLY_BY_CODE: Record<string, string> = {
   invalid_credentials: 'That email and password do not match an account.',
   '42501': 'You do not have permission to do that.',
   PGRST116: 'We could not find that.',
+  mapbox_search_failed: 'Search is not available right now. Try again in a moment.',
 };
 
 const GENERIC = 'Something went wrong. Please try again.';
@@ -19,6 +20,7 @@ describe('toUserMessage', () => {
     ['Auth Code', { code: 'invalid_credentials' }, FRIENDLY_BY_CODE['invalid_credentials']],
     ['Postgres Code', { code: '42501' }, FRIENDLY_BY_CODE['42501']],
     ['PostgREST Code', { code: 'PGRST116' }, FRIENDLY_BY_CODE['PGRST116']],
+    ['Mapbox Code', { code: 'mapbox_search_failed' }, FRIENDLY_BY_CODE['mapbox_search_failed']],
     [
       'Error instance with code property',
       Object.assign(new Error('You do not have permission to do that.'), { code: '42501' }),

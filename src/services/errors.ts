@@ -16,6 +16,7 @@ const FRIENDLY_BY_CODE: Record<string, string> = {
   weak_password: 'Choose a longer password.',
   over_request_rate_limit: 'Too many attempts. Wait a moment and try again.',
   over_email_send_rate_limit: 'Too many emails sent. Wait a moment and try again.',
+  mapbox_search_failed: 'Search is not available right now. Try again in a moment.',
   '22023': 'That change is not allowed right now. Refresh and try again.',
   '23505': 'That is already taken.',
   '23514': 'Some of those details are not allowed.',

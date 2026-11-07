@@ -22,6 +22,20 @@ jest.mock('expo-linking', () => ({
   createURL: (path: string) => `ridesync://${path}`,
 }));
 
+// The real package needs native modules. Map pieces render as plain Views so a test can find them
+// and read their props
+jest.mock('@rnmapbox/maps', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const mapbox = {
+    MapView: (props: object) => React.createElement(View, { testID: 'mapbox-map', ...props }),
+    Camera: (props: object) => React.createElement(View, { testID: 'mapbox-camera', ...props }),
+    StyleURL: { Dark: 'mapbox://styles/mapbox/dark-v10' },
+    setAccessToken: jest.fn(async () => null),
+  };
+  return { __esModule: true, ...mapbox, default: mapbox };
+});
+
 jest.mock('@react-navigation/bottom-tabs', () => ({
   useBottomTabBarHeight: () => 60,
 }));

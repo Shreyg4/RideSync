@@ -25,13 +25,6 @@ export type SavedTrip = {
   tripType: TripType;
 };
 
-export type Location = {
-  id: number;
-  name: string;
-  address: string;
-  type: string;
-};
-
 export type TripMember = {
   id: string;
   name: string;
@@ -63,3 +56,19 @@ export type TripStop = {
   notes: string | null;
   departsAt: Date | null;
 };
+
+export type Coordinates = {
+  lat: number;
+  lng: number;
+};
+
+export type PlaceSuggestion = {
+  mapboxId: string;
+  name: string;
+  address: string | null;
+};
+
+export type Place = PlaceSuggestion &
+  Coordinates & {
+    category: StopCategory;
+  };

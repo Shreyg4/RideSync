@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { toTrip, toTripMember } from '../tripMapper';
+import { toTrip, toTripMember, toTripStop } from '../tripMapper';
 import type { TripRow, TripMemberRow } from '@/src/services/tripService';
 import { mockBucket } from '@/src/test/supabase';
 
@@ -65,6 +65,46 @@ describe('toTrip', () => {
 
     expect(trip.departureDate).toBe(date.format(startsAt));
     expect(trip.departureTime).toBe(time.format(startsAt));
+  });
+});
+
+describe('toTripStop', () => {
+  const row = {
+    id: 3,
+    trip_id: 1,
+    position: 2,
+    name: 'Motel',
+    address: '9 Hill Rd',
+    lat: 47.6,
+    lng: -122.3,
+    mapbox_id: 'mapbox-3',
+    stop_type: 'overnight',
+    category: 'lodging',
+    notes: 'Late check-in',
+    departs_at: '2026-09-03T15:00:00.000Z',
+    created_at: '2026-09-01T00:00:00.000Z',
+    updated_at: '2026-09-01T00:00:00.000Z',
+  };
+
+  it('renames the columns the app reads', () => {
+    expect(toTripStop(row)).toEqual({
+      id: 3,
+      tripId: 1,
+      position: 2,
+      name: 'Motel',
+      address: '9 Hill Rd',
+      lat: 47.6,
+      lng: -122.3,
+      mapboxId: 'mapbox-3',
+      stopType: 'overnight',
+      stopCategory: 'lodging',
+      notes: 'Late check-in',
+      departsAt: new Date('2026-09-03T15:00:00.000Z'),
+    });
+  });
+
+  it('leaves a missing departure time empty rather than the 1970 date', () => {
+    expect(toTripStop({ ...row, departs_at: null }).departsAt).toBeNull();
   });
 });
 

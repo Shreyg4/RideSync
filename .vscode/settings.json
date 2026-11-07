@@ -37,5 +37,6 @@
   ],
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
-  }
+  },
+  "python.terminal.useEnvFile": true
 }

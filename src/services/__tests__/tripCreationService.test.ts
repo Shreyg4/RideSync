@@ -22,7 +22,7 @@ jest.mock('../tripService', () => ({ createTrip: jest.fn() }));
 const IMAGE_PATH = 'user-1/1767225600000.png';
 const STARTS_AT = new Date('2026-11-01T17:30:00.000Z');
 const created = { id: 7, name: 'Coast Run' } as TripRow;
-const image = { uri: 'file://cover.png', mimeType: 'image/png' };
+const image = { kind: 'local' as const, uri: 'file://cover.png', mimeType: 'image/png' };
 
 const input: CreateTripInput = {
   userId: 'user-1',

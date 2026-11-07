@@ -8,14 +8,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import SmallButton from '@/src/components/SmallButton';
-import { ChevronLeft, Pencil, Share2, Settings } from 'lucide-react-native';
+import { ChevronLeft, Eye, Pencil, Share2, Settings } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
+import StopListItem from '@/src/components/StopListItem';
+import { useAuth } from '@/src/context/AuthProvider';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { getTrip, listTripMembers } from '@/src/services/tripService';
-import { toTrip, toTripMember } from '@/src/lib/tripMapper';
+import { listTripStops } from '@/src/services/tripStopService';
+import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
 import { reportError } from '@/src/lib/logger';
 import { formatJoinCode, tripTypeLabel } from '@/src/domain/rules';
 
@@ -23,6 +26,7 @@ const backToTrips = () => router.dismissTo('/trips');
 
 const TripDetailsScreen = () => {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const tripId = Number(Array.isArray(id) ? id[0] : id);
 
@@ -43,10 +47,20 @@ const TripDetailsScreen = () => {
     'TripDetailsScreen.listTripMembers'
   );
 
+  const {
+    data: stops,
+    error: stopsError,
+    reload: reloadStops,
+  } = useAsync(
+    async () => (Number.isInteger(tripId) ? (await listTripStops(tripId)).map(toTripStop) : []),
+    [tripId],
+    'TripDetailsScreen.listTripStops'
+  );
+
   // This screen sits under every trip screen in the stack, so it alone sends a removed member home
   useTripMembersRealtime(tripId, reloadMembers, backToTrips);
 
-  // Coming back from trip settings may mean new details or members
+  // Coming back from trip settings or the planner may mean new details, members or stops
   const firstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -56,8 +70,11 @@ const TripDetailsScreen = () => {
       }
       reloadTrip();
       reloadMembers();
-    }, [reloadTrip, reloadMembers])
+      reloadStops();
+    }, [reloadTrip, reloadMembers, reloadStops])
   );
+
+  const isViewer = members?.find((member) => member.id === user?.id)?.role === 'viewer';
 
   const backButton = (
     <SmallButton
@@ -159,15 +176,23 @@ const TripDetailsScreen = () => {
           />
         </View>
 
-        {/* Where itinerary will be listed */}
+        {/* The trip's stops, in order */}
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Itinerary</Text>
-          <Text style={[styles.text, { paddingBottom: spacing.lg }]}>Not planned</Text>
+          {stops?.length ? (
+            stops.map((stop) => (
+              <StopListItem key={stop.id} stop={stop} testID={`stop-${stop.id}`} />
+            ))
+          ) : (
+            <Text style={[styles.text, { paddingBottom: spacing.lg }]}>
+              {stopsError ?? (stops ? 'Not planned' : 'Loading stops...')}
+            </Text>
+          )}
           <LargeButton
-            icon={Pencil}
-            label="Edit itinerary"
+            icon={isViewer ? Eye : Pencil}
+            label={isViewer ? 'View itinerary' : 'Edit itinerary'}
             variant="dashed"
-            onPress={() => router.push('/planner')}
+            onPress={() => router.push(`/trips/${tripId}/planner`)}
           />
         </View>
         {/* The Directions Button */}

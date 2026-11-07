@@ -1,17 +1,20 @@
 import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { Dot } from 'lucide-react-native';
-import type { Location } from '@/src/types/trip';
+import type { TripStop } from '@/src/types/trip';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
+import { stopLabel } from '@/src/domain/rules';
 
 type StopListItemProps = {
-  location: Location;
+  stop: TripStop;
   onPress?: () => void;
   testID?: string;
 };
 
-const StopListItem = ({ location, onPress, testID }: StopListItemProps) => {
+const StopListItem = ({ stop, onPress, testID }: StopListItemProps) => {
+  const label = stopLabel(stop);
+
   return (
     <Pressable
       disabled={!onPress}
@@ -20,16 +23,22 @@ const StopListItem = ({ location, onPress, testID }: StopListItemProps) => {
         onPress?.();
       }}
       testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={`${location.name}, ${location.address}`}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={[stop.name, stop.address, label].filter(Boolean).join(', ')}
       style={({ pressed }) => [pressFeedback.card(pressed)]}
     >
       <View style={styles.container}>
-        <Text style={styles.name}>{location.name}</Text>
+        <Text style={styles.name}>{stop.name}</Text>
         <View style={styles.infoRow}>
-          <Text style={styles.subtext}>{location.address}</Text>
-          <Dot {...iconProps} />
-          <Text style={styles.subtext}>{location.type}</Text>
+          {stop.address ? (
+            <>
+              <Text style={[styles.subtext, styles.address]} numberOfLines={1}>
+                {stop.address}
+              </Text>
+              <Dot {...iconProps} />
+            </>
+          ) : null}
+          <Text style={styles.subtext}>{label}</Text>
         </View>
       </View>
     </Pressable>
@@ -55,8 +64,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     fontWeight: fontWeight.regular,
   },
+  // Long addresses shrink so the label after them stays on screen
+  address: {
+    flexShrink: 1,
+  },
   infoRow: {
     flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 const iconProps = {

@@ -5,7 +5,9 @@ import { Share } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import TripDetailsScreen from '../trips/[id]';
 import { setErrorReporter } from '@/src/lib/logger';
+import type { AuthContextType } from '@/src/context/AuthProvider';
 import type { TripMemberRow, TripRow } from '@/src/services/tripService';
+import type { TripStopRow } from '@/src/services/tripStopService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockChannels, mockRpc, mockTable } from '@/src/test/supabase';
 
@@ -33,6 +35,23 @@ const memberRow = (overrides: Partial<TripMemberRow> = {}): TripMemberRow => ({
   joined_at: NOW,
   ...overrides,
 });
+
+const stopRow: TripStopRow = {
+  id: 1,
+  trip_id: 1,
+  position: 0,
+  name: 'Home',
+  address: '1 Main St',
+  lat: 47.6,
+  lng: -122.3,
+  mapbox_id: 'mapbox-1',
+  stop_type: 'start',
+  category: 'other',
+  notes: null,
+  departs_at: null,
+  created_at: NOW,
+  updated_at: NOW,
+};
 
 const withParams = (params: Record<string, unknown>) => {
   (useLocalSearchParams as jest.Mock).mockReturnValue(params);
@@ -150,6 +169,66 @@ describe('TripDetailsScreen', () => {
     );
 
     expect(await view.findByText('Bea')).toBeTruthy();
+  });
+
+  it('lists the stops in the itinerary', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({
+      data: [{ ...stopRow, id: 5, name: 'Home' }],
+      error: null,
+    });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    expect(await view.findByTestId('stop-5')).toBeTruthy();
+    expect(view.getByText('Home')).toBeTruthy();
+    expect(view.queryByText('Not planned')).toBeNull();
+  });
+
+  it('says the trip is not planned when it has no stops', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({ data: [], error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    expect(await view.findByText('Not planned')).toBeTruthy();
+  });
+
+  it('shows a friendly error when the stops fail to load', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({ data: null, error: { code: '42501' } });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    expect(await view.findByText('You do not have permission to do that.')).toBeTruthy();
+  });
+
+  it('offers a viewer the itinerary to view and opens this trip’s planner', async () => {
+    (router.push as jest.Mock).mockClear();
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockRpc('list_trip_members', { data: [memberRow({ role: 'viewer' })] });
+    const view = await renderScreen(
+      <TripDetailsScreen />,
+      signedInAuth({ user: { id: 'user-1' } as AuthContextType['user'] })
+    );
+
+    await fireEvent.press(await view.findByLabelText('View itinerary'));
+
+    expect(router.push).toHaveBeenCalledWith('/trips/1/planner');
+  });
+
+  it('offers an owner the itinerary to edit', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockRpc('list_trip_members', { data: [memberRow({ role: 'owner' })] });
+    const view = await renderScreen(
+      <TripDetailsScreen />,
+      signedInAuth({ user: { id: 'user-1' } as AuthContextType['user'] })
+    );
+
+    expect(await view.findByLabelText('Edit itinerary')).toBeTruthy();
   });
 
   it('sends a member who is removed on another phone back to Trips', async () => {

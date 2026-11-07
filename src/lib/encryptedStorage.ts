@@ -31,7 +31,11 @@ const encrypt = async (value: string) => {
 
 const decrypt = (hexKey: string, hexCiphertext: string) => {
   const cipher = new ModeOfOperation.ctr(utils.hex.toBytes(hexKey), new Counter(0));
-  return utils.utf8.fromBytes(cipher.decrypt(utils.hex.toBytes(hexCiphertext)));
+  // Not aes-js's utf8.fromBytes: it garbles 4-byte characters like emoji, which breaks the session
+  // JSON. Fatal makes the wrong key throw, since CTR mode decrypts it to invalid UTF-8 without failing
+  return new TextDecoder('utf-8', { fatal: true }).decode(
+    cipher.decrypt(utils.hex.toBytes(hexCiphertext))
+  );
 };
 
 export const encryptedStorage: SessionStorage = {
