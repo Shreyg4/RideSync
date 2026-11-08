@@ -11,6 +11,9 @@ import type { TripStopRow } from '@/src/services/tripStopService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockChannels, mockRpc, mockTable } from '@/src/test/supabase';
 
+// The timeline's markers are hidden from screen readers, so queries have to ask for them
+const HIDDEN = { includeHiddenElements: true };
+
 const NOW = new Date(2026, 8, 2, 9, 30, 0, 0).toISOString();
 
 const tripRow = (overrides: Partial<TripRow> = {}): TripRow => ({
@@ -184,6 +187,68 @@ describe('TripDetailsScreen', () => {
     expect(await view.findByTestId('stop-5')).toBeTruthy();
     expect(view.getByText('Home')).toBeTruthy();
     expect(view.queryByText('Not planned')).toBeNull();
+  });
+
+  it('shows a round trip’s drive home under its own heading, ending back at the start', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow({ trip_type: 'round-trip' }), error: null });
+    mockTable('trip_stops').__setResult({
+      data: [
+        stopRow,
+        { ...stopRow, id: 2, position: 1, name: 'Coast', stop_type: 'stop', is_turnaround: true },
+        { ...stopRow, id: 3, position: 2, name: 'Diner', stop_type: 'stop' },
+      ],
+      error: null,
+    });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    await view.findByText('Coast');
+    expect(
+      view.getAllByText(/^(Home|Coast|Diner|Return)$/).map((node) => node.props.children)
+    ).toEqual(['Home', 'Coast', 'Return', 'Diner', 'Home']);
+    expect(view.getByTestId('back-to-start')).toBeTruthy();
+    expect(view.getByTestId('pin-1', HIDDEN)).toBeTruthy();
+    expect(view.getByTestId('pin-2', HIDDEN)).toBeTruthy();
+    expect(view.getByTestId('dot-3', HIDDEN)).toBeTruthy();
+    expect(view.getByTestId('pin-back-to-start', HIDDEN)).toBeTruthy();
+    expect(view.queryByLabelText('Add return stop')).toBeNull();
+  });
+
+  it('shows only the start of a long itinerary and points to the planner for the rest', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({
+      data: [1, 2, 3, 4, 5, 6, 7].map((id) => ({
+        ...stopRow,
+        id,
+        position: id - 1,
+        name: `Place ${id}`,
+        stop_type: id === 1 ? 'start' : id === 7 ? 'end' : 'stop',
+      })),
+      error: null,
+    });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    await view.findByText('Place 1');
+    expect(view.getAllByTestId(/^stop-/).map((row) => row.props.testID)).toEqual([
+      'stop-1',
+      'stop-2',
+      'stop-3',
+      'stop-4',
+    ]);
+    expect(view.getByTestId('itinerary-more-stops').props.children).toBe(
+      '3 more stops in the planner'
+    );
+  });
+
+  it('shows a short itinerary in full, with no count', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({ data: [stopRow], error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+
+    await view.findByText('Home');
+    expect(view.queryByTestId('itinerary-more-stops')).toBeNull();
   });
 
   it('says the trip is not planned when it has no stops', async () => {

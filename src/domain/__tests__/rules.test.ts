@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import type { StopType, TripMember, TripMemberRole } from '@/src/types/trip';
+import type { StopType, TripMember, TripMemberRole, TripStop, TripType } from '@/src/types/trip';
 import {
   nextOwner,
   memberRoleLabel,
@@ -10,12 +10,17 @@ import {
   nextStopType,
   addStopLabel,
   canStayOvernight,
-  startsReturnLeg,
+  isKeyStop,
+  itineraryRows,
+  dayHeadingLabel,
+  previewRows,
+  timeline,
   parseNextStopType,
   parseStopPosition,
   stopCategoryLabel,
   stopLabel,
 } from '../rules';
+import type { ItineraryRow } from '../rules';
 
 const member = (name: string, role: TripMemberRole): TripMember => ({
   id: name.toLowerCase(),
@@ -153,6 +158,20 @@ describe('stopLabel', () => {
   });
 });
 
+describe('isKeyStop', () => {
+  it('picks out the start, end and destination', () => {
+    expect(isKeyStop({ stopType: 'start', isTurnaround: false })).toBe(true);
+    expect(isKeyStop({ stopType: 'end', isTurnaround: false })).toBe(true);
+    expect(isKeyStop({ stopType: 'stop', isTurnaround: true })).toBe(true);
+    expect(isKeyStop({ stopType: 'overnight', isTurnaround: true })).toBe(true);
+  });
+
+  it('leaves out normal and overnight stops along the way', () => {
+    expect(isKeyStop({ stopType: 'stop', isTurnaround: false })).toBe(false);
+    expect(isKeyStop({ stopType: 'overnight', isTurnaround: false })).toBe(false);
+  });
+});
+
 describe('canStayOvernight', () => {
   it('allows a night at a normal stop or the destination', () => {
     expect(canStayOvernight('stop')).toBe(true);
@@ -165,22 +184,314 @@ describe('canStayOvernight', () => {
   });
 });
 
-describe('startsReturnLeg', () => {
-  const stops = [false, true, false, false].map((isTurnaround) => ({ isTurnaround }));
+describe('itineraryRows', () => {
+  // Wed, Sep 2 2026
+  const STARTS_AT = new Date(2026, 8, 2, 9, 30);
 
-  it('is true only for the stop right after the destination', () => {
-    expect(stops.map((_, index) => startsReturnLeg(stops, index))).toEqual([
-      false,
-      false,
-      true,
-      false,
+  const tripStop = (
+    id: number,
+    stopType: StopType,
+    isTurnaround = false,
+    departsAt: Date | null = null
+  ): TripStop => ({
+    id,
+    tripId: 1,
+    position: id - 1,
+    name: `Stop ${id}`,
+    address: null,
+    lat: 47.6,
+    lng: -122.3,
+    mapboxId: null,
+    stopType,
+    stopCategory: 'other',
+    notes: null,
+    departsAt,
+    isTurnaround,
+  });
+
+  const rowsFor = (
+    stops: TripStop[],
+    tripType: TripType = 'round-trip',
+    canAdd = true,
+    startsAt = STARTS_AT
+  ) => itineraryRows(stops, tripType, startsAt, canAdd);
+
+  // Each row as a short tag, so the order is easy to read
+  const shape = (rows: ReturnType<typeof itineraryRows>) =>
+    rows.map((row) => {
+      switch (row.kind) {
+        case 'stop':
+          return row.stop.id;
+        case 'dayHeading':
+          return `Day ${row.day} ${row.date.getMonth() + 1}/${row.date.getDate()}${
+            row.startsReturn ? ' Return' : ''
+          }`;
+        case 'add':
+          return row.atPosition === undefined ? row.label : `${row.label} @${row.atPosition}`;
+        case 'returnHeading':
+          return 'Return';
+        case 'backToStart':
+          return `back to ${row.stop.id}`;
+      }
+    });
+
+  it('has only the Set start button for a new trip', () => {
+    expect(shape(rowsFor([], 'one-way'))).toEqual(['Set start']);
+    expect(shape(rowsFor([], 'round-trip'))).toEqual(['Set start']);
+  });
+
+  it('asks for the end or destination at the bottom while it is missing', () => {
+    expect(shape(rowsFor([tripStop(1, 'start')], 'one-way'))).toEqual(['Day 1 9/2', 1, 'Set end']);
+    expect(shape(rowsFor([tripStop(1, 'start')], 'round-trip'))).toEqual([
+      'Day 1 9/2',
+      1,
+      'Set destination',
+      'back to 1',
     ]);
   });
 
-  it('is false everywhere on a trip with no destination', () => {
-    const oneWay = [{ isTurnaround: false }, { isTurnaround: false }];
+  it('puts the add button just before a one-way trip’s end', () => {
+    const stops = [tripStop(1, 'start'), tripStop(2, 'stop'), tripStop(3, 'end')];
 
-    expect(oneWay.map((_, index) => startsReturnLeg(oneWay, index))).toEqual([false, false]);
+    expect(shape(rowsFor(stops, 'one-way'))).toEqual(['Day 1 9/2', 1, 2, 'Add stop', 3]);
+  });
+
+  it('splits a round trip into the way out and the drive home, finishing at the start', () => {
+    const stops = [tripStop(1, 'start'), tripStop(2, 'stop', true), tripStop(3, 'stop')];
+
+    expect(shape(rowsFor(stops))).toEqual([
+      'Day 1 9/2',
+      1,
+      'Add stop',
+      2,
+      'Return',
+      3,
+      'Add return stop @3',
+      'back to 1',
+    ]);
+  });
+
+  it('adds return stops after the last one, even before any exist', () => {
+    const stops = [tripStop(1, 'start'), tripStop(2, 'stop', true)];
+
+    expect(shape(rowsFor(stops))).toEqual([
+      'Day 1 9/2',
+      1,
+      'Add stop',
+      2,
+      'Return',
+      'Add return stop @2',
+      'back to 1',
+    ]);
+  });
+
+  it('asks again at the bottom for a destination after the old one is removed', () => {
+    const stops = [tripStop(1, 'start'), tripStop(2, 'stop')];
+
+    expect(shape(rowsFor(stops))).toEqual(['Day 1 9/2', 1, 2, 'Set destination', 'back to 1']);
+  });
+
+  it('leaves every button out for someone who cannot add stops', () => {
+    const stops = [tripStop(1, 'start'), tripStop(2, 'stop', true), tripStop(3, 'stop')];
+
+    expect(shape(rowsFor(stops, 'round-trip', false))).toEqual([
+      'Day 1 9/2',
+      1,
+      2,
+      'Return',
+      3,
+      'back to 1',
+    ]);
+    expect(shape(rowsFor([], 'one-way', false))).toEqual([]);
+  });
+
+  it('starts a new day after each overnight stop', () => {
+    const stops = [
+      tripStop(1, 'start'),
+      tripStop(2, 'overnight'),
+      tripStop(3, 'stop'),
+      tripStop(4, 'overnight'),
+      tripStop(5, 'end'),
+    ];
+
+    expect(shape(rowsFor(stops, 'one-way', false))).toEqual([
+      'Day 1 9/2',
+      1,
+      2,
+      'Day 2 9/3',
+      3,
+      4,
+      'Day 3 9/4',
+      5,
+    ]);
+  });
+
+  it('puts the return on the next day when the group sleeps at the destination', () => {
+    const stops = [tripStop(1, 'start'), tripStop(2, 'overnight', true), tripStop(3, 'stop')];
+
+    expect(shape(rowsFor(stops, 'round-trip', false))).toEqual([
+      'Day 1 9/2',
+      1,
+      2,
+      'Day 2 9/3 Return',
+      3,
+      'back to 1',
+    ]);
+  });
+
+  it('follows a departure date, so a two-night stay skips a day', () => {
+    const stops = [
+      tripStop(1, 'start'),
+      tripStop(2, 'overnight', false, new Date(2026, 8, 4, 8)),
+      tripStop(3, 'end'),
+    ];
+
+    expect(shape(rowsFor(stops, 'one-way', false))).toEqual(['Day 1 9/2', 1, 2, 'Day 3 9/4', 3]);
+  });
+
+  it('ignores a departure that is not after the day the group arrived', () => {
+    const stops = [
+      tripStop(1, 'start'),
+      tripStop(2, 'overnight', false, new Date(2026, 8, 2, 23)),
+      tripStop(3, 'end'),
+    ];
+
+    expect(shape(rowsFor(stops, 'one-way', false))).toEqual(['Day 1 9/2', 1, 2, 'Day 2 9/3', 3]);
+  });
+
+  it('carries the dates into the next month and year', () => {
+    const stops = [tripStop(1, 'start'), tripStop(2, 'overnight'), tripStop(3, 'end')];
+    const rows = rowsFor(stops, 'one-way', false, new Date(2026, 11, 31, 22));
+
+    expect(shape(rows)).toEqual(['Day 1 12/31', 1, 2, 'Day 2 1/1', 3]);
+    const lastDay = rows.find((row) => row.kind === 'dayHeading' && row.day === 2);
+    expect(lastDay?.kind === 'dayHeading' && lastDay.date.getFullYear()).toBe(2027);
+  });
+
+  it('has no back-to-start row until a round trip has a start', () => {
+    expect(shape(rowsFor([], 'round-trip', false))).toEqual([]);
+  });
+});
+
+describe('previewRows', () => {
+  const place = (id: number): ItineraryRow => ({
+    kind: 'stop',
+    stop: { id } as TripStop,
+  });
+  const heading = (day: number): ItineraryRow => ({
+    kind: 'dayHeading',
+    day,
+    date: new Date(2026, 8, day + 1),
+    startsReturn: false,
+  });
+  const ids = (rows: ItineraryRow[]) =>
+    rows.map((row) => (row.kind === 'stop' ? row.stop.id : row.kind));
+
+  it('keeps a list that is short enough whole', () => {
+    const rows = [heading(1), place(1), place(2), place(3), place(4), place(5)];
+
+    expect(previewRows(rows, 5)).toEqual({ rows, hiddenStops: 0 });
+  });
+
+  it('cuts a longer list to one place under the max and counts the stops left out', () => {
+    const rows = [heading(1), ...[1, 2, 3, 4, 5, 6, 7].map(place)];
+
+    const preview = previewRows(rows, 5);
+
+    expect(ids(preview.rows)).toEqual(['dayHeading', 1, 2, 3, 4]);
+    expect(preview.hiddenStops).toBe(3);
+  });
+
+  it('counts the return to the start as a place but not as a hidden stop', () => {
+    const start = place(1);
+    const rows = [
+      ...[1, 2, 3, 4, 5].map(place),
+      { kind: 'backToStart', stop: (start as { stop: TripStop }).stop } as ItineraryRow,
+    ];
+
+    const preview = previewRows(rows, 5);
+
+    expect(ids(preview.rows)).toEqual([1, 2, 3, 4]);
+    expect(preview.hiddenStops).toBe(1);
+  });
+
+  it('drops a heading left at the bottom with nothing under it', () => {
+    const rows = [place(1), place(2), place(3), place(4), heading(2), place(5), place(6)];
+
+    expect(ids(previewRows(rows, 5).rows)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe('timeline', () => {
+  const place = { kind: 'stop', stop: { id: 1 } as TripStop } as ItineraryRow;
+  const heading = { kind: 'returnHeading' } as ItineraryRow;
+  const add = { kind: 'add', stopType: 'stop', label: 'Add stop' } as ItineraryRow;
+  const lines = (rows: ItineraryRow[]) =>
+    timeline(rows).map(({ lineAbove, lineBelow }) => `${+lineAbove}${+lineBelow}`);
+
+  it('runs from the first place to the last, through the rows between', () => {
+    expect(lines([heading, place, add, place, heading, place, add])).toEqual([
+      '00',
+      '01',
+      '11',
+      '11',
+      '11',
+      '10',
+      '00',
+    ]);
+  });
+
+  it('starts a new line each day, with none through the day heading', () => {
+    const day = (n: number) =>
+      ({ kind: 'dayHeading', day: n, date: new Date(), startsReturn: false }) as ItineraryRow;
+
+    expect(lines([day(1), place, place, day(2), place, heading, place, add, place])).toEqual([
+      '00',
+      '01',
+      '10',
+      '00',
+      '01',
+      '11',
+      '11',
+      '11',
+      '10',
+    ]);
+  });
+
+  it('leaves a day with one place without a line', () => {
+    const day = {
+      kind: 'dayHeading',
+      day: 2,
+      date: new Date(),
+      startsReturn: false,
+    } as ItineraryRow;
+
+    expect(lines([place, place, day, place, add])).toEqual(['01', '10', '00', '00', '00']);
+  });
+
+  it('draws no line for a single place or none', () => {
+    expect(lines([heading, place, add])).toEqual(['00', '00', '00']);
+    expect(lines([add])).toEqual(['00']);
+    expect(lines([])).toEqual([]);
+  });
+});
+
+describe('dayHeadingLabel', () => {
+  const date = new Date(2026, 8, 3);
+  const shortDate = date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  it('names the day and its date', () => {
+    expect(dayHeadingLabel({ day: 2, date, startsReturn: false })).toBe(`Day 2 · ${shortDate}`);
+  });
+
+  it('marks the day the drive home begins', () => {
+    expect(dayHeadingLabel({ day: 2, date, startsReturn: true })).toBe(
+      `Day 2 · ${shortDate} · Return`
+    );
   });
 });
 

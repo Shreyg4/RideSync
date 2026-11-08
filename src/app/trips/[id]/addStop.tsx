@@ -23,7 +23,7 @@ import TripMap from '@/src/components/TripMap';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
 import { colors, contentWidth, fontSize, gradients, radii, spacing } from '@/src/constants/theme';
-import { parseNextStopType, PLACE_QUERY_MAX_LENGTH } from '@/src/domain/rules';
+import { parseNextStopType, parseStopPosition, PLACE_QUERY_MAX_LENGTH } from '@/src/domain/rules';
 import type { NextStopType } from '@/src/domain/rules';
 import { useCurrentLocation } from '@/src/hooks/useCurrentLocation';
 import { usePlaceSearch } from '@/src/hooks/usePlaceSearch';
@@ -38,9 +38,15 @@ const SEARCH_PLACEHOLDERS: Record<NextStopType, string> = {
 
 const AddStopScreen = () => {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id: string | string[]; stopType?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    id: string | string[];
+    stopType?: string | string[];
+    atPosition?: string | string[];
+  }>();
   const tripId = Number(Array.isArray(params.id) ? params.id[0] : params.id);
   const stopType = parseNextStopType(params.stopType);
+  // Only a stop on a round trip's drive home has a position, which the preview passes to the save
+  const atPosition = parseStopPosition(params.atPosition);
 
   const { location, loading: locating } = useCurrentLocation();
   const { query, setQuery, results, searching, pickingId, error, noResults, pick } =
@@ -77,7 +83,12 @@ const AddStopScreen = () => {
     if (!place) return;
     router.push({
       pathname: '/trips/[id]/stopDetails',
-      params: { id: tripId, place: toPlaceParam(place), stopType },
+      params: {
+        id: tripId,
+        place: toPlaceParam(place),
+        stopType,
+        ...(atPosition === undefined ? {} : { atPosition }),
+      },
     });
   };
 

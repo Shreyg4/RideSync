@@ -1,6 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
+import { StyleSheet } from 'react-native';
+import type { ReactTestInstance } from 'react-test-renderer';
+import { colors } from '@/src/constants/theme';
 import StopListItem from '../StopListItem';
 import type { TripStop } from '@/src/types/trip';
 
@@ -21,13 +24,34 @@ const stop = (overrides: Partial<TripStop> = {}): TripStop => ({
   ...overrides,
 });
 
-describe('StopListItem', () => {
-  it('shows the Return heading only on the stop that starts the drive home', async () => {
-    const first = await render(<StopListItem stop={stop()} startsReturn />);
-    expect(first.getByText('Return')).toBeTruthy();
+// The card's border color, which sits on the view inside the pressable
+const borderColor = (view: ReturnType<typeof render> extends Promise<infer V> ? V : never) =>
+  StyleSheet.flatten((view.getByTestId('row').children[0] as ReactTestInstance).props.style)
+    .borderColor;
 
-    const other = await render(<StopListItem stop={stop()} />);
-    expect(other.queryByText('Return')).toBeNull();
+describe('StopListItem', () => {
+  it('tints the border of a highlighted stop', async () => {
+    const view = await render(<StopListItem stop={stop()} highlighted testID="row" />);
+
+    expect(borderColor(view)).toBe(colors.tint);
+  });
+
+  it('keeps the border invisible otherwise', async () => {
+    const view = await render(<StopListItem stop={stop()} testID="row" />);
+
+    expect(borderColor(view)).toBe('transparent');
+  });
+
+  it('shows a label it is given in place of the stop’s own', async () => {
+    const view = await render(
+      <StopListItem stop={stop({ stopType: 'start' })} label="Back to start" testID="row" />
+    );
+
+    expect(view.getByText('Back to start')).toBeTruthy();
+    expect(view.queryByText('Start')).toBeNull();
+    expect(view.getByTestId('row').props.accessibilityLabel).toBe(
+      'Diner, 1 Main St, Back to start'
+    );
   });
 
   it('labels the destination instead of its category', async () => {

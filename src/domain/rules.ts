@@ -11,6 +11,7 @@ import type {
   TripMemberRole,
   TripMember,
 } from '@/src/types/trip';
+import { addDays, daysBetween, formatShortDate, startOfDay } from '@/src/lib/dateTime';
 
 export const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
 export const USERNAME_MIN_LENGTH = 5;
@@ -92,15 +93,102 @@ export const canStayOvernight = (value: NextStopType) =>
 export const parseNextStopType = (value: unknown): NextStopType =>
   value === 'start' || value === 'end' || value === 'destination' ? value : 'stop';
 
-// True for the first stop after the destination, where the drive home begins
-export const startsReturnLeg = (stops: readonly Pick<TripStop, 'isTurnaround'>[], index: number) =>
-  index > 0 && stops[index - 1].isTurnaround;
+export type ItineraryRow =
+  | { kind: 'stop'; stop: TripStop }
+  | { kind: 'dayHeading'; day: number; date: Date; startsReturn: boolean }
+  | { kind: 'returnHeading' }
+  | { kind: 'add'; stopType: NextStopType; label: string; atPosition?: number }
+  | { kind: 'backToStart'; stop: TripStop };
+
+export type AddStopRow = Extract<ItineraryRow, { kind: 'add' }>;
+
+// The group leaves an overnight stop on its departure date, or the next morning if it has none.
+// A departure that isn't after the day they arrived can't be right, so it's ignored
+const departureDay = (stop: Pick<TripStop, 'departsAt'>, arrivalDay: Date) => {
+  const departs = stop.departsAt ? startOfDay(stop.departsAt) : null;
+  return departs && departs > arrivalDay ? departs : addDays(arrivalDay, 1);
+};
+
+// "Day 2 · Sat, Sep 12", with "· Return" when the group sleeps at the destination
+export const dayHeadingLabel = ({
+  day,
+  date,
+  startsReturn,
+}: Pick<Extract<ItineraryRow, { kind: 'dayHeading' }>, 'day' | 'date' | 'startsReturn'>) =>
+  [`Day ${day}`, formatShortDate(date), startsReturn ? 'Return' : null].filter(Boolean).join(' · ');
+
+// The itinerary as the planner and trip details list it. Days aren't stored: each overnight stop
+// ends one, and days are numbered by date, so a two-night stay skips a number. Until the trip has
+// its start and its end or destination, the one button sits at the bottom. After that, new stops
+// go just before the end or destination, which is where add_trip_stop puts a stop given no
+// position. A round trip's drive home has its own heading and button, then the list finishes back
+// at the start
+export const itineraryRows = (
+  stops: readonly TripStop[],
+  tripType: TripType,
+  startsAt: Date,
+  canAdd: boolean
+): ItineraryRow[] => {
+  const next = nextStopType(stops, tripType);
+  const hasBothEnds = next === 'stop';
+  const rows: ItineraryRow[] = [];
+  const firstDay = startOfDay(startsAt);
+  let currentDay = firstDay;
+
+  if (stops.length > 0) {
+    rows.push({ kind: 'dayHeading', day: 1, date: firstDay, startsReturn: false });
+  }
+
+  for (const stop of stops) {
+    if (canAdd && hasBothEnds && (stop.isTurnaround || stop.stopType === 'end')) {
+      rows.push({ kind: 'add', stopType: 'stop', label: addStopLabel('stop') });
+    }
+    rows.push({ kind: 'stop', stop });
+
+    if (stop.stopType === 'overnight') {
+      currentDay = departureDay(stop, currentDay);
+      rows.push({
+        kind: 'dayHeading',
+        day: daysBetween(firstDay, currentDay) + 1,
+        date: currentDay,
+        startsReturn: stop.isTurnaround,
+      });
+    } else if (stop.isTurnaround) {
+      rows.push({ kind: 'returnHeading' });
+    }
+  }
+
+  if (canAdd && !hasBothEnds) rows.push({ kind: 'add', stopType: next, label: addStopLabel(next) });
+
+  if (tripType === 'round-trip') {
+    // A position past the last stop puts it at the end of the drive home
+    if (canAdd && hasBothEnds) {
+      rows.push({
+        kind: 'add',
+        stopType: 'stop',
+        label: 'Add return stop',
+        atPosition: stops.length,
+      });
+    }
+    const start = stops.find((stop) => stop.stopType === 'start');
+    if (start) rows.push({ kind: 'backToStart', stop: start });
+  }
+
+  return rows;
+};
 
 // Also a route param. Without a usable position, add_trip_stop puts the stop at the end of the list
 export const parseStopPosition = (value: unknown): number | undefined => {
   const position = typeof value === 'string' && value !== '' ? Number(value) : NaN;
   return Number.isInteger(position) && position >= 0 ? position : undefined;
 };
+
+// The trip's fixed points: where it starts, turns around and ends
+export const isKeyStop = ({
+  stopType,
+  isTurnaround,
+}: Pick<TripStop, 'stopType' | 'isTurnaround'>) =>
+  isTurnaround || stopType === 'start' || stopType === 'end';
 
 // A normal stop is described by what it is. Start, end and overnight stops by their place in the trip
 export const stopLabel = ({
@@ -144,3 +232,61 @@ const STOP_CATEGORY_IDS: readonly (readonly [StopCategory, readonly string[]])[]
 
 export const toStopCategory = (mapboxIds: readonly string[] = []): StopCategory =>
   STOP_CATEGORY_IDS.find(([, ids]) => ids.some((id) => mapboxIds.includes(id)))?.[0] ?? 'other';
+
+export const ITINERARY_PREVIEW_MAX_PLACES = 5;
+
+const isPlaceRow = (row: ItineraryRow) => row.kind === 'stop' || row.kind === 'backToStart';
+
+// A short itinerary for trip details; the planner has the whole thing. A list that's cut keeps one
+// place fewer than the max, so what's hidden is always at least one stop plus the finish, never
+// just the finish. Headings left at the bottom with no stop under them go too
+export const previewRows = (
+  rows: readonly ItineraryRow[],
+  maxPlaces = ITINERARY_PREVIEW_MAX_PLACES
+): { rows: ItineraryRow[]; hiddenStops: number } => {
+  if (rows.filter(isPlaceRow).length <= maxPlaces) return { rows: [...rows], hiddenStops: 0 };
+
+  let places = 0;
+  const end = rows.findIndex((row) => isPlaceRow(row) && ++places === maxPlaces);
+  const shown = rows.slice(0, end);
+  while (shown.length > 0 && !isPlaceRow(shown[shown.length - 1])) shown.pop();
+
+  return {
+    rows: shown,
+    hiddenStops: rows.slice(end).filter((row) => row.kind === 'stop').length,
+  };
+};
+
+export type TimelineSegment = { lineAbove: boolean; lineBelow: boolean };
+
+// Where the line beside the itinerary runs. Each day has its own line, from its first place down to
+// its last, through the headings and buttons between them. It stops at a day heading, so a new day
+// starts a new line
+export const timeline = (rows: readonly ItineraryRow[]): TimelineSegment[] => {
+  const segments: TimelineSegment[] = [];
+  let dayStart = 0;
+
+  rows.forEach((row, index) => {
+    const isLastRow = index === rows.length - 1;
+    if (row.kind !== 'dayHeading' && !isLastRow) return;
+
+    const dayEnd = row.kind === 'dayHeading' ? index : index + 1;
+    const day = rows.slice(dayStart, dayEnd);
+    const placeIndexes = day.flatMap((dayRow, i) => (isPlaceRow(dayRow) ? [i] : []));
+    const first = placeIndexes[0] ?? -1;
+    const last = placeIndexes[placeIndexes.length - 1] ?? -1;
+
+    day.forEach((dayRow, i) => {
+      const between = i > first && i < last;
+      segments.push(
+        isPlaceRow(dayRow)
+          ? { lineAbove: i > first, lineBelow: i < last }
+          : { lineAbove: between, lineBelow: between }
+      );
+    });
+    if (row.kind === 'dayHeading') segments.push({ lineAbove: false, lineBelow: false });
+    dayStart = index + 1;
+  });
+
+  return segments;
+};

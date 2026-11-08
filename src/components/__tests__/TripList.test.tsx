@@ -14,6 +14,7 @@ const trip = (overrides: Partial<Trip> = {}): Trip => ({
   numMembers: 4,
   image: null,
   name: 'Mount Rainier',
+  startsAt: new Date(2026, 6, 10, 7),
   departureDate: '07/10/2026',
   departureTime: '7:00 AM',
   tripType: 'round-trip',

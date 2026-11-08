@@ -346,6 +346,35 @@ describe('AddStopScreen', () => {
     });
   });
 
+  it('passes a return stop’s position on to the preview', async () => {
+    (useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: '1',
+      stopType: 'stop',
+      atPosition: '4',
+    });
+    const view = await renderScreen(<AddStopScreen />, signedInAuth());
+    await view.findByTestId('add-stop-map');
+    await search(view, 'Space');
+
+    await fireEvent.press(view.getByTestId('place-result-needle-suggested'));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    expect((router.push as jest.Mock).mock.calls[0][0]).toMatchObject({
+      params: { stopType: 'stop', atPosition: 4 },
+    });
+  });
+
+  it('sends no position for a stop that goes in the default place', async () => {
+    const view = await renderAddStop();
+    await search(view, 'Space');
+
+    await fireEvent.press(view.getByTestId('place-result-needle-suggested'));
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    const { params } = (router.push as jest.Mock).mock.calls[0][0] as { params: object };
+    expect(params).not.toHaveProperty('atPosition');
+  });
+
   it('stays on the results with a message when the place fails to load', async () => {
     const view = await renderAddStop();
     await search(view, 'Space');

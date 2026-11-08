@@ -12,6 +12,7 @@ export type Trip = {
   numMembers: number;
   image: string | null;
   name: string;
+  startsAt: Date;
   departureDate: string;
   departureTime: string;
   tripType: TripType;

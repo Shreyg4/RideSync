@@ -1,19 +1,19 @@
 import { FlatList, StyleSheet, View } from 'react-native';
 import React, { useCallback, useRef, useState } from 'react';
-import { Settings, Plus } from 'lucide-react-native';
+import { Settings } from 'lucide-react-native';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import EmptyState from '@/src/components/EmptyState';
 import ErrorText from '@/src/components/ErrorText';
-import LargeButton from '@/src/components/LargeButton';
+import ItineraryRowItem, { itineraryRowKey } from '@/src/components/ItineraryRowItem';
 import LoadingState from '@/src/components/LoadingState';
 import SmallButton from '@/src/components/SmallButton';
 import ScreenHeader from '@/src/components/ScreenHeader';
 import { colors, spacing, gradients } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import StopListItem from '@/src/components/StopListItem';
 import { useAuth } from '@/src/context/AuthProvider';
-import { addStopLabel, nextStopType, startsReturnLeg } from '@/src/domain/rules';
+import { itineraryRows, timeline } from '@/src/domain/rules';
+import type { AddStopRow } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
@@ -62,7 +62,17 @@ const PlannerScreen = () => {
 
   const myRole = data?.members.find((member) => member.id === user?.id)?.role;
   const canEdit = myRole === 'owner' || myRole === 'editor';
-  const stopType = data ? nextStopType(data.stops, data.trip.tripType) : null;
+
+  const rows = data
+    ? itineraryRows(data.stops, data.trip.tripType, data.trip.startsAt, canEdit)
+    : [];
+  const segments = timeline(rows);
+
+  const openSearch = ({ stopType, atPosition }: AddStopRow) =>
+    router.push({
+      pathname: '/trips/[id]/addStop',
+      params: { id: tripId, stopType, ...(atPosition === undefined ? {} : { atPosition }) },
+    });
 
   return (
     <View style={{ flex: 1 }}>
@@ -100,46 +110,39 @@ const PlannerScreen = () => {
         )
       ) : (
         <FlatList
-          data={data.stops}
-          keyExtractor={(stop) => stop.id.toString()}
+          data={rows}
+          keyExtractor={itineraryRowKey}
           renderItem={({ item, index }) => (
-            <StopListItem
-              stop={item}
-              startsReturn={startsReturnLeg(data.stops, index)}
-              testID={`stop-${item.id}`}
+            <ItineraryRowItem
+              row={item}
+              segment={segments[index]}
+              onAdd={openSearch}
+              highlightKeyStops
             />
           )}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.sm }}
+          contentContainerStyle={{
+            paddingLeft: spacing.xs,
+            paddingBottom: insets.bottom + spacing.sm,
+          }}
+          // An editor's empty list still has the Set start button, so this can't be ListEmptyComponent
           ListHeaderComponent={
             <>
               <View style={styles.listSpacer} />
               <ErrorText message={error} onRetry={reload} />
+              {data.stops.length === 0 ? (
+                <EmptyState
+                  title="No stops yet"
+                  subtitle={
+                    canEdit
+                      ? 'Set a starting point to begin planning.'
+                      : 'The owner or an editor can add stops.'
+                  }
+                />
+              ) : null}
             </>
-          }
-          ListEmptyComponent={
-            <EmptyState
-              title="No stops yet"
-              subtitle={
-                canEdit
-                  ? 'Set a starting point to begin planning.'
-                  : 'The owner or an editor can add stops.'
-              }
-            />
-          }
-          ListFooterComponent={
-            canEdit && stopType ? (
-              <LargeButton
-                icon={Plus}
-                label={addStopLabel(stopType)}
-                variant="dashed"
-                onPress={() =>
-                  router.push({ pathname: '/trips/[id]/addStop', params: { id: tripId, stopType } })
-                }
-              />
-            ) : null
           }
         />
       )}

@@ -12,7 +12,7 @@ import { ChevronLeft, Eye, Pencil, Share2, Settings } from 'lucide-react-native'
 import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
-import StopListItem from '@/src/components/StopListItem';
+import ItineraryRowItem, { itineraryRowKey } from '@/src/components/ItineraryRowItem';
 import { useAuth } from '@/src/context/AuthProvider';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
@@ -20,7 +20,13 @@ import { getTrip, listTripMembers } from '@/src/services/tripService';
 import { listTripStops } from '@/src/services/tripStopService';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
 import { reportError } from '@/src/lib/logger';
-import { formatJoinCode, startsReturnLeg, tripTypeLabel } from '@/src/domain/rules';
+import {
+  formatJoinCode,
+  itineraryRows,
+  previewRows,
+  timeline,
+  tripTypeLabel,
+} from '@/src/domain/rules';
 
 const backToTrips = () => router.dismissTo('/trips');
 
@@ -106,6 +112,11 @@ const TripDetailsScreen = () => {
   const trip = toTrip(row);
   const joinCode = formatJoinCode(row.invite_link);
   const inviteUrl = Linking.createURL(`invite/${row.invite_link}`);
+  // Trip details shows the start of the itinerary; the planner has all of it
+  const itinerary = stops?.length
+    ? previewRows(itineraryRows(stops, trip.tripType, trip.startsAt, false))
+    : null;
+  const itinerarySegments = itinerary ? timeline(itinerary.rows) : [];
 
   const shareInvite = () => {
     Share.share({
@@ -179,15 +190,22 @@ const TripDetailsScreen = () => {
         {/* The trip's stops, in order */}
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Itinerary</Text>
-          {stops?.length ? (
-            stops.map((stop, index) => (
-              <StopListItem
-                key={stop.id}
-                stop={stop}
-                startsReturn={startsReturnLeg(stops, index)}
-                testID={`stop-${stop.id}`}
-              />
-            ))
+          {itinerary ? (
+            <>
+              {itinerary.rows.map((itineraryRow, index) => (
+                <ItineraryRowItem
+                  key={itineraryRowKey(itineraryRow)}
+                  row={itineraryRow}
+                  segment={itinerarySegments[index]}
+                  compact
+                />
+              ))}
+              {itinerary.hiddenStops > 0 ? (
+                <Text style={styles.moreStops} testID="itinerary-more-stops">
+                  {`${itinerary.hiddenStops} more ${itinerary.hiddenStops === 1 ? 'stop' : 'stops'} in the planner`}
+                </Text>
+              ) : null}
+            </>
           ) : (
             <Text style={[styles.text, { paddingBottom: spacing.lg }]}>
               {stopsError ?? (stops ? 'Not planned' : 'Loading stops...')}
@@ -276,6 +294,13 @@ const styles = StyleSheet.create({
     color: colors.tint,
     fontSize: fontSize.sheetTitle,
     fontWeight: fontWeight.heavy,
+  },
+  moreStops: {
+    color: colors.textMutedLight,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.regular,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   text: {
     color: colors.tintSubtle,

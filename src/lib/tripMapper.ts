@@ -14,6 +14,7 @@ import type {
 } from '../types/trip';
 import type { TripRow, TripMemberRow, SavedTripRow } from '../services/tripService';
 import { avatarUrl } from './avatarStorage';
+import { formatShortDate } from './dateTime';
 import { tripImageUrl } from './tripImageStorage';
 import type { TripStopRow } from '../services/tripStopService';
 
@@ -24,11 +25,8 @@ export const toTrip = (row: TripRow): Trip => {
     numMembers: 1,
     image: tripImageUrl(row.image_url),
     name: row.name,
-    departureDate: startsAt.toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    }),
+    startsAt,
+    departureDate: formatShortDate(startsAt),
     departureTime: startsAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }),
     tripType: row.trip_type as TripType,
   };

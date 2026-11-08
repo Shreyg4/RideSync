@@ -5,12 +5,18 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
+import { StyleSheet } from 'react-native';
+import type { ReactTestInstance } from 'react-test-renderer';
+import { colors } from '@/src/constants/theme';
 import PlannerScreen from '../trips/[id]/planner';
 import type { AuthContextType } from '@/src/context/AuthProvider';
 import type { TripRow } from '@/src/services/tripService';
 import type { TripStopRow } from '@/src/services/tripStopService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockChannels, mockRpc, mockTable } from '@/src/test/supabase';
+
+// The timeline's markers are hidden from screen readers, so queries have to ask for them
+const HIDDEN = { includeHiddenElements: true };
 
 const NOW = new Date(2026, 8, 2, 9, 30).toISOString();
 
@@ -45,6 +51,9 @@ const stopRow = (id: number, stop_type: string, name: string): TripStopRow => ({
   created_at: NOW,
   updated_at: NOW,
 });
+
+const shortDate = (date: Date) =>
+  date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
 const member = (role: string) => ({
   user_id: 'user-1',
@@ -164,28 +173,123 @@ describe('PlannerScreen', () => {
     });
   });
 
-  it('puts the Return heading above the first stop after the destination', async () => {
-    const view = await renderPlanner({
-      stops: [
-        stopRow(1, 'start', 'Home'),
-        { ...stopRow(2, 'overnight', 'Coast'), is_turnaround: true },
-        stopRow(3, 'stop', 'Diner'),
-      ],
-      trip: tripRow({ trip_type: 'round-trip' }),
+  describe('a round trip with its destination', () => {
+    const renderRoundTrip = (role = 'owner') =>
+      renderPlanner({
+        role,
+        stops: [
+          stopRow(1, 'start', 'Home'),
+          { ...stopRow(2, 'overnight', 'Coast'), is_turnaround: true },
+          stopRow(3, 'stop', 'Diner'),
+        ],
+        trip: tripRow({ trip_type: 'round-trip' }),
+      });
+
+    // Rows and buttons in the order they appear on screen
+    const order = (view: Awaited<ReturnType<typeof renderPlanner>>) =>
+      view
+        .getAllByText(/^(Home|Coast|Diner|Return|Add stop|Add return stop)$/)
+        .map((node) => node.props.children);
+
+    it('puts Add stop before the destination and Add return stop after the drive home', async () => {
+      const view = await renderRoundTrip();
+
+      await view.findByText('Coast');
+      expect(order(view)).toEqual([
+        'Home',
+        'Add stop',
+        'Coast',
+        'Diner',
+        'Add return stop',
+        'Home',
+      ]);
+      expect(view.getByText('Destination (overnight)')).toBeTruthy();
     });
 
-    expect(await view.findByText('Return')).toBeTruthy();
-    expect(view.getByText('Destination (overnight)')).toBeTruthy();
+    it('starts the drive home on Day 2, the morning after the night at the destination', async () => {
+      const view = await renderRoundTrip();
+
+      expect((await view.findByTestId('day-1')).props.children).toBe(
+        `Day 1 · ${shortDate(new Date(2026, 8, 2))}`
+      );
+      expect(view.getByTestId('day-2').props.children).toBe(
+        `Day 2 · ${shortDate(new Date(2026, 8, 3))} · Return`
+      );
+      expect(view.queryByText('Return')).toBeNull();
+    });
+
+    it('tints the start, the destination and the return to the start, not the stops between', async () => {
+      const view = await renderRoundTrip();
+      await view.findByText('Coast');
+
+      const border = (testID: string) =>
+        StyleSheet.flatten((view.getByTestId(testID).children[0] as ReactTestInstance).props.style)
+          .borderColor;
+
+      expect(border('stop-1')).toBe(colors.tint);
+      expect(border('stop-2')).toBe(colors.tint);
+      expect(border('back-to-start')).toBe(colors.tint);
+      expect(border('stop-3')).toBe('transparent');
+    });
+
+    it('pins the start, destination and finish, and gives other stops a dot', async () => {
+      const view = await renderRoundTrip();
+      await view.findByText('Coast');
+
+      expect(view.getByTestId('pin-1', HIDDEN)).toBeTruthy();
+      expect(view.getByTestId('pin-2', HIDDEN)).toBeTruthy();
+      expect(view.getByTestId('pin-back-to-start', HIDDEN)).toBeTruthy();
+      expect(view.getByTestId('dot-3', HIDDEN)).toBeTruthy();
+      expect(view.queryByTestId('pin-3', HIDDEN)).toBeNull();
+    });
+
+    it('finishes the list back at the start', async () => {
+      const view = await renderRoundTrip();
+
+      const finish = await view.findByTestId('back-to-start');
+      expect(finish.props.accessibilityLabel).toBe('Home, Home address, Back to start');
+    });
+
+    it('opens search for a stop on the way out without a position', async () => {
+      const view = await renderRoundTrip();
+
+      await fireEvent.press(await view.findByLabelText('Add stop'));
+
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/trips/[id]/addStop',
+        params: { id: 1, stopType: 'stop' },
+      });
+    });
+
+    it('opens search for a stop on the way home at the end of the list', async () => {
+      const view = await renderRoundTrip();
+
+      await fireEvent.press(await view.findByLabelText('Add return stop'));
+
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/trips/[id]/addStop',
+        params: { id: 1, stopType: 'stop', atPosition: 3 },
+      });
+    });
+
+    it('shows a viewer the legs and the finish without the buttons', async () => {
+      const view = await renderRoundTrip('viewer');
+
+      await view.findByText('Coast');
+      expect(order(view)).toEqual(['Home', 'Coast', 'Diner', 'Home']);
+    });
   });
 
-  it('shows no Return heading when nothing comes after the destination', async () => {
+  it('puts Add stop just before a one-way trip’s end', async () => {
     const view = await renderPlanner({
-      stops: [stopRow(1, 'start', 'Home'), { ...stopRow(2, 'stop', 'Coast'), is_turnaround: true }],
-      trip: tripRow({ trip_type: 'round-trip' }),
+      stops: [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')],
     });
 
     await view.findByText('Coast');
-    expect(view.queryByText('Return')).toBeNull();
+    expect(view.getAllByText(/^(Home|Coast|Add stop)$/).map((node) => node.props.children)).toEqual(
+      ['Home', 'Add stop', 'Coast']
+    );
+    expect(view.queryByTestId('back-to-start')).toBeNull();
   });
 
   it('removes the old placeholder buttons', async () => {

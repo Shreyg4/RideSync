@@ -6,6 +6,7 @@ const trips: Trip[] = [
     numMembers: 4,
     image: 'https://www.thurstontalk.com/wp-content/uploads/2014/04/Mount-Rainier-Sunset.jpg',
     name: 'Mount Rainier',
+    startsAt: new Date(2026, 6, 10, 7),
     departureDate: '07/10/2026',
     departureTime: '7:00 AM',
     tripType: 'round-trip',
@@ -16,6 +17,7 @@ const trips: Trip[] = [
     image:
       'https://houston.org/_next/image/?url=https%3A%2F%2Fwpb.houston.org%2Fapp%2Fuploads%2F2025%2F12%2FMM5_FIFA_World_Cup_2026_Ball_02Oct2025_ZU2160-scaled.jpg&w=828&q=75',
     name: 'World Cup Trip',
+    startsAt: new Date(2026, 6, 19, 7),
     departureDate: '07/19/2026',
     departureTime: '7:00 AM',
     tripType: 'round-trip',
@@ -25,6 +27,7 @@ const trips: Trip[] = [
     numMembers: 1,
     image: '',
     name: 'A Road Trip',
+    startsAt: new Date(2026, 8, 2, 9),
     departureDate: '09/2/2026',
     departureTime: '9:00 AM',
     tripType: 'one-way',
@@ -35,6 +38,7 @@ const trips: Trip[] = [
     image:
       'https://media.triumphmotorcycles.co.uk/image/upload/f_auto/q_auto:eco/sitecoremedialibrary/media-library/images/motorcycles/usa-disclaimer-heros/classics/scrambler-400-x-my24-family-hero-1-1920x1080-us-disclaimer.jpg',
     name: 'A Trip',
+    startsAt: new Date(2026, 9, 8, 14),
     departureDate: '10/8/2026',
     departureTime: '2:00 PM',
     tripType: 'one-way',

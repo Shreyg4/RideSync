@@ -51,6 +51,12 @@ describe('toTrip', () => {
     expect(toTrip(tripRow({ trip_type: 'round-trip' })).tripType).toBe('round-trip');
   });
 
+  it('keeps the start as a date, for working out each day of the trip', () => {
+    const startsAt = new Date(2026, 6, 10, 9, 5);
+
+    expect(toTrip(tripRow({ starts_at: startsAt.toISOString() })).startsAt).toEqual(startsAt);
+  });
+
   it('formats the departure date and time in the device locale', () => {
     const startsAt = new Date(2026, 6, 10, 9, 5);
     const trip = toTrip(tripRow({ starts_at: startsAt.toISOString() }));

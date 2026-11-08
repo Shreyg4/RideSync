@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { mergeDateTime } from '../dateTime';
+import { addDays, daysBetween, mergeDateTime, startOfDay } from '../dateTime';
 
 const NOW = new Date(2026, 8, 2, 9, 30, 0, 0);
 
@@ -50,5 +50,29 @@ describe('mergeDateTime', () => {
 
     expect(previous.getMonth()).toBe(0);
     expect(previous.getDate()).toBe(1);
+  });
+});
+
+describe('calendar days', () => {
+  it('starts a day at local midnight', () => {
+    expect(startOfDay(new Date(2026, 8, 2, 23, 59))).toEqual(new Date(2026, 8, 2));
+  });
+
+  it('adds whole dates across a month and a year', () => {
+    expect(addDays(new Date(2026, 0, 31), 1)).toEqual(new Date(2026, 1, 1));
+    expect(addDays(new Date(2026, 11, 31, 22), 1)).toEqual(new Date(2027, 0, 1));
+  });
+
+  // In US time zones, Nov 1 2026 is 25 hours long and Mar 8 2026 is 23
+  it('steps over a daylight saving change by one date, not 24 hours', () => {
+    expect(addDays(new Date(2026, 9, 31, 23), 1)).toEqual(new Date(2026, 10, 1));
+    expect(addDays(new Date(2026, 2, 7, 23), 1)).toEqual(new Date(2026, 2, 8));
+    expect(daysBetween(new Date(2026, 9, 31), new Date(2026, 10, 2))).toBe(2);
+    expect(daysBetween(new Date(2026, 2, 7), new Date(2026, 2, 9))).toBe(2);
+  });
+
+  it('counts days by date, whatever the time of day', () => {
+    expect(daysBetween(new Date(2026, 8, 2, 23), new Date(2026, 8, 3, 1))).toBe(1);
+    expect(daysBetween(new Date(2026, 8, 2, 1), new Date(2026, 8, 2, 23))).toBe(0);
   });
 });

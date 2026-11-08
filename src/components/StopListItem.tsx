@@ -8,70 +8,75 @@ import { stopLabel } from '@/src/domain/rules';
 
 type StopListItemProps = {
   stop: TripStop;
-  startsReturn?: boolean; // shows the "Return" heading above this stop
+  label?: string; // replaces the label worked out from the stop
+  highlighted?: boolean; // tints the border
+  compact?: boolean; // less space around the card, for short lists
   onPress?: () => void;
   testID?: string;
 };
 
-const StopListItem = ({ stop, startsReturn = false, onPress, testID }: StopListItemProps) => {
-  const label = stopLabel(stop);
-
+const StopListItem = ({
+  stop,
+  label = stopLabel(stop),
+  highlighted = false,
+  compact = false,
+  onPress,
+  testID,
+}: StopListItemProps) => {
   return (
-    <>
-      {startsReturn ? (
-        <Text style={styles.returnHeading} accessibilityRole="header">
-          Return
-        </Text>
-      ) : null}
-      <Pressable
-        disabled={!onPress}
-        onPress={() => {
-          haptics.action();
-          onPress?.();
-        }}
-        testID={testID}
-        accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={[stop.name, stop.address, label].filter(Boolean).join(', ')}
-        style={({ pressed }) => [pressFeedback.card(pressed)]}
+    <Pressable
+      disabled={!onPress}
+      onPress={() => {
+        haptics.action();
+        onPress?.();
+      }}
+      testID={testID}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={[stop.name, stop.address, label].filter(Boolean).join(', ')}
+      style={({ pressed }) => [pressFeedback.card(pressed)]}
+    >
+      <View
+        style={[styles.container, compact && styles.compact, highlighted && styles.highlighted]}
       >
-        <View style={styles.container}>
-          <Text style={styles.name}>{stop.name}</Text>
-          <View style={styles.infoRow}>
-            {stop.address ? (
-              <>
-                <Text style={[styles.subtext, styles.address]} numberOfLines={1}>
-                  {stop.address}
-                </Text>
-                <Dot {...iconProps} />
-              </>
-            ) : null}
-            <Text style={styles.subtext}>{label}</Text>
-          </View>
+        <Text style={styles.name}>{stop.name}</Text>
+        <View style={styles.infoRow}>
+          {stop.address ? (
+            <>
+              <Text style={[styles.subtext, styles.address]} numberOfLines={1}>
+                {stop.address}
+              </Text>
+              <Dot {...iconProps} />
+            </>
+          ) : null}
+          <Text style={styles.subtext}>{label}</Text>
         </View>
-      </Pressable>
-    </>
+      </View>
+    </Pressable>
   );
 };
 
 export default StopListItem;
 
 const styles = StyleSheet.create({
-  returnHeading: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: fontWeight.semibold,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
-  },
   container: {
     backgroundColor: colors.card,
     borderRadius: radii.lg,
-    margin: spacing.sm,
-    padding: spacing.sm,
+    margin: spacing.xs,
+    padding: spacing.lg,
+    // Always there, so a highlighted card is the same size as the rest
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  compact: {
+    marginHorizontal: 0,
+    marginVertical: spacing.xxs / 2,
+  },
+  highlighted: {
+    borderColor: colors.tint,
   },
   name: {
     color: colors.text,
-    fontSize: fontSize.sheetTitle,
+    fontSize: fontSize.body,
     fontWeight: fontWeight.bold,
   },
   subtext: {
