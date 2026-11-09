@@ -6,11 +6,13 @@ import StopListItem from '@/src/components/StopListItem';
 import { colors, fontSize, fontWeight, spacing } from '@/src/constants/theme';
 import { dayHeadingLabel, isKeyStop } from '@/src/domain/rules';
 import type { AddStopRow, ItineraryRow, TimelineSegment } from '@/src/domain/rules';
+import type { TripStop } from '@/src/types/trip';
 
 type ItineraryRowItemProps = {
   row: ItineraryRow;
   segment?: TimelineSegment; // where the line beside the list runs, from timeline()
   onAdd?: (row: AddStopRow) => void;
+  onOpenStop?: (stop: TripStop) => void; // leaves the stop cards untappable when not given
   highlightKeyStops?: boolean; // tints the start, destination, end and the return to the start
   compact?: boolean; // less space between rows, for short lists
 };
@@ -50,7 +52,7 @@ const marker = (row: ItineraryRow) => {
 
 const rowContent = (
   row: ItineraryRow,
-  { onAdd, highlightKeyStops = false, compact = false }: ItineraryRowItemProps
+  { onAdd, onOpenStop, highlightKeyStops = false, compact = false }: ItineraryRowItemProps
 ): ReactNode => {
   const headingStyle = [styles.heading, compact && styles.compactHeading];
 
@@ -61,6 +63,7 @@ const rowContent = (
           stop={row.stop}
           highlighted={highlightKeyStops && isKeyStop(row.stop)}
           compact={compact}
+          onPress={onOpenStop && (() => onOpenStop(row.stop))}
           testID={`stop-${row.stop.id}`}
         />
       );
@@ -91,6 +94,7 @@ const rowContent = (
           label="Back to start"
           highlighted={highlightKeyStops}
           compact={compact}
+          onPress={onOpenStop && (() => onOpenStop(row.stop))}
           testID="back-to-start"
         />
       );

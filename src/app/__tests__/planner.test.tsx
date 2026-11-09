@@ -302,12 +302,40 @@ describe('PlannerScreen', () => {
     expect(view.queryByText('Total Time')).toBeNull();
   });
 
-  it('does not open search from a saved stop', async () => {
+  it('opens a saved stop’s details, not search', async () => {
     const view = await renderPlanner({ stops: [stopRow(1, 'start', 'Home')] });
 
     await fireEvent.press(await view.findByTestId('stop-1'));
 
-    expect(router.push).not.toHaveBeenCalled();
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/trips/[id]/stopDetails',
+      params: { id: 1, stopId: 1 },
+    });
+  });
+
+  it('lets a viewer open a stop too, to read its details', async () => {
+    const view = await renderPlanner({ role: 'viewer', stops: [stopRow(1, 'start', 'Home')] });
+
+    await fireEvent.press(await view.findByTestId('stop-1'));
+
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { id: 1, stopId: 1 } })
+    );
+  });
+
+  it('opens the start from the Back to start row on a round trip', async () => {
+    const stops = [
+      stopRow(1, 'start', 'Home'),
+      { ...stopRow(2, 'stop', 'Coast'), is_turnaround: true },
+    ];
+    const view = await renderPlanner({ stops, trip: tripRow({ trip_type: 'round-trip' }) });
+
+    await fireEvent.press(await view.findByTestId('back-to-start'));
+
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { id: 1, stopId: 1 } })
+    );
   });
 
   it('removes the add button when the member becomes a viewer on another phone', async () => {

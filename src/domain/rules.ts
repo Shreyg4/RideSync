@@ -183,12 +183,55 @@ export const parseStopPosition = (value: unknown): number | undefined => {
   return Number.isInteger(position) && position >= 0 ? position : undefined;
 };
 
+// A route param naming a saved stop. Ids start at 1
+export const parseStopId = (value: unknown): number | undefined => {
+  const id = parseStopPosition(value);
+  return id !== undefined && id > 0 ? id : undefined;
+};
+
 // The trip's fixed points: where it starts, turns around and ends
 export const isKeyStop = ({
   stopType,
   isTurnaround,
 }: Pick<TripStop, 'stopType' | 'isTurnaround'>) =>
   isTurnaround || stopType === 'start' || stopType === 'end';
+
+// What a saved stop is in the trip, in the terms search and the preview use. Overnight is only a
+// setting on a normal stop or the destination, so it isn't one of these
+export const stopRole = ({
+  stopType,
+  isTurnaround,
+}: Pick<TripStop, 'stopType' | 'isTurnaround'>): NextStopType => {
+  if (isTurnaround) return 'destination';
+  return stopType === 'overnight' ? 'stop' : stopType;
+};
+
+// The start, end and destination split the trip into its way there and way home, so they can be
+// moved to another place but not taken off. remove_trip_stop enforces this for start and end
+export const canRemoveStop = (stop: Pick<TripStop, 'stopType' | 'isTurnaround'>) =>
+  !isKeyStop(stop);
+
+// The day the group reaches a stop: the date of the last day heading above it in the itinerary
+export const stopArrivalDay = (rows: readonly ItineraryRow[], stopId: number): Date | undefined => {
+  let day: Date | undefined;
+  for (const row of rows) {
+    if (row.kind === 'dayHeading') day = row.date;
+    if (row.kind === 'stop' && row.stop.id === stopId) return day;
+  }
+  return undefined;
+};
+
+// When the group leaves an overnight stop if nobody picks a time
+export const DEFAULT_DEPARTURE_HOUR = 9;
+
+// A departure has to be on a later day than the arrival, or the itinerary ignores it
+export const earliestDepartureDay = (arrivalDay: Date) => addDays(startOfDay(arrivalDay), 1);
+
+export const defaultDeparture = (arrivalDay: Date) => {
+  const next = earliestDepartureDay(arrivalDay);
+  next.setHours(DEFAULT_DEPARTURE_HOUR);
+  return next;
+};
 
 // A normal stop is described by what it is. Start, end and overnight stops by their place in the trip
 export const stopLabel = ({

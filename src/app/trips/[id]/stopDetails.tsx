@@ -1,18 +1,22 @@
 /**
  * @file stopDetails.tsx
- * @description The last step of adding a stop: shows the picked place on a map, lets the user adjust
- * its details, and saves it to the trip
+ * @description One stop, on a map with its details. Reached three ways:
+ * - from search with a picked place, to add it to the trip
+ * - from the planner with a stopId, to edit or remove it (a viewer only sees it)
+ * - from search with both, after Change place, to move that stop to the picked place
  */
 import { MarkerView } from '@rnmapbox/maps';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { MapPin } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { MapPin, Trash2 } from 'lucide-react-native';
+import React, { useState, type ReactNode } from 'react';
+import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import Chip from '@/src/components/Chip';
+import DepartureField from '@/src/components/DepartureField';
 import EmptyState from '@/src/components/EmptyState';
 import ErrorText from '@/src/components/ErrorText';
 import LargeButton from '@/src/components/LargeButton';
+import LoadingState from '@/src/components/LoadingState';
 import Screen from '@/src/components/Screen';
 import ScreenHeader from '@/src/components/ScreenHeader';
 import TextBox from '@/src/components/TextBox';
@@ -27,43 +31,153 @@ import {
   radii,
   spacing,
 } from '@/src/constants/theme';
+import { useAuth } from '@/src/context/AuthProvider';
 import {
   addStopLabel,
+  canRemoveStop,
   canStayOvernight,
+  defaultDeparture,
+  earliestDepartureDay,
+  itineraryRows,
   parseNextStopType,
+  parseStopId,
   parseStopPosition,
   STOP_CATEGORIES,
   STOP_NAME_MAX_LENGTH,
   STOP_NOTES_MAX_LENGTH,
+  stopArrivalDay,
   stopCategoryLabel,
+  stopLabel,
+  stopRole,
 } from '@/src/domain/rules';
 import type { NextStopType } from '@/src/domain/rules';
+import { useAsync } from '@/src/hooks/useAsync';
+import { formatShortDate } from '@/src/lib/dateTime';
 import { parsePlaceParam } from '@/src/lib/placeParam';
+import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
 import { reportAndDescribe } from '@/src/services/errors';
-import { addTripStop } from '@/src/services/tripStopService';
-import type { Place, StopCategory } from '@/src/types/trip';
+import { getTrip, listTripMembers } from '@/src/services/tripService';
+import {
+  addTripStop,
+  listTripStops,
+  removeTripStop,
+  updateTripStop,
+} from '@/src/services/tripStopService';
+import type { TripStopChanges } from '@/src/services/tripStopService';
+import type { Place, StopCategory, TripStop } from '@/src/types/trip';
 import { validateStopForm } from '@/src/validation/tripForms';
 import type { StopFieldErrors } from '@/src/validation/tripForms';
 
 // Close enough to tell a place from its neighbours
 const PREVIEW_ZOOM = 15;
 
+type PreviewPlace = Pick<Place, 'name' | 'address' | 'lat' | 'lng'>;
+
+type FormMode =
+  | { kind: 'add'; place: Place; stopType: NextStopType; atPosition?: number }
+  | {
+      kind: 'edit';
+      stop: TripStop;
+      newPlace: Place | null; // set after Change place, and then saved over the stop's own place
+      arrivalDay?: Date; // when the group gets there; unknown only if it's not in the itinerary
+    };
+
+const plannerHref = (tripId: number) => `/trips/${tripId}/planner` as const;
+
+const formatTime = (date: Date) =>
+  date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+// A saved stop has no Mapbox category list, only the category it was saved with
+const placeOfStop = (stop: TripStop): PreviewPlace => ({
+  name: stop.name,
+  address: stop.address,
+  lat: stop.lat,
+  lng: stop.lng,
+});
+
+// Only a preview, so a drag that starts here scrolls the form instead of panning the map
+const PlacePreview = ({ place }: { place: PreviewPlace }) => (
+  <View style={styles.map} pointerEvents="none" testID="stop-details-map-box">
+    <TripMap initialCenter={place} initialZoom={PREVIEW_ZOOM} testID="stop-details-map">
+      {/* Mapbox reads coordinates longitude first. The anchor rests the pin's tip on the place */}
+      <MarkerView
+        coordinate={[place.lng, place.lat]}
+        anchor={{ x: 0.5, y: 1 }}
+        allowOverlap
+        testID="stop-details-pin"
+      >
+        <MapPin color={colors.tint} fill={colors.background} size={36} />
+      </MarkerView>
+    </TripMap>
+  </View>
+);
+
 type StopDetailsFormProps = {
   tripId: number;
-  place: Place;
-  stopType: NextStopType;
-  atPosition?: number;
+  mode: FormMode;
 };
 
-// Fields are seeded from the place once, so the screen renders this only after the place is known
-const StopDetailsForm = ({ tripId, place, stopType, atPosition }: StopDetailsFormProps) => {
-  const [name, setName] = useState(place.name);
-  const [category, setCategory] = useState<StopCategory>(place.category);
-  const [notes, setNotes] = useState('');
-  const [overnight, setOvernight] = useState(false);
+// Fields are seeded once, so the screen renders this only after the place or stop is known
+const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
+  const stop = mode.kind === 'edit' ? mode.stop : null;
+  // A saved stop opened as it is, rather than one being moved to a new place
+  const editingInPlace = mode.kind === 'edit' && !mode.newPlace ? mode.stop : null;
+  // A picked place: the one being added, or the one a stop is moving to
+  const pickedPlace = mode.kind === 'add' ? mode.place : mode.newPlace;
+  const place: PreviewPlace =
+    mode.kind === 'add' ? mode.place : (mode.newPlace ?? placeOfStop(mode.stop));
+  const role = mode.kind === 'add' ? mode.stopType : stopRole(mode.stop);
+
+  // A moved stop takes the new place's name and category, but keeps its notes and overnight plan
+  const [name, setName] = useState(pickedPlace?.name ?? stop?.name ?? '');
+  const [category, setCategory] = useState<StopCategory>(
+    pickedPlace?.category ?? stop?.stopCategory ?? 'other'
+  );
+  const [notes, setNotes] = useState(stop?.notes ?? '');
+  const [overnight, setOvernight] = useState(stop?.stopType === 'overnight');
+  const [departsAt, setDepartsAt] = useState<Date | null>(stop?.departsAt ?? null);
   const [errors, setErrors] = useState<StopFieldErrors>({});
   const [formError, setFormError] = useState<string>();
   const [saving, setSaving] = useState(false);
+
+  const arrivalDay = mode.kind === 'edit' ? mode.arrivalDay : undefined;
+
+  const saveStop = async () => {
+    if (mode.kind === 'add') {
+      await addTripStop(tripId, {
+        stop_name: name.trim(),
+        stop_lat: mode.place.lat,
+        stop_lng: mode.place.lng,
+        stop_address: mode.place.address ?? undefined,
+        stop_mapbox_id: mode.place.mapboxId,
+        new_stop_type: canStayOvernight(role) ? (overnight ? 'overnight' : 'stop') : role,
+        stop_category: category,
+        stop_notes: notes.trim() || undefined,
+        at_position: mode.atPosition,
+        stop_is_turnaround: role === 'destination',
+      });
+      return;
+    }
+
+    const changes: TripStopChanges = {
+      name: name.trim(),
+      category,
+      notes: notes.trim() || null,
+    };
+    if (mode.newPlace) {
+      changes.lat = mode.newPlace.lat;
+      changes.lng = mode.newPlace.lng;
+      changes.address = mode.newPlace.address;
+      changes.mapbox_id = mode.newPlace.mapboxId;
+    }
+    // Start and end can't change type, so they aren't sent one. A stop that stops being overnight
+    // loses its departure; updateTripStop clears it too
+    if (canStayOvernight(role)) {
+      changes.stop_type = overnight ? 'overnight' : 'stop';
+      changes.departs_at = overnight && departsAt ? departsAt.toISOString() : null;
+    }
+    await updateTripStop(mode.stop.id, changes);
+  };
 
   const handleSave = async () => {
     setFormError(undefined);
@@ -73,20 +187,9 @@ const StopDetailsForm = ({ tripId, place, stopType, atPosition }: StopDetailsFor
 
     setSaving(true);
     try {
-      await addTripStop(tripId, {
-        stop_name: name.trim(),
-        stop_lat: place.lat,
-        stop_lng: place.lng,
-        stop_address: place.address ?? undefined,
-        stop_mapbox_id: place.mapboxId,
-        new_stop_type: canStayOvernight(stopType) ? (overnight ? 'overnight' : 'stop') : stopType,
-        stop_category: category,
-        stop_notes: notes.trim() || undefined,
-        at_position: atPosition,
-        stop_is_turnaround: stopType === 'destination',
-      });
-      // Closes this screen and the search under it. The planner reloads when it regains focus
-      router.dismissTo(`/trips/${tripId}/planner`);
+      await saveStop();
+      // Closes this screen, and search under it if there is one. The planner reloads on focus
+      router.dismissTo(plannerHref(tripId));
     } catch (error) {
       setFormError(reportAndDescribe(error, { scope: 'StopDetailsScreen.handleSave' }));
     } finally {
@@ -94,22 +197,35 @@ const StopDetailsForm = ({ tripId, place, stopType, atPosition }: StopDetailsFor
     }
   };
 
+  const removeStop = async (stopId: number) => {
+    setFormError(undefined);
+    setSaving(true);
+    try {
+      await removeTripStop(stopId);
+      router.dismissTo(plannerHref(tripId));
+    } catch (error) {
+      setFormError(reportAndDescribe(error, { scope: 'StopDetailsScreen.removeStop' }));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmRemove = (target: TripStop) =>
+    Alert.alert(`Remove ${target.name}?`, 'It comes off the itinerary for everyone on the trip.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => removeStop(target.id) },
+    ]);
+
+  // Search hands the picked place back to a new preview of this stop, which saves it
+  const changePlace = (target: TripStop) =>
+    router.push({
+      pathname: '/trips/[id]/addStop',
+      params: { id: tripId, stopType: role, stopId: target.id },
+    });
+
   return (
     <Screen bottomOffset={spacing.lg}>
-      {/* Only a preview, so a drag that starts here scrolls the form instead of panning the map */}
-      <View style={styles.map} pointerEvents="none" testID="stop-details-map-box">
-        <TripMap initialCenter={place} initialZoom={PREVIEW_ZOOM} testID="stop-details-map">
-          {/* Mapbox reads coordinates longitude first. The anchor rests the pin's tip on the place */}
-          <MarkerView
-            coordinate={[place.lng, place.lat]}
-            anchor={{ x: 0.5, y: 1 }}
-            allowOverlap
-            testID="stop-details-pin"
-          >
-            <MapPin color={colors.tint} fill={colors.background} size={36} />
-          </MarkerView>
-        </TripMap>
-      </View>
+      <PlacePreview place={place} />
 
       <TextBox
         value={name}
@@ -126,6 +242,16 @@ const StopDetailsForm = ({ tripId, place, stopType, atPosition }: StopDetailsFor
 
       {place.address ? <Text style={styles.address}>{place.address}</Text> : null}
 
+      {editingInPlace ? (
+        <LargeButton
+          icon={MapPin}
+          label="Change place"
+          variant="dashed"
+          onPress={() => changePlace(editingInPlace)}
+          testID="stop-change-place"
+        />
+      ) : null}
+
       <Text style={styles.label}>Category</Text>
       <View style={styles.chips}>
         {STOP_CATEGORIES.map((value) => (
@@ -139,7 +265,7 @@ const StopDetailsForm = ({ tripId, place, stopType, atPosition }: StopDetailsFor
         ))}
       </View>
 
-      {canStayOvernight(stopType) ? (
+      {canStayOvernight(role) ? (
         <View style={styles.overnight}>
           <View style={styles.overnightText}>
             <Text style={styles.overnightTitle}>Overnight stay</Text>
@@ -156,6 +282,16 @@ const StopDetailsForm = ({ tripId, place, stopType, atPosition }: StopDetailsFor
             testID="stop-overnight-switch"
           />
         </View>
+      ) : null}
+
+      {/* add_trip_stop takes no departure, so it's set once the stop exists */}
+      {overnight && arrivalDay ? (
+        <DepartureField
+          value={departsAt}
+          onChange={setDepartsAt}
+          minimumDate={earliestDepartureDay(arrivalDay)}
+          defaultValue={defaultDeparture(arrivalDay)}
+        />
       ) : null}
 
       <TextBox
@@ -176,12 +312,109 @@ const StopDetailsForm = ({ tripId, place, stopType, atPosition }: StopDetailsFor
 
       <ErrorText message={formError} style={styles.formError} testID="stop-save-error" />
       <LargeButton
-        label={addStopLabel(stopType)}
+        label={mode.kind === 'add' ? addStopLabel(role) : 'Save changes'}
         disabled={saving}
         onPress={handleSave}
         testID="stop-save-button"
       />
+      {editingInPlace && canRemoveStop(editingInPlace) ? (
+        <LargeButton
+          icon={Trash2}
+          label="Remove stop"
+          variant="danger"
+          disabled={saving}
+          onPress={() => confirmRemove(editingInPlace)}
+          testID="stop-remove-button"
+        />
+      ) : null}
     </Screen>
+  );
+};
+
+// What a viewer sees: the same details, with nothing to change
+const StopSummary = ({ stop }: { stop: TripStop }) => (
+  <Screen bottomOffset={spacing.lg}>
+    <PlacePreview place={placeOfStop(stop)} />
+    <Text style={styles.summaryName} testID="stop-summary-name">
+      {stop.name}
+    </Text>
+    {stop.address ? <Text style={styles.address}>{stop.address}</Text> : null}
+    <Text style={styles.summaryLine}>{stopLabel(stop)}</Text>
+    {stop.stopType === 'overnight' ? (
+      <Text style={styles.summaryLine} testID="stop-summary-departure">
+        {stop.departsAt
+          ? `Leaves ${formatShortDate(stop.departsAt)} at ${formatTime(stop.departsAt)}`
+          : 'Leaves the next morning'}
+      </Text>
+    ) : null}
+    {stop.notes ? <Text style={styles.summaryNotes}>{stop.notes}</Text> : null}
+  </Screen>
+);
+
+type EditStopProps = {
+  tripId: number;
+  stopId: number;
+  newPlace: Place | null;
+  renderShell: (title: string, body: ReactNode) => ReactNode;
+};
+
+// Loads the stop with what decides how it can be edited: the member's role, and the day the group
+// gets there, which is the earliest an overnight departure can be
+const EditStop = ({ tripId, stopId, newPlace, renderShell }: EditStopProps) => {
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  const { data, loading, error } = useAsync(
+    async () => {
+      const [tripRow, stopRows, memberRows] = await Promise.all([
+        getTrip(tripId),
+        listTripStops(tripId),
+        listTripMembers(tripId),
+      ]);
+      const stops = stopRows.map(toTripStop);
+      const stop = stops.find((candidate) => candidate.id === stopId);
+      if (!tripRow || !stop) return null;
+
+      const trip = toTrip(tripRow);
+      const arrivalDay = stopArrivalDay(
+        itineraryRows(stops, trip.tripType, trip.startsAt, false),
+        stopId
+      );
+      const role = memberRows.map(toTripMember).find((member) => member.id === userId)?.role;
+
+      return { stop, arrivalDay, canEdit: role === 'owner' || role === 'editor' };
+    },
+    [tripId, stopId, userId],
+    'StopDetailsScreen.load'
+  );
+
+  if (!data) {
+    return renderShell(
+      'Stop',
+      loading ? (
+        <LoadingState testID="stop-details-loading" />
+      ) : (
+        <EmptyState
+          title={error ? "Couldn't load stop" : 'This stop is no longer on the trip'}
+          subtitle={error ?? undefined}
+        />
+      )
+    );
+  }
+
+  if (!data.canEdit) return renderShell('Stop', <StopSummary stop={data.stop} />);
+
+  return renderShell(
+    newPlace ? 'Change Place' : 'Edit Stop',
+    <StopDetailsForm
+      tripId={tripId}
+      mode={{
+        kind: 'edit',
+        stop: data.stop,
+        newPlace,
+        arrivalDay: data.arrivalDay,
+      }}
+    />
   );
 };
 
@@ -191,12 +424,14 @@ const StopDetailsScreen = () => {
     place?: string;
     stopType?: string;
     atPosition?: string;
+    stopId?: string;
   }>();
   const tripId = Number(Array.isArray(params.id) ? params.id[0] : params.id);
   const place = parsePlaceParam(params.place);
   const stopType = parseNextStopType(params.stopType);
+  const stopId = parseStopId(params.stopId);
 
-  return (
+  const renderShell = (title: string, body: ReactNode) => (
     <View style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
       {/* Same as the planner: the gradient only spans the header */}
@@ -206,20 +441,26 @@ const StopDetailsScreen = () => {
           {...gradients.cardToBackground()}
           style={StyleSheet.absoluteFill}
         />
-        <ScreenHeader title={addStopLabel(stopType)} onBack={() => router.back()} />
+        <ScreenHeader title={title} onBack={() => router.back()} />
       </View>
-
-      {place ? (
-        <StopDetailsForm
-          tripId={tripId}
-          place={place}
-          stopType={stopType}
-          atPosition={parseStopPosition(params.atPosition)}
-        />
-      ) : (
-        <EmptyState title="Couldn't open that place" />
-      )}
+      {body}
     </View>
+  );
+
+  if (stopId !== undefined) {
+    return <EditStop tripId={tripId} stopId={stopId} newPlace={place} renderShell={renderShell} />;
+  }
+
+  return renderShell(
+    addStopLabel(stopType),
+    place ? (
+      <StopDetailsForm
+        tripId={tripId}
+        mode={{ kind: 'add', place, stopType, atPosition: parseStopPosition(params.atPosition) }}
+      />
+    ) : (
+      <EmptyState title="Couldn't open that place" />
+    )
   );
 };
 
@@ -293,5 +534,24 @@ const styles = StyleSheet.create({
   },
   formError: {
     alignSelf: 'center',
+  },
+  summaryName: {
+    color: colors.text,
+    fontSize: fontSize.section,
+    fontWeight: fontWeight.bold,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  summaryLine: {
+    color: colors.text,
+    fontSize: fontSize.body,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.xs,
+  },
+  summaryNotes: {
+    color: colors.textMutedLight,
+    fontSize: fontSize.body,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
   },
 });

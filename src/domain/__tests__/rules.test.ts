@@ -19,6 +19,11 @@ import {
   parseStopPosition,
   stopCategoryLabel,
   stopLabel,
+  stopRole,
+  canRemoveStop,
+  stopArrivalDay,
+  earliestDepartureDay,
+  defaultDeparture,
 } from '../rules';
 import type { ItineraryRow } from '../rules';
 
@@ -130,6 +135,77 @@ describe('addStopLabel', () => {
     expect(addStopLabel('end')).toBe('Set end');
     expect(addStopLabel('destination')).toBe('Set destination');
     expect(addStopLabel('stop')).toBe('Add stop');
+  });
+});
+
+describe('stopRole', () => {
+  it.each<[StopType, boolean, string]>([
+    ['start', false, 'start'],
+    ['end', false, 'end'],
+    ['stop', false, 'stop'],
+    ['overnight', false, 'stop'],
+    ['stop', true, 'destination'],
+    ['overnight', true, 'destination'],
+  ])('calls a %s stop (turnaround: %s) a %s', (stopType, isTurnaround, expected) => {
+    expect(stopRole({ stopType, isTurnaround })).toBe(expected);
+  });
+});
+
+describe('canRemoveStop', () => {
+  it.each<[string, StopType, boolean, boolean]>([
+    ['a normal stop', 'stop', false, true],
+    ['an overnight stop', 'overnight', false, true],
+    ['the start', 'start', false, false],
+    ['the end', 'end', false, false],
+    ['the destination', 'stop', true, false],
+    ['an overnight destination', 'overnight', true, false],
+  ])('%s: %s', (_, stopType, isTurnaround, expected) => {
+    expect(canRemoveStop({ stopType, isTurnaround })).toBe(expected);
+  });
+});
+
+describe('stopArrivalDay', () => {
+  const day = (n: number, date: Date): ItineraryRow => ({
+    kind: 'dayHeading',
+    day: n,
+    date,
+    startsReturn: false,
+  });
+  const stopRow = (id: number): ItineraryRow =>
+    ({ kind: 'stop', stop: { id } as TripStop }) as ItineraryRow;
+  const SEP_2 = new Date(2026, 8, 2);
+  const SEP_3 = new Date(2026, 8, 3);
+  const rows = [day(1, SEP_2), stopRow(1), stopRow(2), day(2, SEP_3), stopRow(3)];
+
+  it('gives the day of the heading above the stop', () => {
+    expect(stopArrivalDay(rows, 1)).toBe(SEP_2);
+    expect(stopArrivalDay(rows, 2)).toBe(SEP_2);
+    expect(stopArrivalDay(rows, 3)).toBe(SEP_3);
+  });
+
+  it('gives the arrival day for an overnight stop, not the day after it', () => {
+    // The heading below an overnight stop is the next day, and belongs to the stops after it
+    expect(stopArrivalDay([day(1, SEP_2), stopRow(1), day(2, SEP_3)], 1)).toBe(SEP_2);
+  });
+
+  it('gives nothing for a stop that is not listed', () => {
+    expect(stopArrivalDay(rows, 99)).toBeUndefined();
+  });
+});
+
+describe('earliestDepartureDay and defaultDeparture', () => {
+  const ARRIVAL = new Date(2026, 8, 2, 18, 45);
+
+  it('lets the group leave from the next calendar day on', () => {
+    expect(earliestDepartureDay(ARRIVAL)).toEqual(new Date(2026, 8, 3));
+  });
+
+  it('suggests leaving the next morning', () => {
+    expect(defaultDeparture(ARRIVAL)).toEqual(new Date(2026, 8, 3, 9, 0));
+  });
+
+  it('moves to the next month at the end of one', () => {
+    expect(defaultDeparture(new Date(2026, 8, 30))).toEqual(new Date(2026, 9, 1, 9, 0));
   });
 });
 

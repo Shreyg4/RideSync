@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
 import { itineraryRows, timeline } from '@/src/domain/rules';
 import type { AddStopRow } from '@/src/domain/rules';
+import type { TripStop } from '@/src/types/trip';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
@@ -48,7 +49,7 @@ const PlannerScreen = () => {
   // A role change on another phone changes whether this member can add stops
   useTripMembersRealtime(tripId, reload);
 
-  // Coming back from the search screen may mean a new stop
+  // Coming back from search or a stop's details may mean a new, changed or removed stop
   const firstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -72,6 +73,13 @@ const PlannerScreen = () => {
     router.push({
       pathname: '/trips/[id]/addStop',
       params: { id: tripId, stopType, ...(atPosition === undefined ? {} : { atPosition }) },
+    });
+
+  // Editors can change or remove the stop there, and everyone else sees its details
+  const openStop = (stop: TripStop) =>
+    router.push({
+      pathname: '/trips/[id]/stopDetails',
+      params: { id: tripId, stopId: stop.id },
     });
 
   return (
@@ -117,6 +125,7 @@ const PlannerScreen = () => {
               row={item}
               segment={segments[index]}
               onAdd={openSearch}
+              onOpenStop={openStop}
               highlightKeyStops
             />
           )}

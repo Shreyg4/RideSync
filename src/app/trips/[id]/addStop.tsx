@@ -23,7 +23,12 @@ import TripMap from '@/src/components/TripMap';
 import { haptics } from '@/src/constants/haptics';
 import { pressFeedback } from '@/src/constants/pressFeedback';
 import { colors, contentWidth, fontSize, gradients, radii, spacing } from '@/src/constants/theme';
-import { parseNextStopType, parseStopPosition, PLACE_QUERY_MAX_LENGTH } from '@/src/domain/rules';
+import {
+  parseNextStopType,
+  parseStopId,
+  parseStopPosition,
+  PLACE_QUERY_MAX_LENGTH,
+} from '@/src/domain/rules';
 import type { NextStopType } from '@/src/domain/rules';
 import { useCurrentLocation } from '@/src/hooks/useCurrentLocation';
 import { usePlaceSearch } from '@/src/hooks/usePlaceSearch';
@@ -42,11 +47,14 @@ const AddStopScreen = () => {
     id: string | string[];
     stopType?: string | string[];
     atPosition?: string | string[];
+    stopId?: string | string[];
   }>();
   const tripId = Number(Array.isArray(params.id) ? params.id[0] : params.id);
   const stopType = parseNextStopType(params.stopType);
   // Only a stop on a round trip's drive home has a position, which the preview passes to the save
   const atPosition = parseStopPosition(params.atPosition);
+  // Set when Change place opened search, so the preview moves that stop instead of adding one
+  const stopId = parseStopId(params.stopId);
 
   const { location, loading: locating } = useCurrentLocation();
   const { query, setQuery, results, searching, pickingId, error, noResults, pick } =
@@ -88,6 +96,7 @@ const AddStopScreen = () => {
         place: toPlaceParam(place),
         stopType,
         ...(atPosition === undefined ? {} : { atPosition }),
+        ...(stopId === undefined ? {} : { stopId }),
       },
     });
   };
@@ -112,7 +121,7 @@ const AddStopScreen = () => {
             />
           )}
           <ScreenHeader
-            title="Add Stop"
+            title={stopId === undefined ? 'Add Stop' : 'Change Place'}
             onBack={() => (layerOpen ? closeLayer() : router.back())}
             // Stays an X with the keyboard closed, since this still clears the search, not leaves
             backIcon={searchOpen ? X : undefined}
