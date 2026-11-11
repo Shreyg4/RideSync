@@ -16,6 +16,7 @@ import ItineraryRowItem, { itineraryRowKey } from '@/src/components/ItineraryRow
 import { useAuth } from '@/src/context/AuthProvider';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
+import { useTripStopsRealtime } from '@/src/hooks/useTripStopsRealtime';
 import { getTrip, listTripMembers } from '@/src/services/tripService';
 import { listTripStops } from '@/src/services/tripStopService';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
@@ -65,6 +66,8 @@ const TripDetailsScreen = () => {
 
   // This screen sits under every trip screen in the stack, so it alone sends a removed member home
   useTripMembersRealtime(tripId, reloadMembers, backToTrips);
+  // The itinerary preview follows stop changes made on other phones
+  useTripStopsRealtime(tripId, reloadStops);
 
   // Coming back from trip settings or the planner may mean new details, members or stops
   const firstFocus = useRef(true);

@@ -10,6 +10,7 @@ import { BackHandler } from 'react-native';
 import AddStopScreen from '../trips/[id]/addStop';
 import { parsePlaceParam } from '@/src/lib/placeParam';
 import { renderScreen, signedInAuth } from '@/src/test/render';
+import { mockTable } from '@/src/test/supabase';
 
 jest.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: jest.fn(),
@@ -104,66 +105,62 @@ describe('AddStopScreen', () => {
     ['end', 'Where does the trip end?'],
     ['destination', 'Where are you headed?'],
     ['stop', 'Search for a place'],
-  ])('is titled Add Stop, and the search box says what a %s search is for', async (type, hint) => {
+  ])('has no title, and the search box says what a %s search is for', async (type, hint) => {
     const view = await renderAddStop(type);
 
-    expect(view.getByText('Add Stop')).toBeTruthy();
+    expect(view.queryByText('Add Stop')).toBeNull();
     expect(view.getByPlaceholderText(hint)).toBeTruthy();
   });
 
-  describe('opening on a normal stop', () => {
-    it('shows the gradient and a preview-sized map that does not take touches', async () => {
+  describe('opening the screen', () => {
+    it('fills the screen with a map that takes touches', async () => {
       const view = await renderAddStop();
 
-      expect(view.getByTestId('add-stop-gradient')).toBeTruthy();
-      expect(view.getByLabelText('Expand map')).toBeTruthy();
-      expect(view.getByTestId('add-stop-map-touch').props.pointerEvents).toBe('none');
-    });
-
-    it('expands the map when tapped, and the map then takes touches', async () => {
-      const view = await renderAddStop();
-
-      await fireEvent.press(view.getByLabelText('Expand map'));
-
+      expect(view.getByTestId('add-stop-map')).toBeTruthy();
       expect(view.getByTestId('add-stop-map-touch').props.pointerEvents).toBe('auto');
-      expect(view.queryByLabelText('Expand map')).toBeNull();
-      expect(view.getByLabelText('Close map')).toBeTruthy();
+      expect(view.queryByTestId('add-stop-backdrop')).toBeNull();
     });
 
-    it.each([
-      ['its close button', 'Close map'],
-      ['the back button', 'Go back'],
-    ])('shrinks an expanded map from %s without leaving', async (_, label) => {
+    it('puts the back button right beside the search box', async () => {
       const view = await renderAddStop();
-      await fireEvent.press(view.getByLabelText('Expand map'));
+      const row = view.getByTestId('place-search-bar');
 
-      await fireEvent.press(view.getByLabelText(label));
-
-      expect(view.getByLabelText('Expand map')).toBeTruthy();
-      expect(router.back).not.toHaveBeenCalled();
+      expect(row).toContainElement(view.getByLabelText('Go back'));
+      expect(row).toContainElement(view.getByTestId('place-search-input'));
     });
 
-    it('leaves the screen from the back button when nothing is open', async () => {
+    it('leaves the screen from the back button when search is closed', async () => {
       const view = await renderAddStop();
 
       await fireEvent.press(view.getByLabelText('Go back'));
 
       expect(router.back).toHaveBeenCalledTimes(1);
     });
+
+    it.each(['start', 'end', 'stop'])(
+      'opens a %s search on the map, with the keyboard closed',
+      async (stopType) => {
+        const view = await renderAddStop(stopType);
+
+        expect(view.queryByTestId('add-stop-backdrop')).toBeNull();
+        expect(view.getByTestId('place-search-input').props.autoFocus).toBeUndefined();
+      }
+    );
   });
 
   describe('pressing the search box', () => {
     const focus = (view: View) => fireEvent(view.getByTestId('place-search-input'), 'focus');
     const blur = (view: View) => fireEvent(view.getByTestId('place-search-input'), 'blur');
 
-    it('darkens the background and removes the map', async () => {
+    it('darkens the map behind the results and stops it taking touches, without reloading it', async () => {
       const view = await renderAddStop();
+      const map = view.getByTestId('add-stop-map');
 
       await focus(view);
 
-      expect(view.queryByTestId('add-stop-gradient')).toBeNull();
-      expect(view.queryByTestId('add-stop-map')).toBeNull();
-      expect(view.queryByLabelText('Expand map')).toBeNull();
+      expect(view.getByTestId('add-stop-backdrop')).toBeTruthy();
+      expect(view.getByTestId('add-stop-map-touch').props.pointerEvents).toBe('none');
+      expect(view.getByTestId('add-stop-map')).toBe(map);
     });
 
     it('brings the map back when the keyboard closes on an empty box', async () => {
@@ -172,8 +169,8 @@ describe('AddStopScreen', () => {
 
       await blur(view);
 
-      expect(view.getByTestId('add-stop-gradient')).toBeTruthy();
-      expect(view.getByTestId('add-stop-map')).toBeTruthy();
+      expect(view.queryByTestId('add-stop-backdrop')).toBeNull();
+      expect(view.getByTestId('add-stop-map-touch').props.pointerEvents).toBe('auto');
     });
 
     it('keeps the results when the keyboard closes on typed text', async () => {
@@ -184,7 +181,7 @@ describe('AddStopScreen', () => {
       await blur(view);
 
       expect(view.getByText('Space Needle')).toBeTruthy();
-      expect(view.queryByTestId('add-stop-map')).toBeNull();
+      expect(view.getByTestId('add-stop-backdrop')).toBeTruthy();
     });
 
     it('goes back to the map from the close button, clearing the text', async () => {
@@ -196,7 +193,8 @@ describe('AddStopScreen', () => {
 
       expect(router.back).not.toHaveBeenCalled();
       expect(view.getByTestId('place-search-input').props.value).toBe('');
-      expect(view.getByTestId('add-stop-map')).toBeTruthy();
+      expect(view.queryByTestId('add-stop-backdrop')).toBeNull();
+      expect(view.queryByText('Space Needle')).toBeNull();
     });
 
     it('swaps the back button for a close button only while search is open', async () => {
@@ -223,12 +221,12 @@ describe('AddStopScreen', () => {
     });
   });
 
-  it('lets the Android back button close what is open before it leaves the screen', async () => {
+  it('lets the Android back button close search before it leaves the screen', async () => {
     const listen = jest.spyOn(BackHandler, 'addEventListener');
     const view = await renderAddStop();
     expect(listen).not.toHaveBeenCalled();
 
-    await fireEvent.press(view.getByLabelText('Expand map'));
+    await search(view, 'Space');
     const onBack = listen.mock.calls[0][1];
     let handled: boolean | null | undefined;
     await act(async () => {
@@ -236,20 +234,100 @@ describe('AddStopScreen', () => {
     });
 
     expect(handled).toBe(true);
-    expect(view.getByLabelText('Expand map')).toBeTruthy();
+    expect(view.getByTestId('place-search-input').props.value).toBe('');
+    expect(view.getByLabelText('Go back')).toBeTruthy();
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  it.each(['start', 'end', 'stop'])(
-    'opens a %s search on the map, with the keyboard closed',
-    async (stopType) => {
-      const view = await renderAddStop(stopType);
+  describe('the trip’s stops on the map', () => {
+    const NOW = new Date(2026, 8, 2, 9, 30).toISOString();
+    const stopRow = (id: number, stop_type: string, name: string) => ({
+      id,
+      trip_id: 1,
+      position: id - 1,
+      name,
+      address: null,
+      lat: 47.6 - id,
+      lng: -122.3,
+      mapbox_id: null,
+      stop_type,
+      category: 'other',
+      notes: null,
+      departs_at: null,
+      is_turnaround: false,
+      created_at: NOW,
+      updated_at: NOW,
+    });
 
-      expect(view.getByTestId('add-stop-gradient')).toBeTruthy();
-      expect(view.getByLabelText('Expand map')).toBeTruthy();
-      expect(view.getByTestId('place-search-input').props.autoFocus).toBeUndefined();
-    }
-  );
+    it('pins this trip’s stops, numbered in trip order', async () => {
+      mockTable('trip_stops').__setResult({
+        data: [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')],
+        error: null,
+      });
+      const view = await renderAddStop();
+
+      expect(await view.findByLabelText('Stop 1, Home')).toHaveTextContent('1');
+      expect(view.getByLabelText('Stop 2, Coast')).toHaveTextContent('2');
+      expect(view.getByTestId('add-stop-map')).toContainElement(view.getByTestId('map-pin-2'));
+      expect(mockTable('trip_stops').eq).toHaveBeenCalledWith('trip_id', 1);
+    });
+
+    it('fits the map to every stop, like the planner’s map', async () => {
+      mockTable('trip_stops').__setResult({
+        data: [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')],
+        error: null,
+      });
+      const view = await renderAddStop();
+      await view.findByLabelText('Stop 1, Home');
+
+      const camera = view.getByTestId('mapbox-camera');
+      expect(camera.props.bounds).toEqual({ ne: [-122.3, 46.6], sw: [-122.3, 45.6] });
+      // Opens there instead of flying in from the user's location
+      expect(camera.props.defaultSettings.bounds).toEqual({
+        ne: [-122.3, 46.6],
+        sw: [-122.3, 45.6],
+      });
+    });
+
+    it('fits the pins below the search bar with a wide margin, so they sit well inside the screen', async () => {
+      mockTable('trip_stops').__setResult({
+        data: [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')],
+        error: null,
+      });
+      const view = await renderAddStop();
+      await view.findByLabelText('Stop 1, Home');
+
+      // The bar ends below the test's 47-point status bar, a 10-point gap and its own 52 points
+      const { padding } = view.getByTestId('mapbox-camera').props;
+      expect(padding.paddingTop).toBe(100 + 47 + 10 + 52);
+      expect(padding.paddingBottom).toBe(100);
+    });
+
+    it('centers on the user before the trip has any stops', async () => {
+      mockTable('trip_stops').__setResult({ data: [], error: null });
+      const view = await renderAddStop('start');
+
+      const camera = view.getByTestId('mapbox-camera');
+      expect(camera.props.defaultSettings.centerCoordinate).toEqual([-122.3, 47.6]);
+      expect(camera.props.bounds).toBeUndefined();
+    });
+
+    it('keeps the pins from being tapped, since that would leave search', async () => {
+      mockTable('trip_stops').__setResult({ data: [stopRow(1, 'start', 'Home')], error: null });
+      const view = await renderAddStop();
+
+      expect(await view.findByLabelText('Stop 1, Home')).toBeDisabled();
+    });
+
+    it('still searches when the stops fail to load, just without pins', async () => {
+      mockTable('trip_stops').__setResult({ data: null, error: { code: '42501' } });
+      const view = await renderAddStop();
+      await search(view, 'Space');
+
+      expect(view.getByText('Space Needle')).toBeTruthy();
+      expect(view.queryByTestId(/^map-pin-/)).toBeNull();
+    });
+  });
 
   it('limits the search box to what Mapbox accepts', async () => {
     const view = await renderAddStop();
@@ -372,7 +450,7 @@ describe('AddStopScreen', () => {
     });
     const view = await renderScreen(<AddStopScreen />, signedInAuth());
     await view.findByTestId('add-stop-map');
-    expect(view.getByText('Change Place')).toBeTruthy();
+    expect(view.getByPlaceholderText('Search for its new place')).toBeTruthy();
     await search(view, 'Space');
 
     await fireEvent.press(view.getByTestId('place-result-needle-suggested'));

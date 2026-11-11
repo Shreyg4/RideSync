@@ -37,6 +37,49 @@ jest.mock('@rnmapbox/maps', () => {
   return { __esModule: true, ...mapbox, default: mapbox };
 });
 
+// The library's own mocks for its native module, so components using gestures can render
+require('react-native-gesture-handler/jestSetup');
+
+// The real row needs Reanimated's native side. This one renders the row and its revealed actions
+// together, and a hidden button per row stands in for the swipe that opens it
+jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
+  const React = require('react');
+  const { Pressable, View } = require('react-native');
+  type MockSwipeableProps = {
+    children?: React.ReactNode;
+    renderRightActions?: (progress: unknown, translation: unknown, methods: unknown) => unknown;
+    onSwipeableWillOpen?: (direction: string) => void;
+    onSwipeableWillClose?: (direction: string) => void;
+    testID?: string;
+  };
+  const Swipeable = React.forwardRef((props: MockSwipeableProps, ref: unknown) => {
+    const latest = React.useRef(props);
+    latest.current = props;
+    const methods = React.useMemo(
+      () => ({
+        openRight: jest.fn(() => latest.current.onSwipeableWillOpen?.('left')),
+        close: jest.fn(() => latest.current.onSwipeableWillClose?.('left')),
+        openLeft: jest.fn(),
+        reset: jest.fn(),
+      }),
+      []
+    );
+    React.useImperativeHandle(ref, () => methods, [methods]);
+    return React.createElement(
+      View,
+      { testID: props.testID },
+      props.children,
+      props.renderRightActions?.({ value: 1 }, { value: 0 }, methods),
+      React.createElement(Pressable, {
+        testID: props.testID ? `${props.testID}-swipe` : undefined,
+        onPress: methods.openRight,
+      })
+    );
+  });
+  Swipeable.displayName = 'MockReanimatedSwipeable';
+  return { __esModule: true, default: Swipeable };
+});
+
 jest.mock('@react-navigation/bottom-tabs', () => ({
   useBottomTabBarHeight: () => 60,
 }));

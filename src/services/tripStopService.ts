@@ -69,3 +69,25 @@ export const reorderTripStops = async (tripId: number, orderedIds: number[]): Pr
   });
   if (error) throw error;
 };
+
+// supabase.channel() hands back the open channel when a name is reused, so two screens on the same
+// trip would share one and the first to unmount would close it for both
+let channelCount = 0;
+
+// Calls onChange whenever a stop in the trip is added, edited, moved or removed. Returns the
+// unsubscribe. A deleted row arrives with only its id, so this says that something changed, not what
+export const subscribeToTripStops = (tripId: number, onChange: () => void): (() => void) => {
+  channelCount += 1;
+  const channel = supabase
+    .channel(`trip-stops:${tripId}:${channelCount}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'trip_stops', filter: `trip_id=eq.${tripId}` },
+      () => onChange()
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};

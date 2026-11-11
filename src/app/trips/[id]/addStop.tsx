@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Maximize2, X } from 'lucide-react-native';
+import { ChevronLeft, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,13 +16,11 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ErrorText from '@/src/components/ErrorText';
 import PlaceResultItem from '@/src/components/PlaceResultItem';
-import ScreenHeader from '@/src/components/ScreenHeader';
 import SmallButton from '@/src/components/SmallButton';
 import TextBox from '@/src/components/TextBox';
+import { StopMarkers } from '@/src/components/StopsMap';
 import TripMap from '@/src/components/TripMap';
-import { haptics } from '@/src/constants/haptics';
-import { pressFeedback } from '@/src/constants/pressFeedback';
-import { colors, contentWidth, fontSize, gradients, radii, spacing } from '@/src/constants/theme';
+import { colors, fontSize, radii, spacing } from '@/src/constants/theme';
 import {
   parseNextStopType,
   parseStopId,
@@ -30,9 +28,12 @@ import {
   PLACE_QUERY_MAX_LENGTH,
 } from '@/src/domain/rules';
 import type { NextStopType } from '@/src/domain/rules';
+import { useAsync } from '@/src/hooks/useAsync';
 import { useCurrentLocation } from '@/src/hooks/useCurrentLocation';
 import { usePlaceSearch } from '@/src/hooks/usePlaceSearch';
 import { toPlaceParam } from '@/src/lib/placeParam';
+import { toTripStop } from '@/src/lib/tripMapper';
+import { listTripStops } from '@/src/services/tripStopService';
 
 const SEARCH_PLACEHOLDERS: Record<NextStopType, string> = {
   start: 'Where does the trip start?',
@@ -40,6 +41,17 @@ const SEARCH_PLACEHOLDERS: Record<NextStopType, string> = {
   destination: 'Where are you headed?',
   stop: 'Search for a place',
 };
+
+// With no title on the screen, the box is what says a stop is moving rather than being added
+const CHANGE_PLACE_PLACEHOLDER = 'Search for its new place';
+
+// Room around the outermost stops when the map fits them
+const ADD_STOP_FIT_MARGIN = 100;
+
+const SEARCH_BAR_HEIGHT = 52;
+const SEARCH_BUTTON_SIZE = 44;
+// Centers the button in the bar's rounded left end
+const SEARCH_BUTTON_INSET = (SEARCH_BAR_HEIGHT - SEARCH_BUTTON_SIZE) / 2;
 
 const AddStopScreen = () => {
   const insets = useSafeAreaInsets();
@@ -57,34 +69,38 @@ const AddStopScreen = () => {
   const stopId = parseStopId(params.stopId);
 
   const { location, loading: locating } = useCurrentLocation();
+  // Shows where the trip already goes while picking the next place. Search works without them,
+  // so a failed load only leaves the pins off
+  const { data: stops, loading: loadingStops } = useAsync(
+    async () => (Number.isInteger(tripId) ? (await listTripStops(tripId)).map(toTripStop) : []),
+    [tripId],
+    'AddStopScreen.listTripStops'
+  );
   const { query, setQuery, results, searching, pickingId, error, noResults, pick } =
     usePlaceSearch(location);
 
   const [searchFocused, setSearchFocused] = useState(false);
-  const [mapExpanded, setMapExpanded] = useState(false);
 
   const ResultSeperator = () => <View style={styles.horizontalLine} />;
 
   // Text keeps search open after the keyboard closes, so the results can still be scrolled and tapped
   const searchOpen = searchFocused || query.length > 0;
-  const layerOpen = searchOpen || mapExpanded;
 
-  const closeLayer = useCallback(() => {
-    setMapExpanded(false);
+  const closeSearch = useCallback(() => {
     setSearchFocused(false);
     setQuery('');
     Keyboard.dismiss();
   }, [setQuery]);
 
-  // Android's back button closes the open layer before it leaves the screen, like the header's does
+  // Android's back button closes search before it leaves the screen, like the X beside the box does
   useEffect(() => {
-    if (!layerOpen) return;
+    if (!searchOpen) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      closeLayer();
+      closeSearch();
       return true;
     });
     return () => subscription.remove();
-  }, [layerOpen, closeLayer]);
+  }, [searchOpen, closeSearch]);
 
   const openPlace = async (mapboxId: string) => {
     const place = await pick(mapboxId);
@@ -103,40 +119,86 @@ const AddStopScreen = () => {
 
   return (
     <View style={styles.screen}>
-      {/* A swipe from the screen's edge has to pan an expanded map, not leave the screen */}
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: !mapExpanded }} />
+      {/* The map fills the screen, so a swipe from its edge has to pan the map, not leave */}
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
 
+      {/* Stays mounted under search, so closing search shows the map where it was left */}
+      <View
+        pointerEvents={searchOpen ? 'none' : 'auto'}
+        style={StyleSheet.absoluteFill}
+        testID="add-stop-map-touch"
+      >
+        {/* A map only uses its starting position on mount, so it waits for the location and the
+            stops. It opens fitted to the stops, like the planner's, or on the user before there are any */}
+        {locating || loadingStops ? null : (
+          <TripMap
+            initialCenter={location ?? undefined}
+            fitTo={stops ?? []}
+            // Fits the pins below the search bar instead of under it
+            coveredEdges={{ top: insets.top + spacing.sm + SEARCH_BAR_HEIGHT }}
+            // Full screen leaves room to zoom out further than the planner's small map, so the
+            // stops sit well inside the screen rather than along its edges
+            fitMargin={ADD_STOP_FIT_MARGIN}
+            testID="add-stop-map"
+          >
+            {/* Only for reference here: tapping a pin would leave search */}
+            <StopMarkers stops={stops ?? []} />
+          </TripMap>
+        )}
+      </View>
+
+      {/* Keeps the status bar and the search bar readable over a bright map */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(0, 0, 0, 0.8)', 'transparent']}
+        style={[styles.topFade, { height: insets.top + SEARCH_BAR_HEIGHT * 2 }]}
+        testID="add-stop-top-fade"
+      />
+
+      {searchOpen ? (
+        <View pointerEvents="none" style={styles.backdrop} testID="add-stop-backdrop" />
+      ) : null}
+
+      {/* Lets touches through to the map wherever the search bar and results aren't */}
       <KeyboardAvoidingView
         behavior="padding"
-        style={[styles.content, { paddingBottom: insets.bottom + spacing.sm }]}
+        pointerEvents="box-none"
+        style={[
+          styles.overlay,
+          { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.sm },
+        ]}
       >
-        {/* Same as the planner: the gradient only spans the header */}
-        <View>
-          {searchOpen ? null : (
-            <LinearGradient
-              pointerEvents="none"
-              {...gradients.cardToBackground()}
-              style={StyleSheet.absoluteFill}
-              testID="add-stop-gradient"
-            />
-          )}
-          <ScreenHeader
-            title={stopId === undefined ? 'Add Stop' : 'Change Place'}
-            onBack={() => (layerOpen ? closeLayer() : router.back())}
+        {/* One full-width bar, like a maps app: the button sits inside the box at its left end */}
+        <View style={styles.searchBar} testID="place-search-bar">
+          <TextBox
+            value={query}
+            onChangeText={setQuery}
+            placeholder={
+              stopId === undefined ? SEARCH_PLACEHOLDERS[stopType] : CHANGE_PLACE_PLACEHOLDER
+            }
+            maxLength={PLACE_QUERY_MAX_LENGTH}
+            width="100%"
+            height={SEARCH_BAR_HEIGHT}
+            borderRadius={radii.pill}
+            marginVertical={0}
+            // Starts the text after the button, and gives back the right edge kept for a password eye
+            style={styles.searchInput}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            testID="place-search-input"
+          />
+          <SmallButton
             // Stays an X with the keyboard closed, since this still clears the search, not leaves
-            backIcon={searchOpen ? X : undefined}
-            backLabel={searchOpen ? 'Close search' : undefined}
+            icon={searchOpen ? X : ChevronLeft}
+            onPress={searchOpen ? closeSearch : () => router.back()}
+            accessibilityLabel={searchOpen ? 'Close search' : 'Go back'}
+            color={colors.text}
+            backgroundColor="transparent"
+            size={24}
+            diameter={SEARCH_BUTTON_SIZE}
+            style={styles.searchButton}
           />
         </View>
-        <TextBox
-          value={query}
-          onChangeText={setQuery}
-          placeholder={SEARCH_PLACEHOLDERS[stopType]}
-          maxLength={PLACE_QUERY_MAX_LENGTH}
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
-          testID="place-search-input"
-        />
         <ErrorText message={error} style={styles.message} testID="place-search-error" />
 
         {searchOpen ? (
@@ -184,46 +246,7 @@ const AddStopScreen = () => {
               />
             ) : null}
           </Pressable>
-        ) : (
-          // One wrapper for both sizes, so expanding resizes the map instead of reloading it
-          <View style={mapExpanded ? styles.mapFull : styles.mapPreview} testID="add-stop-map-box">
-            <View
-              pointerEvents={mapExpanded ? 'auto' : 'none'}
-              style={styles.mapTouch}
-              testID="add-stop-map-touch"
-            >
-              {/* A map only uses its starting position on mount, so it waits for the location lookup */}
-              {locating ? null : (
-                <TripMap initialCenter={location ?? undefined} testID="add-stop-map" />
-              )}
-            </View>
-
-            {mapExpanded ? (
-              <SmallButton
-                icon={X}
-                onPress={() => setMapExpanded(false)}
-                accessibilityLabel="Close map"
-                color={colors.text}
-                backgroundColor="rgba(0, 0, 0, 0.6)"
-                style={[styles.closeMap, { top: insets.top + spacing.sm }]}
-              />
-            ) : (
-              <Pressable
-                onPress={() => {
-                  haptics.action();
-                  setMapExpanded(true);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Expand map"
-                style={({ pressed }) => [StyleSheet.absoluteFill, pressFeedback.card(pressed)]}
-              >
-                <View style={styles.expandHint}>
-                  <Maximize2 color={colors.text} size={18} />
-                </View>
-              </Pressable>
-            )}
-          </View>
-        )}
+        ) : null}
       </KeyboardAvoidingView>
     </View>
   );
@@ -232,12 +255,36 @@ const AddStopScreen = () => {
 export default AddStopScreen;
 
 const styles = StyleSheet.create({
+  // Shows behind the map while the location lookup holds it back
   screen: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.card,
   },
-  content: {
-    flex: 1,
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  // Dims the map behind the results the way the old search screen's dark background did
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  searchBar: {
+    justifyContent: 'center',
+    marginHorizontal: spacing.sm,
+  },
+  searchInput: {
+    paddingLeft: SEARCH_BUTTON_INSET + SEARCH_BUTTON_SIZE + spacing.xxs,
+    paddingRight: spacing.md,
+  },
+  searchButton: {
+    position: 'absolute',
+    left: SEARCH_BUTTON_INSET,
   },
   message: {
     alignSelf: 'center',
@@ -263,36 +310,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.caption,
     padding: spacing.md,
     textAlign: 'center',
-  },
-  // Same size and shape as the cover image box on the trip form
-  mapPreview: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radii.lg,
-    width: contentWidth,
-    aspectRatio: 5 / 3,
-    alignSelf: 'center',
-    margin: spacing.sm,
-    overflow: 'hidden',
-  },
-  mapFull: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.card,
-  },
-  mapTouch: {
-    flex: 1,
-  },
-  expandHint: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    padding: spacing.xs,
-    borderRadius: radii.pill,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  closeMap: {
-    position: 'absolute',
-    right: spacing.md,
   },
 });

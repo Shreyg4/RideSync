@@ -15,6 +15,8 @@ type ItineraryRowItemProps = {
   onOpenStop?: (stop: TripStop) => void; // leaves the stop cards untappable when not given
   highlightKeyStops?: boolean; // tints the start, destination, end and the return to the start
   compact?: boolean; // less space between rows, for short lists
+  // Wraps a stop's card, for example to make it swipeable. The line beside it stays where it is
+  wrapStop?: (stop: TripStop, card: ReactNode) => ReactNode;
 };
 
 export const itineraryRowKey = (row: ItineraryRow) => {
@@ -52,13 +54,13 @@ const marker = (row: ItineraryRow) => {
 
 const rowContent = (
   row: ItineraryRow,
-  { onAdd, onOpenStop, highlightKeyStops = false, compact = false }: ItineraryRowItemProps
+  { onAdd, onOpenStop, highlightKeyStops = false, compact = false, wrapStop }: ItineraryRowItemProps
 ): ReactNode => {
   const headingStyle = [styles.heading, compact && styles.compactHeading];
 
   switch (row.kind) {
-    case 'stop':
-      return (
+    case 'stop': {
+      const card = (
         <StopListItem
           stop={row.stop}
           highlighted={highlightKeyStops && isKeyStop(row.stop)}
@@ -67,6 +69,8 @@ const rowContent = (
           testID={`stop-${row.stop.id}`}
         />
       );
+      return wrapStop ? wrapStop(row.stop, card) : card;
+    }
     case 'dayHeading':
       return (
         <Text

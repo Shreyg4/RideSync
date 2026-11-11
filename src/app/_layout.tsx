@@ -5,6 +5,7 @@
  */
 import '@/src/lib/reporting';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -46,10 +47,13 @@ function RootLayout() {
   }
 
   // Entire app is wrapped in AuthProvider so all screens know current auth state
+  // Swipeable rows and other gestures only work inside this root view
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 export default Sentry.wrap(RootLayout);

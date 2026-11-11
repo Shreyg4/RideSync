@@ -2,7 +2,7 @@
 // which stops already exist, so these check both
 
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { act, fireEvent } from '@testing-library/react-native';
+import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { StyleSheet } from 'react-native';
@@ -13,7 +13,7 @@ import type { AuthContextType } from '@/src/context/AuthProvider';
 import type { TripRow } from '@/src/services/tripService';
 import type { TripStopRow } from '@/src/services/tripStopService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
-import { mockChannels, mockRpc, mockTable } from '@/src/test/supabase';
+import { mockChannels, mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
 
 // The timeline's markers are hidden from screen readers, so queries have to ask for them
 const HIDDEN = { includeHiddenElements: true };
@@ -349,6 +349,248 @@ describe('PlannerScreen', () => {
 
     expect(await view.findByText('The owner or an editor can add stops.')).toBeTruthy();
     expect(view.queryByLabelText('Set start')).toBeNull();
+  });
+
+  describe('the map', () => {
+    const oneWay = [
+      stopRow(1, 'start', 'Home'),
+      stopRow(2, 'stop', 'Diner'),
+      stopRow(3, 'end', 'Coast'),
+    ];
+
+    it('puts every stop on the map, numbered in trip order', async () => {
+      const view = await renderPlanner({ stops: oneWay });
+
+      expect(await view.findByTestId('planner-map')).toBeTruthy();
+      expect(view.getByLabelText('Stop 1, Home')).toHaveTextContent('1');
+      expect(view.getByLabelText('Stop 2, Diner')).toHaveTextContent('2');
+      expect(view.getByLabelText('Stop 3, Coast')).toHaveTextContent('3');
+    });
+
+    it('opens the full-screen map for this trip when the map is tapped', async () => {
+      const view = await renderPlanner({ stops: oneWay });
+
+      await fireEvent.press(await view.findByLabelText('Open map'));
+
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/trips/[id]/map',
+        params: { id: 1 },
+      });
+    });
+
+    it('lets a viewer open the full-screen map too', async () => {
+      const view = await renderPlanner({ role: 'viewer', stops: oneWay });
+
+      await fireEvent.press(await view.findByLabelText('Open map'));
+
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({ pathname: '/trips/[id]/map' })
+      );
+    });
+
+    it('keeps the small map from panning or opening pins, so a tap always opens the full map', async () => {
+      const view = await renderPlanner({ stops: oneWay });
+      await view.findByTestId('planner-map');
+
+      expect(view.getByLabelText('Stop 2, Diner')).toBeDisabled();
+      expect(view.getByTestId('planner-map').parent?.props.pointerEvents).toBe('none');
+    });
+
+    it('is not shown until the trip has a stop', async () => {
+      const view = await renderPlanner();
+
+      await view.findByText('No stops yet');
+      expect(view.queryByTestId('planner-map')).toBeNull();
+    });
+  });
+
+  describe('swiping a stop to remove it', () => {
+    const trip = [
+      stopRow(1, 'start', 'Home'),
+      stopRow(2, 'stop', 'Diner'),
+      stopRow(3, 'stop', 'Gas'),
+      stopRow(4, 'end', 'Coast'),
+    ];
+    const removeCalls = () =>
+      mockSupabase.rpc.mock.calls.filter(([name]) => name === 'remove_trip_stop');
+
+    // Stands in for the swipe that reveals the button
+    const swipeOpen = async (view: Awaited<ReturnType<typeof renderPlanner>>, stopId: number) => {
+      await fireEvent(view.getByTestId(`swipe-stop-${stopId}`), 'touchStart');
+      await fireEvent.press(view.getByTestId(`swipe-stop-${stopId}-swipe`));
+    };
+
+    it.each(['owner', 'editor'])('lets an %s swipe a normal stop', async (role) => {
+      const view = await renderPlanner({ role, stops: trip });
+      await view.findByText('Diner');
+
+      expect(view.getByLabelText('Remove Diner')).toBeTruthy();
+      expect(view.getByLabelText('Remove Gas')).toBeTruthy();
+    });
+
+    it('never offers to remove the start or end, which can only be moved', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Home');
+
+      expect(view.queryByTestId('swipe-stop-1')).toBeNull();
+      expect(view.queryByTestId('swipe-stop-4')).toBeNull();
+      expect(view.queryByLabelText('Remove Home')).toBeNull();
+      expect(view.queryByLabelText('Remove Coast')).toBeNull();
+    });
+
+    it('never offers to remove a round trip’s destination', async () => {
+      const destination = { ...stopRow(2, 'stop', 'Coast'), is_turnaround: true };
+      const view = await renderPlanner({
+        stops: [stopRow(1, 'start', 'Home'), destination],
+        trip: tripRow({ trip_type: 'round-trip' }),
+      });
+      await view.findAllByText('Coast');
+
+      expect(view.queryByLabelText('Remove Coast')).toBeNull();
+    });
+
+    it('gives a viewer nothing to swipe', async () => {
+      const view = await renderPlanner({ role: 'viewer', stops: trip });
+      await view.findByText('Diner');
+
+      expect(view.queryByTestId('swipe-stop-2')).toBeNull();
+      expect(view.queryByLabelText('Remove Diner')).toBeNull();
+    });
+
+    it('removes the stop from the trash button, with no confirm step, and shows the new list', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+      await swipeOpen(view, 2);
+
+      mockTable('trip_stops').__setResult({
+        data: [trip[0], trip[2], trip[3]],
+        error: null,
+      });
+      await fireEvent.press(view.getByLabelText('Remove Diner'));
+
+      expect(removeCalls()).toEqual([['remove_trip_stop', { target_stop_id: 2 }]]);
+      await waitFor(() => expect(view.queryByText('Diner')).toBeNull());
+      expect(view.getByText('Gas')).toBeTruthy();
+    });
+
+    it('shows a friendly error and closes the row when removing fails', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+      await swipeOpen(view, 2);
+
+      mockRpc('remove_trip_stop', { data: null, error: { code: '42501' } });
+      await fireEvent.press(view.getByLabelText('Remove Diner'));
+
+      expect(await view.findByText('You do not have permission to do that.')).toBeTruthy();
+      expect(view.getByText('Diner')).toBeTruthy();
+    });
+
+    it('closes the open row on a tap elsewhere, without doing what was tapped', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+      await swipeOpen(view, 2);
+      (router.push as jest.Mock).mockClear();
+
+      // A tap on another stop's card: the screen sees the touch begin outside the open row
+      await fireEvent(view.getByTestId('stop-1'), 'touchStart');
+      await fireEvent.press(view.getByTestId('stop-1'));
+
+      expect(router.push).not.toHaveBeenCalled();
+
+      // The row is closed, so the next tap works normally
+      await fireEvent(view.getByTestId('stop-1'), 'touchStart');
+      await fireEvent.press(view.getByTestId('stop-1'));
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({ params: { id: 1, stopId: 1 } })
+      );
+    });
+
+    it('closes the open row when its own card is tapped, instead of opening the stop', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+      await swipeOpen(view, 2);
+      (router.push as jest.Mock).mockClear();
+
+      await fireEvent(view.getByTestId('swipe-stop-2'), 'touchStart');
+      await fireEvent.press(view.getByTestId('stop-2'));
+
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it('keeps the add buttons and the map from acting on the tap that closes a row', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+
+      await swipeOpen(view, 2);
+      (router.push as jest.Mock).mockClear();
+      await fireEvent(view.getByLabelText('Open map'), 'touchStart');
+      await fireEvent.press(view.getByLabelText('Open map'));
+
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it('opens stops normally when no row is open', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+
+      await fireEvent(view.getByTestId('swipe-stop-2'), 'touchStart');
+      await fireEvent.press(view.getByTestId('stop-2'));
+
+      expect(router.push).toHaveBeenCalledWith(
+        expect.objectContaining({ params: { id: 1, stopId: 2 } })
+      );
+    });
+  });
+
+  describe('stop changes on another phone', () => {
+    const stopsChannel = () => {
+      const channel = mockChannels().find(({ topic }) => topic.startsWith('trip-stops:'));
+      if (!channel) throw new Error('the planner is not listening for stop changes');
+      return channel;
+    };
+
+    it('listens for changes to this trip’s stops', async () => {
+      const view = await renderPlanner();
+      await view.findByText('No stops yet');
+
+      expect(stopsChannel().on).toHaveBeenCalledWith(
+        'postgres_changes',
+        expect.objectContaining({ table: 'trip_stops', filter: 'trip_id=eq.1' }),
+        expect.any(Function)
+      );
+    });
+
+    it('shows a stop added on another phone, in the list and on the map', async () => {
+      const view = await renderPlanner({ stops: [stopRow(1, 'start', 'Home')] });
+      await view.findByText('Home');
+
+      mockTable('trip_stops').__setResult({
+        data: [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')],
+        error: null,
+      });
+      await act(async () =>
+        stopsChannel().__emit({ eventType: 'INSERT', new: { id: 2, trip_id: 1 }, old: {} })
+      );
+
+      expect(await view.findByText('Coast')).toBeTruthy();
+      expect(view.getByLabelText('Stop 2, Coast')).toBeTruthy();
+    });
+
+    it('drops a stop removed on another phone, from a delete that only carries its id', async () => {
+      const view = await renderPlanner({
+        stops: [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')],
+      });
+      await view.findByText('Coast');
+
+      mockTable('trip_stops').__setResult({ data: [stopRow(1, 'start', 'Home')], error: null });
+      await act(async () =>
+        stopsChannel().__emit({ eventType: 'DELETE', new: {}, old: { id: 2 } })
+      );
+
+      await waitFor(() => expect(view.queryByText('Coast')).toBeNull());
+      expect(view.queryByLabelText('Stop 2, Coast')).toBeNull();
+    });
   });
 
   it('reports a missing trip', async () => {

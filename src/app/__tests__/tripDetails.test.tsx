@@ -189,6 +189,23 @@ describe('TripDetailsScreen', () => {
     expect(view.queryByText('Not planned')).toBeNull();
   });
 
+  it('shows a stop added on another phone without leaving the screen', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({ data: [], error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+    await view.findByText('Not planned');
+
+    mockTable('trip_stops').__setResult({ data: [{ ...stopRow, id: 5 }], error: null });
+    const stopsChannel = mockChannels().find(({ topic }) => topic.startsWith('trip-stops:'));
+    await act(async () =>
+      stopsChannel?.__emit({ eventType: 'INSERT', new: { id: 5, trip_id: 1 }, old: {} })
+    );
+
+    expect(await view.findByTestId('stop-5')).toBeTruthy();
+    expect(view.queryByText('Not planned')).toBeNull();
+  });
+
   it('shows a round trip’s drive home under its own heading, ending back at the start', async () => {
     withParams({ id: '1' });
     mockTable('trips').__setResult({ data: tripRow({ trip_type: 'round-trip' }), error: null });
