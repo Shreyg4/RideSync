@@ -1,5 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
-import { render } from '@testing-library/react-native';
+import { describe, expect, it, jest } from '@jest/globals';
+import { act, render } from '@testing-library/react-native';
 import React from 'react';
 import { Text } from 'react-native';
 import TripMap from '../TripMap';
@@ -149,6 +149,59 @@ describe('TripMap', () => {
       expect(view.getByTestId('mapbox-camera').props.defaultSettings.centerCoordinate).toEqual([
         -122.7, 45.5,
       ]);
+    });
+  });
+
+  describe('onUserMoved', () => {
+    const state = (isGestureActive: boolean) => ({
+      properties: { center: [-122.3, 47.6], bounds: { ne: [-122.2, 47.7], sw: [-122.4, 47.5] } },
+      gestures: { isGestureActive },
+    });
+    const AREA = { bbox: [-122.4, 47.5, -122.2, 47.7], center: { lat: 47.6, lng: -122.3 } };
+
+    const renderMap = async () => {
+      const onUserMoved = jest.fn();
+      const view = await render(<TripMap onUserMoved={onUserMoved} testID="map" />);
+      const map = () => view.getByTestId('map');
+      return { onUserMoved, map };
+    };
+
+    it('reports the area on screen once the map settles after the user moves it', async () => {
+      const { onUserMoved, map } = await renderMap();
+
+      await act(async () => map().props.onCameraChanged(state(true)));
+      await act(async () => map().props.onCameraChanged(state(false)));
+      expect(onUserMoved).not.toHaveBeenCalled();
+      await act(async () => map().props.onMapIdle(state(false)));
+
+      expect(onUserMoved).toHaveBeenCalledTimes(1);
+      expect(onUserMoved).toHaveBeenCalledWith(AREA);
+    });
+
+    it('ignores the camera moving by itself, like fitting places', async () => {
+      const { onUserMoved, map } = await renderMap();
+
+      await act(async () => map().props.onCameraChanged(state(false)));
+      await act(async () => map().props.onMapIdle(state(false)));
+
+      expect(onUserMoved).not.toHaveBeenCalled();
+    });
+
+    it('reports each move once', async () => {
+      const { onUserMoved, map } = await renderMap();
+
+      await act(async () => map().props.onCameraChanged(state(true)));
+      await act(async () => map().props.onMapIdle(state(false)));
+      await act(async () => map().props.onMapIdle(state(false)));
+
+      expect(onUserMoved).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks the map for no camera events when nothing listens', async () => {
+      const view = await render(<TripMap testID="map" />);
+
+      expect(view.getByTestId('map').props.onCameraChanged).toBeUndefined();
+      expect(view.getByTestId('map').props.onMapIdle).toBeUndefined();
     });
   });
 });

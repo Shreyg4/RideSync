@@ -3,13 +3,13 @@
  * @description The map every trip screen builds on. Pins and routes go in as children
  */
 import { Camera, MapView, StyleURL } from '@rnmapbox/maps';
-import type { CameraStop } from '@rnmapbox/maps';
-import { useMemo, useState } from 'react';
+import type { CameraStop, MapState } from '@rnmapbox/maps';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { cameraFit } from '@/src/lib/mapCamera';
-import type { CameraFit } from '@/src/lib/mapCamera';
+import { areaFromBounds, cameraFit } from '@/src/lib/mapCamera';
+import type { CameraFit, MapArea } from '@/src/lib/mapCamera';
 import type { Coordinates } from '@/src/types/trip';
 
 const DEFAULT_ZOOM = 11;
@@ -25,6 +25,11 @@ type TripMapProps = {
   // keeps its places clear of it. Added to the usual margin
   coveredEdges?: CoveredEdges;
   fitMargin?: number; // room left around fitTo's outermost places; more zooms the map further out
+  // Called with the area on screen once the map settles after the user drags or zooms it. The
+  // camera moving by itself, like for fitTo, doesn't count
+  onUserMoved?: (area: MapArea) => void;
+  // Each new number flies the camera back to fitTo, even after the user panned away from it
+  recenterRequest?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
   children?: ReactNode;
@@ -57,10 +62,25 @@ const TripMap = ({
   fitTo,
   coveredEdges,
   fitMargin = FIT_PADDING,
+  onUserMoved,
+  recenterRequest = 0,
   style,
   testID,
   children,
 }: TripMapProps) => {
+  // Android clears the gesture flag before the map goes idle, so a drag is noted while it happens
+  const userMoved = useRef(false);
+
+  const noteGesture = (state: MapState) => {
+    if (state.gestures.isGestureActive) userMoved.current = true;
+  };
+
+  const reportUserMove = (state: MapState) => {
+    if (!userMoved.current) return;
+    userMoved.current = false;
+    onUserMoved?.(areaFromBounds(state.properties.bounds, state.properties.center));
+  };
+
   // A reload hands in a new array holding the same places. Keying on the values leaves the camera
   // where the user panned it, and only moves it when a place is added, moved or removed
   const fitKey = fitTo ? JSON.stringify(cameraFit(fitTo)) : 'null';
@@ -73,15 +93,33 @@ const TripMap = ({
   // Opening on the first fit stops the camera flying in from the whole world
   const [openingFit] = useState(fitted);
 
+  // The camera only moves itself when fitTo changes. After a pan, fitTo is still the same, so going
+  // back to it has to be asked for directly
+  const camera = useRef<Camera>(null);
+  const latestFit = useRef(fitted);
+  latestFit.current = fitted;
+  useEffect(() => {
+    if (recenterRequest === 0 || !latestFit.current) return;
+    camera.current?.setCamera({
+      ...latestFit.current,
+      animationMode: 'easeTo',
+      animationDuration: FIT_ANIMATION_MS,
+    });
+  }, [recenterRequest]);
+
   return (
     <MapView
       style={[styles.map, style]}
       styleURL={StyleURL.Dark}
       scaleBarEnabled={false}
+      // Camera events cross to JavaScript many times a second, so only a map that uses them gets them
+      onCameraChanged={onUserMoved ? noteGesture : undefined}
+      onMapIdle={onUserMoved ? reportUserMove : undefined}
       testID={testID}
     >
       {fitted ? (
         <Camera
+          ref={camera}
           defaultSettings={openingFit ?? undefined}
           {...fitted}
           animationMode="easeTo"

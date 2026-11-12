@@ -3,10 +3,24 @@
  * @description The data-access layer for Mapbox Search Box.
  */
 import { STOP_NAME_MAX_LENGTH, toStopCategory } from '@/src/domain/rules';
+import type { SearchCategory } from '@/src/domain/rules';
+import type { MapArea } from '@/src/lib/mapCamera';
 import type { Coordinates, Place, PlaceSuggestion } from '@/src/types/trip';
 
 const BASE_URL = 'https://api.mapbox.com/search/searchbox/v1';
 const SUGGEST_LIMIT = 5;
+// Enough to show what's around without burying the map in pins. Mapbox allows up to 25
+const CATEGORY_LIMIT = 10;
+
+// The Mapbox category each chip searches. Food is the broad one, so fast food shows up too
+const CATEGORY_IDS: Record<SearchCategory, string> = {
+  gas: 'gas_station',
+  food: 'food',
+  coffee: 'coffee',
+  rest: 'rest_area',
+  lodging: 'lodging',
+  attraction: 'tourist_attraction',
+};
 
 // Leaves out 'category' and 'brand'. Those are groups of places, so retrieving one returns several
 // features and the first is an arbitrary place, not what the user tapped
@@ -25,11 +39,14 @@ type SuggestResponse = {
   suggestions: MapboxPlace[];
 };
 
-type RetrieveResponse = {
-  features: {
-    geometry: { coordinates: [lng: number, lat: number] };
-    properties: MapboxPlace & { poi_category_ids?: string[] };
-  }[];
+type MapboxFeature = {
+  geometry: { coordinates: [lng: number, lat: number] };
+  properties: MapboxPlace & { poi_category_ids?: string[] };
+};
+
+// /retrieve and /category both answer with these
+type FeatureResponse = {
+  features: MapboxFeature[];
 };
 
 const searchFailed = (reason: string | number) =>
@@ -52,6 +69,19 @@ const request = async <T>(
 
 const addressOf = ({ full_address, place_formatted }: MapboxPlace) =>
   full_address ?? place_formatted ?? null;
+
+const toPlace = ({ geometry, properties }: MapboxFeature): Place => {
+  const [lng, lat] = geometry.coordinates;
+  return {
+    // Can differ from the suggestion's id, and this is the one that identifies the saved place
+    mapboxId: properties.mapbox_id,
+    name: properties.name.slice(0, STOP_NAME_MAX_LENGTH).trim(),
+    address: addressOf(properties),
+    lat,
+    lng,
+    category: toStopCategory(properties.poi_category_ids),
+  };
+};
 
 export const suggestPlaces = async (
   query: string,
@@ -82,7 +112,7 @@ export const retrievePlace = async (
   sessionToken: string,
   signal?: AbortSignal
 ): Promise<Place> => {
-  const { features } = await request<RetrieveResponse>(
+  const { features } = await request<FeatureResponse>(
     `/retrieve/${encodeURIComponent(mapboxId)}`,
     { session_token: sessionToken },
     signal
@@ -90,17 +120,27 @@ export const retrievePlace = async (
 
   const feature = features[0];
   if (!feature) throw searchFailed('no place returned');
+  return toPlace(feature);
+};
 
-  const { geometry, properties } = feature;
-  const [lng, lat] = geometry.coordinates;
+// Places of one kind inside an area, nearest its center first. Unlike typed search, every result
+// already has its coordinates, so there's no /retrieve and no session token
+export const searchCategory = async (
+  category: SearchCategory,
+  area: MapArea,
+  signal?: AbortSignal
+): Promise<Place[]> => {
+  const { features } = await request<FeatureResponse>(
+    `/category/${CATEGORY_IDS[category]}`,
+    {
+      bbox: area.bbox.join(','),
+      proximity: `${area.center.lng},${area.center.lat}`,
+      limit: String(CATEGORY_LIMIT),
+    },
+    signal
+  );
 
-  return {
-    // Can differ from the suggestion's id, and this is the one that identifies the saved place
-    mapboxId: properties.mapbox_id,
-    name: properties.name.slice(0, STOP_NAME_MAX_LENGTH).trim(),
-    address: addressOf(properties),
-    lat,
-    lng,
-    category: toStopCategory(properties.poi_category_ids),
-  };
+  // The user asked for this kind of place, so it's what the stop is saved as. Mapbox's own ids
+  // can say otherwise, like a gas station that sells coffee
+  return features.map((feature) => ({ ...toPlace(feature), category }));
 };

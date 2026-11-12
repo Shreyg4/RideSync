@@ -58,6 +58,12 @@ export const STOP_CATEGORIES = [
 export const stopCategoryLabel = (value: StopCategory) =>
   value.charAt(0).toUpperCase() + value.slice(1);
 
+// The kinds of place the search map can look for. 'Other' isn't a kind anyone searches for
+export type SearchCategory = Exclude<StopCategory, 'other'>;
+export const SEARCH_CATEGORIES = STOP_CATEGORIES.filter(
+  (category): category is SearchCategory => category !== 'other'
+);
+
 // Mapbox rejects a longer search
 export const PLACE_QUERY_MAX_LENGTH = 256;
 
@@ -187,6 +193,25 @@ export const parseStopPosition = (value: unknown): number | undefined => {
 export const parseStopId = (value: unknown): number | undefined => {
   const id = parseStopPosition(value);
   return id !== undefined && id > 0 ? id : undefined;
+};
+
+// The stops a new stop can be added after. Nothing comes after the end of a one-way trip
+export const fromStopOptions = (stops: readonly TripStop[]) =>
+  stops.filter((stop) => stop.stopType !== 'end');
+
+// The stop a new one follows when the user doesn't pick another: the one before the position it
+// was opened with, or else the one before the end or destination, which is where add_trip_stop
+// puts a stop given no position
+export const defaultFromStop = (
+  stops: readonly TripStop[],
+  atPosition?: number
+): TripStop | undefined => {
+  const options = fromStopOptions(stops);
+  const insertAt =
+    atPosition ??
+    stops.find((stop) => stop.isTurnaround || stop.stopType === 'end')?.position ??
+    stops.length;
+  return options.findLast((stop) => stop.position < insertAt) ?? options[0];
 };
 
 // The trip's fixed points: where it starts, turns around and ends

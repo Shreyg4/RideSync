@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { retrievePlace, suggestPlaces } from '../mapboxSearchService';
+import { retrievePlace, searchCategory, suggestPlaces } from '../mapboxSearchService';
 import { toUserMessage } from '../errors';
+import type { SearchCategory } from '@/src/domain/rules';
 
 const TOKEN = 'pk.test-token';
 const SESSION = 'session-1';
@@ -197,6 +198,99 @@ describe('retrievePlace', () => {
     await retrievePlace('id', SESSION, signal);
 
     expect(requested().signal).toBe(signal);
+  });
+});
+
+describe('searchCategory', () => {
+  const AREA = {
+    bbox: [-122.5, 47.5, -122.1, 47.7] as [number, number, number, number],
+    center: { lat: 47.6, lng: -122.3 },
+  };
+
+  const CHIP_CATEGORIES: [SearchCategory, string][] = [
+    ['gas', 'gas_station'],
+    ['food', 'food'],
+    ['coffee', 'coffee'],
+    ['rest', 'rest_area'],
+    ['lodging', 'lodging'],
+    ['attraction', 'tourist_attraction'],
+  ];
+
+  it.each(CHIP_CATEGORIES)('searches %s with Mapbox’s %s category', async (category, mapboxId) => {
+    respondWith({ features: [] });
+
+    await searchCategory(category, AREA);
+
+    expect(requested().path).toBe(
+      `https://api.mapbox.com/search/searchbox/v1/category/${mapboxId}`
+    );
+  });
+
+  it('keeps results inside the area, nearest its center first', async () => {
+    respondWith({ features: [] });
+
+    await searchCategory('gas', AREA);
+
+    const { params } = requested();
+    expect(params.get('bbox')).toBe('-122.5,47.5,-122.1,47.7');
+    expect(params.get('proximity')).toBe('-122.3,47.6');
+    expect(params.get('limit')).toBe('10');
+    expect(params.get('access_token')).toBe(TOKEN);
+  });
+
+  it('sends no session token, since category search is billed per request', async () => {
+    respondWith({ features: [] });
+
+    await searchCategory('gas', AREA);
+
+    expect(requested().params.has('session_token')).toBe(false);
+  });
+
+  it('builds places with their coordinates, so none needs a /retrieve', async () => {
+    respondWith({ features: [feature({}, [-122.31, 47.61]), feature({ mapbox_id: 'two' })] });
+
+    const places = await searchCategory('attraction', AREA);
+
+    expect(places).toHaveLength(2);
+    expect(places[0]).toEqual({
+      mapboxId: 'retrieved-id',
+      name: 'Space Needle',
+      address: '400 Broad Street, Seattle, Washington 98109, United States',
+      lat: 47.61,
+      lng: -122.31,
+      category: 'attraction',
+    });
+  });
+
+  it('saves a place as the kind the user searched for, whatever else Mapbox tags it', async () => {
+    respondWith({ features: [feature({ poi_category_ids: ['coffee', 'gas_station'] })] });
+
+    const [place] = await searchCategory('coffee', AREA);
+
+    expect(place.category).toBe('coffee');
+  });
+
+  it('answers with no places when Mapbox finds none', async () => {
+    respondWith({ features: [] });
+
+    await expect(searchCategory('rest', AREA)).resolves.toEqual([]);
+  });
+
+  it('hands the abort signal to fetch', async () => {
+    respondWith({ features: [] });
+    const { signal } = new AbortController();
+
+    await searchCategory('gas', AREA, signal);
+
+    expect(requested().signal).toBe(signal);
+  });
+
+  it('throws the friendly coded error when Mapbox refuses', async () => {
+    respondWith({ message: 'nope' }, 400);
+
+    await expect(searchCategory('gas', AREA)).rejects.toMatchObject({
+      code: 'mapbox_search_failed',
+    });
   });
 });
 

@@ -24,6 +24,9 @@ import {
   stopArrivalDay,
   earliestDepartureDay,
   defaultDeparture,
+  defaultFromStop,
+  fromStopOptions,
+  SEARCH_CATEGORIES,
 } from '../rules';
 import type { ItineraryRow } from '../rules';
 
@@ -604,6 +607,60 @@ describe('toStopCategory', () => {
     ['no list', undefined],
   ])('falls back to other for %s', (_, ids) => {
     expect(toStopCategory(ids)).toBe('other');
+  });
+});
+
+describe('SEARCH_CATEGORIES', () => {
+  it('offers every stop category but other, which nobody searches for', () => {
+    expect(SEARCH_CATEGORIES).toEqual(['gas', 'food', 'coffee', 'rest', 'lodging', 'attraction']);
+  });
+});
+
+describe('the From stop for map search', () => {
+  const at = (id: number, stopType: StopType, isTurnaround = false): TripStop => ({
+    id,
+    tripId: 1,
+    position: id - 1,
+    name: `Stop ${id}`,
+    address: null,
+    lat: 47.6,
+    lng: -122.3,
+    mapboxId: null,
+    stopType,
+    stopCategory: 'other',
+    notes: null,
+    departsAt: null,
+    isTurnaround,
+  });
+  const ids = (stops: readonly (TripStop | undefined)[]) => stops.map((stop) => stop?.id);
+
+  const oneWay = [at(1, 'start'), at(2, 'stop'), at(3, 'stop'), at(4, 'end')];
+  const roundTrip = [at(1, 'start'), at(2, 'stop'), at(3, 'stop', true), at(4, 'stop')];
+
+  it('offers every stop but the end, since nothing is added after it', () => {
+    expect(ids(fromStopOptions(oneWay))).toEqual([1, 2, 3]);
+    expect(ids(fromStopOptions(roundTrip))).toEqual([1, 2, 3, 4]);
+  });
+
+  it('defaults to the stop before the end, where a new stop goes without a position', () => {
+    expect(defaultFromStop(oneWay)?.id).toBe(3);
+  });
+
+  it('defaults to the stop before the destination on a round trip', () => {
+    expect(defaultFromStop(roundTrip)?.id).toBe(2);
+  });
+
+  it('defaults to the stop before the position it was opened with, like a return stop', () => {
+    expect(defaultFromStop(roundTrip, 4)?.id).toBe(4);
+    expect(defaultFromStop(oneWay, 1)?.id).toBe(1);
+  });
+
+  it('falls back to the start for a position before it', () => {
+    expect(defaultFromStop(oneWay, 0)?.id).toBe(1);
+  });
+
+  it('has nothing to default to without stops', () => {
+    expect(defaultFromStop([])).toBeUndefined();
   });
 });
 

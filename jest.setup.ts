@@ -24,12 +24,20 @@ jest.mock('expo-linking', () => ({
 
 // The real package needs native modules. Map pieces render as plain Views so a test can find them
 // and read their props
+const mockSetCamera = jest.fn();
 jest.mock('@rnmapbox/maps', () => {
   const React = require('react');
   const { View } = require('react-native');
+  const Camera = React.forwardRef((props: object, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({ setCamera: mockSetCamera }));
+    return React.createElement(View, { testID: 'mapbox-camera', ...props });
+  });
+  Camera.displayName = 'MockCamera';
   const mapbox = {
     MapView: (props: object) => React.createElement(View, { testID: 'mapbox-map', ...props }),
-    Camera: (props: object) => React.createElement(View, { testID: 'mapbox-camera', ...props }),
+    // Tests read what the camera was told to do through __camera.setCamera
+    Camera,
+    __camera: { setCamera: mockSetCamera },
     MarkerView: (props: object) => React.createElement(View, { testID: 'mapbox-marker', ...props }),
     StyleURL: { Dark: 'mapbox://styles/mapbox/dark-v10' },
     setAccessToken: jest.fn(async () => null),
