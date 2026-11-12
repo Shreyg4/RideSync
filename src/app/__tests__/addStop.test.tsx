@@ -12,6 +12,8 @@ import AddStopScreen from '../trips/[id]/addStop';
 import { parsePlaceParam } from '@/src/lib/placeParam';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockTable } from '@/src/test/supabase';
+import { routeKey, routePoints } from '@/src/domain/route';
+import { toTripStop } from '@/src/lib/tripMapper';
 
 jest.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: jest.fn(),
@@ -271,6 +273,40 @@ describe('AddStopScreen', () => {
       expect(view.getByLabelText('Stop 2, Coast')).toHaveTextContent('2');
       expect(view.getByTestId('add-stop-map')).toContainElement(view.getByTestId('map-pin-2'));
       expect(mockTable('trip_stops').eq).toHaveBeenCalledWith('trip_id', 1);
+    });
+
+    it('draws the trip’s saved route under the pins, without asking Mapbox again', async () => {
+      const stops = [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')];
+      mockTable('trips').__setResult({
+        data: { id: 1, name: 'Coast Run', starts_at: NOW, trip_type: 'one-way' },
+        error: null,
+      });
+      mockTable('trip_stops').__setResult({ data: stops, error: null });
+      mockTable('trip_routes').__setResult({
+        data: {
+          route_key: routeKey(routePoints(stops.map(toTripStop), 'one-way')),
+          legs: [{ duration: 3600, distance: 100000 }],
+          geometry: ['_p~iF~ps|U_ulLnnqC_mqNvxq`@'],
+        },
+        error: null,
+      });
+      const view = await renderAddStop();
+
+      expect(await view.findByTestId('mapbox-shape')).toBeTruthy();
+      expect(view.getByTestId('add-stop-map')).toContainElement(view.getByTestId('mapbox-line'));
+      expect(requests('/directions')).toHaveLength(0);
+    });
+
+    it('draws no route before the trip has two places', async () => {
+      mockTable('trips').__setResult({
+        data: { id: 1, name: 'Coast Run', starts_at: NOW, trip_type: 'one-way' },
+        error: null,
+      });
+      mockTable('trip_stops').__setResult({ data: [stopRow(1, 'start', 'Home')], error: null });
+      const view = await renderAddStop();
+      await view.findByLabelText('Stop 1, Home');
+
+      expect(view.queryByTestId('mapbox-shape')).toBeNull();
     });
 
     it('fits the map to every stop, like the planner’s map', async () => {

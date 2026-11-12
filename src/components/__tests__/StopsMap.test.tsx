@@ -4,6 +4,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { colors } from '@/src/constants/theme';
 import type { TripStop } from '@/src/types/trip';
+import { decodePolyline } from '@/src/lib/polyline';
 import StopsMap from '../StopsMap';
 
 const stop = (
@@ -91,6 +92,25 @@ describe('StopsMap', () => {
     await fireEvent.press(view.getByLabelText('Stop 2, Diner'));
 
     expect(onOpenStop).toHaveBeenCalledWith(stops[1]);
+  });
+
+  it('draws the route as one line, longitude first', async () => {
+    const geometry = ['_p~iF~ps|U_ulLnnqC_mqNvxq`@'];
+    const view = await render(<StopsMap stops={stops} route={{ key: 'k', legs: [], geometry }} />);
+
+    const { shape } = view.getByTestId('mapbox-shape').props;
+    expect(shape.geometry).toEqual({
+      type: 'LineString',
+      coordinates: decodePolyline(geometry[0]),
+    });
+    expect(view.getByTestId('mapbox-line')).toBeTruthy();
+  });
+
+  it('draws no line until the route is in', async () => {
+    const view = await render(<StopsMap stops={stops} route={null} />);
+
+    expect(view.queryByTestId('mapbox-shape')).toBeNull();
+    expect(view.getAllByTestId(/^map-pin-/)).toHaveLength(3);
   });
 
   it('makes the pins untappable without onOpenStop', async () => {

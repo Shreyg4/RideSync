@@ -30,3 +30,11 @@ export const daysBetween = (from: Date, to: Date) =>
 // "Sat, Sep 12", in the phone's locale
 export const formatShortDate = (date: Date) =>
   date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+// "9:05 AM", in the phone's locale
+export const formatTime = (date: Date) =>
+  date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+// "Sat", in the phone's locale
+export const formatWeekday = (date: Date) =>
+  date.toLocaleDateString(undefined, { weekday: 'short' });

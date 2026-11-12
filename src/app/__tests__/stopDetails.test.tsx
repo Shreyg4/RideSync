@@ -8,7 +8,9 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
+import { Linking } from 'react-native';
 import StopDetailsScreen from '../trips/[id]/stopDetails';
+import { navigationUrl } from '@/src/lib/navigation';
 import { toPlaceParam } from '@/src/lib/placeParam';
 import type { TripRow } from '@/src/services/tripService';
 import type { TripStopRow } from '@/src/services/tripStopService';
@@ -709,6 +711,24 @@ describe('StopDetailsScreen editing a stop', () => {
 
       await waitFor(() => expect(savedChanges()).toMatchObject({ lat: 47.6205, lng: -122.3493 }));
       expect(savedChanges()).not.toHaveProperty('stop_type');
+    });
+  });
+
+  describe('navigating', () => {
+    it.each(['owner', 'viewer'])('lets an %s open driving directions to the stop', async (role) => {
+      const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+      const stop = stopRow();
+      const view = await renderEdit({ role, stop });
+
+      await fireEvent.press(view.getByTestId('stop-navigate'));
+
+      expect(openURL).toHaveBeenCalledWith(navigationUrl({ lat: stop.lat, lng: stop.lng }));
+    });
+
+    it('offers no directions to a place that isn’t saved yet', async () => {
+      const view = await renderStopDetails();
+
+      expect(view.queryByTestId('stop-navigate')).toBeNull();
     });
   });
 

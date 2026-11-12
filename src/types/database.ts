@@ -120,6 +120,38 @@ export type Database = {
           },
         ];
       };
+      trip_routes: {
+        Row: {
+          geometry: string[];
+          legs: Json;
+          route_key: string;
+          trip_id: number;
+          updated_at: string;
+        };
+        Insert: {
+          geometry: string[];
+          legs: Json;
+          route_key: string;
+          trip_id: number;
+          updated_at?: string;
+        };
+        Update: {
+          geometry?: string[];
+          legs?: Json;
+          route_key?: string;
+          trip_id?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'trip_routes_trip_id_fkey';
+            columns: ['trip_id'];
+            isOneToOne: true;
+            referencedRelation: 'trips';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       trip_stops: {
         Row: {
           address: string | null;
@@ -331,6 +363,15 @@ export type Database = {
       remove_trip_stop: { Args: { target_stop_id: number }; Returns: undefined };
       reorder_trip_stops: {
         Args: { ordered_ids: number[]; target_trip_id: number };
+        Returns: undefined;
+      };
+      save_trip_route: {
+        Args: {
+          new_geometry: string[];
+          new_legs: Json;
+          new_route_key: string;
+          target_trip_id: number;
+        };
         Returns: undefined;
       };
       start_saved_trip: {

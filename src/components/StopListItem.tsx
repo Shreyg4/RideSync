@@ -11,6 +11,7 @@ type StopListItemProps = {
   label?: string; // replaces the label worked out from the stop
   highlighted?: boolean; // tints the border
   compact?: boolean; // less space around the card, for short lists
+  detail?: string | null; // one more line under the card's details, like when the group gets there
   onPress?: () => void;
   testID?: string;
 };
@@ -20,6 +21,7 @@ const StopListItem = ({
   label = stopLabel(stop),
   highlighted = false,
   compact = false,
+  detail,
   onPress,
   testID,
 }: StopListItemProps) => {
@@ -32,7 +34,7 @@ const StopListItem = ({
       }}
       testID={testID}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={[stop.name, stop.address, label].filter(Boolean).join(', ')}
+      accessibilityLabel={[stop.name, stop.address, label, detail].filter(Boolean).join(', ')}
       style={({ pressed }) => [pressFeedback.card(pressed)]}
     >
       <View
@@ -50,6 +52,11 @@ const StopListItem = ({
           ) : null}
           <Text style={styles.subtext}>{label}</Text>
         </View>
+        {detail ? (
+          <Text style={[styles.subtext, styles.detail]} testID={testID && `detail-${testID}`}>
+            {detail}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -91,6 +98,9 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  detail: {
+    marginTop: spacing.xxs,
   },
 });
 const iconProps = {

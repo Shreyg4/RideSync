@@ -3,13 +3,17 @@
  * @description A trip's stops on a map, numbered in the order the group reaches them. The map keeps
  * every stop in view, and moves when stops are added, moved or removed
  */
-import { MarkerView } from '@rnmapbox/maps';
+import { LineLayer, MarkerView, ShapeSource } from '@rnmapbox/maps';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import TripMap from '@/src/components/TripMap';
+import type { CoveredEdges } from '@/src/components/TripMap';
 import { haptics } from '@/src/constants/haptics';
 import { colors, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import { isKeyStop } from '@/src/domain/rules';
+import type { TripRoute } from '@/src/domain/route';
+import { joinPolylines } from '@/src/lib/polyline';
 import type { TripStop } from '@/src/types/trip';
 
 const PIN_SIZE = 28;
@@ -17,6 +21,9 @@ const PIN_SIZE = 28;
 type StopsMapProps = {
   stops: readonly TripStop[]; // in trip order, which sets each pin's number
   onOpenStop?: (stop: TripStop) => void; // pins can't be tapped without it
+  route?: TripRoute | null; // the driving line between the stops, once it's in
+  coveredEdges?: CoveredEdges; // space along each edge the screen draws over, kept clear of pins
+  fitMargin?: number; // room around the outermost stops; more zooms the map further out
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -57,13 +64,55 @@ export const StopMarkers = ({ stops, onOpenStop }: StopMarkersProps) =>
     );
   });
 
-const StopsMap = ({ stops, onOpenStop, style, testID }: StopsMapProps) => (
-  <TripMap fitTo={stops} style={style} testID={testID}>
+// The road the group drives, under the pins. Decoding a long route takes a moment, so it only
+// happens when the route changes
+export const RouteLine = ({ route }: { route: TripRoute }) => {
+  const shape = useMemo<GeoJSON.Feature<GeoJSON.LineString>>(
+    () => ({
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: joinPolylines(route.geometry) },
+    }),
+    [route.geometry]
+  );
+
+  return (
+    <ShapeSource id="trip-route" shape={shape}>
+      <LineLayer id="trip-route-line" style={routeLineStyle} />
+    </ShapeSource>
+  );
+};
+
+const StopsMap = ({
+  stops,
+  onOpenStop,
+  route,
+  coveredEdges,
+  fitMargin,
+  style,
+  testID,
+}: StopsMapProps) => (
+  <TripMap
+    fitTo={stops}
+    coveredEdges={coveredEdges}
+    fitMargin={fitMargin}
+    style={style}
+    testID={testID}
+  >
+    {route ? <RouteLine route={route} /> : null}
     <StopMarkers stops={stops} onOpenStop={onOpenStop} />
   </TripMap>
 );
 
 export default StopsMap;
+
+const routeLineStyle = {
+  lineColor: colors.tint,
+  lineWidth: 4,
+  lineOpacity: 0.85,
+  lineCap: 'round',
+  lineJoin: 'round',
+} as const;
 
 const styles = StyleSheet.create({
   pin: {

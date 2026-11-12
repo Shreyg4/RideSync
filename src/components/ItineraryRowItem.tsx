@@ -6,6 +6,8 @@ import StopListItem from '@/src/components/StopListItem';
 import { colors, fontSize, fontWeight, spacing } from '@/src/constants/theme';
 import { dayHeadingLabel, isKeyStop } from '@/src/domain/rules';
 import type { AddStopRow, ItineraryRow, TimelineSegment } from '@/src/domain/rules';
+import { stopTimingLabel } from '@/src/domain/route';
+import type { TripTimings } from '@/src/domain/route';
 import type { TripStop } from '@/src/types/trip';
 
 type ItineraryRowItemProps = {
@@ -15,6 +17,7 @@ type ItineraryRowItemProps = {
   onOpenStop?: (stop: TripStop) => void; // leaves the stop cards untappable when not given
   highlightKeyStops?: boolean; // tints the start, destination, end and the return to the start
   compact?: boolean; // less space between rows, for short lists
+  timings?: TripTimings | null; // when the group reaches and leaves each place, once the route is in
   // Wraps a stop's card, for example to make it swipeable. The line beside it stays where it is
   wrapStop?: (stop: TripStop, card: ReactNode) => ReactNode;
 };
@@ -54,17 +57,26 @@ const marker = (row: ItineraryRow) => {
 
 const rowContent = (
   row: ItineraryRow,
-  { onAdd, onOpenStop, highlightKeyStops = false, compact = false, wrapStop }: ItineraryRowItemProps
+  {
+    onAdd,
+    onOpenStop,
+    highlightKeyStops = false,
+    compact = false,
+    timings,
+    wrapStop,
+  }: ItineraryRowItemProps
 ): ReactNode => {
   const headingStyle = [styles.heading, compact && styles.compactHeading];
 
   switch (row.kind) {
     case 'stop': {
+      const timing = timings?.stops.get(row.stop.id);
       const card = (
         <StopListItem
           stop={row.stop}
           highlighted={highlightKeyStops && isKeyStop(row.stop)}
           compact={compact}
+          detail={timing && stopTimingLabel(row.stop, timing)}
           onPress={onOpenStop && (() => onOpenStop(row.stop))}
           testID={`stop-${row.stop.id}`}
         />
@@ -98,6 +110,7 @@ const rowContent = (
           label="Back to start"
           highlighted={highlightKeyStops}
           compact={compact}
+          detail={timings?.backToStart && stopTimingLabel(row.stop, timings.backToStart)}
           onPress={onOpenStop && (() => onOpenStop(row.stop))}
           testID="back-to-start"
         />

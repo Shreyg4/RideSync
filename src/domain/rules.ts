@@ -110,7 +110,7 @@ export type AddStopRow = Extract<ItineraryRow, { kind: 'add' }>;
 
 // The group leaves an overnight stop on its departure date, or the next morning if it has none.
 // A departure that isn't after the day they arrived can't be right, so it's ignored
-const departureDay = (stop: Pick<TripStop, 'departsAt'>, arrivalDay: Date) => {
+export const departureDay = (stop: Pick<TripStop, 'departsAt'>, arrivalDay: Date) => {
   const departs = stop.departsAt ? startOfDay(stop.departsAt) : null;
   return departs && departs > arrivalDay ? departs : addDays(arrivalDay, 1);
 };

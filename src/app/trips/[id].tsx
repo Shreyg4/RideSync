@@ -221,8 +221,13 @@ const TripDetailsScreen = () => {
             onPress={() => router.push(`/trips/${tripId}/planner`)}
           />
         </View>
-        {/* The Directions Button */}
-        <LargeButton label="Directions" onPress={() => router.back()} />
+        {/* The route on a full map. Each stop's details can hand it to the phone's maps app */}
+        <LargeButton
+          label="Directions"
+          disabled={!stops || stops.length < 2}
+          onPress={() => router.push(`/trips/${tripId}/map`)}
+          testID="trip-directions-button"
+        />
         {/* The start trip Button */}
         <LargeButton label="Start Trip" disabled onPress={() => router.back()} />
       </ScrollView>

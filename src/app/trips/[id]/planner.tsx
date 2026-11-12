@@ -1,4 +1,4 @@
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import React, { useCallback, useRef, useState } from 'react';
 import { Maximize2, Settings } from 'lucide-react-native';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -9,16 +9,18 @@ import ItineraryRowItem, { itineraryRowKey } from '@/src/components/ItineraryRow
 import LoadingState from '@/src/components/LoadingState';
 import SmallButton from '@/src/components/SmallButton';
 import ScreenHeader from '@/src/components/ScreenHeader';
-import { colors, spacing, gradients, radii } from '@/src/constants/theme';
+import { colors, fontSize, spacing, gradients, radii } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
 import { canRemoveStop, itineraryRows, timeline } from '@/src/domain/rules';
 import type { AddStopRow } from '@/src/domain/rules';
+import { routeTotalsLabel, tripTimings } from '@/src/domain/route';
 import type { TripStop } from '@/src/types/trip';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { useOpenSwipeRow } from '@/src/hooks/useOpenSwipeRow';
 import { useTripStopsRealtime } from '@/src/hooks/useTripStopsRealtime';
+import { useTripRoute } from '@/src/hooks/useTripRoute';
 import StopsMap from '@/src/components/StopsMap';
 import SwipeToRemove from '@/src/components/SwipeToRemove';
 import { haptics } from '@/src/constants/haptics';
@@ -77,6 +79,13 @@ const PlannerScreen = () => {
     ? itineraryRows(data.stops, data.trip.tripType, data.trip.startsAt, canEdit)
     : [];
   const segments = timeline(rows);
+
+  // Follows the stops: a change from any phone reloads them, and new places fetch a new route
+  const route = useTripRoute(tripId, data?.stops, data?.trip.tripType);
+  const timings =
+    data && route.route
+      ? tripTimings(data.stops, data.trip.tripType, data.trip.startsAt, route.route.legs)
+      : null;
 
   const swipe = useOpenSwipeRow();
   const [removingId, setRemovingId] = useState<number | null>(null);
@@ -164,7 +173,7 @@ const PlannerScreen = () => {
             <View style={styles.mapBox}>
               {/* The preview only shows the route; the full-screen map is where it can be moved */}
               <View pointerEvents="none" style={styles.mapPreview}>
-                <StopsMap stops={data.stops} testID="planner-map" />
+                <StopsMap stops={data.stops} route={route.route} testID="planner-map" />
               </View>
               <Pressable
                 onPress={openMap}
@@ -199,6 +208,7 @@ const PlannerScreen = () => {
             <ItineraryRowItem
               row={item}
               segment={segments[index]}
+              timings={timings}
               onAdd={openSearch}
               onOpenStop={openStop}
               wrapStop={swipeToRemove}
@@ -218,6 +228,12 @@ const PlannerScreen = () => {
               <View style={styles.listSpacer} />
               <ErrorText message={error} onRetry={reload} />
               <ErrorText message={removeError} testID="planner-remove-error" />
+              <ErrorText message={route.error} onRetry={route.retry} testID="planner-route-error" />
+              {timings ? (
+                <Text style={styles.totals} testID="planner-route-totals">
+                  {routeTotalsLabel(timings)}
+                </Text>
+              ) : null}
               {data.stops.length === 0 ? (
                 <EmptyState
                   title="No stops yet"
@@ -253,6 +269,12 @@ const styles = StyleSheet.create({
   },
   listSpacer: {
     height: spacing.sm,
+  },
+  totals: {
+    color: colors.textMutedLight,
+    fontSize: fontSize.caption,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
   // A fixed height keeps the list below it scrollable. The clip rounds the map's corners on Android
   mapBox: {

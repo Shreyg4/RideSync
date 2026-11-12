@@ -35,7 +35,7 @@ type TripMapProps = {
   children?: ReactNode;
 };
 
-type CoveredEdges = { top?: number; right?: number; bottom?: number; left?: number };
+export type CoveredEdges = { top?: number; right?: number; bottom?: number; left?: number };
 
 const cameraStopFor = (
   fit: CameraFit,

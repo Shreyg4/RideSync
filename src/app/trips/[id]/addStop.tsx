@@ -23,7 +23,7 @@ import PlaceMarkers from '@/src/components/PlaceMarkers';
 import PlaceResultItem from '@/src/components/PlaceResultItem';
 import SmallButton from '@/src/components/SmallButton';
 import TextBox from '@/src/components/TextBox';
-import { StopMarkers } from '@/src/components/StopsMap';
+import { RouteLine, StopMarkers } from '@/src/components/StopsMap';
 import TripMap from '@/src/components/TripMap';
 import { colors, fontSize, radii, spacing } from '@/src/constants/theme';
 import {
@@ -41,10 +41,12 @@ import { useAsync } from '@/src/hooks/useAsync';
 import { useCategorySearch } from '@/src/hooks/useCategorySearch';
 import { useCurrentLocation } from '@/src/hooks/useCurrentLocation';
 import { usePlaceSearch } from '@/src/hooks/usePlaceSearch';
+import { useTripRoute } from '@/src/hooks/useTripRoute';
 import { areaAround } from '@/src/lib/mapCamera';
 import type { MapArea } from '@/src/lib/mapCamera';
 import { toPlaceParam } from '@/src/lib/placeParam';
-import { toTripStop } from '@/src/lib/tripMapper';
+import { toTrip, toTripStop } from '@/src/lib/tripMapper';
+import { getTrip } from '@/src/services/tripService';
 import { listTripStops } from '@/src/services/tripStopService';
 import type { Coordinates, Place, TripStop } from '@/src/types/trip';
 
@@ -89,12 +91,23 @@ const AddStopScreen = () => {
 
   const { location, loading: locating } = useCurrentLocation();
   // Shows where the trip already goes while picking the next place. Search works without them,
-  // so a failed load only leaves the pins off
-  const { data: stops, loading: loadingStops } = useAsync(
-    async () => (Number.isInteger(tripId) ? (await listTripStops(tripId)).map(toTripStop) : []),
+  // so a failed load only leaves the pins and route off. The trip type says whether the route
+  // drives back to the start
+  const { data: trip, loading: loadingStops } = useAsync(
+    async () => {
+      if (!Number.isInteger(tripId)) return { stops: [], tripType: undefined };
+      const [tripRow, stopRows] = await Promise.all([getTrip(tripId), listTripStops(tripId)]);
+      return {
+        stops: stopRows.map(toTripStop),
+        tripType: tripRow ? toTrip(tripRow).tripType : undefined,
+      };
+    },
     [tripId],
-    'AddStopScreen.listTripStops'
+    'AddStopScreen.loadTrip'
   );
+  const stops = trip?.stops;
+  // Usually the route the planner already saved, so opening search costs no Directions request
+  const { route } = useTripRoute(tripId, stops, trip?.tripType);
   const { query, setQuery, results, searching, pickingId, error, noResults, pick } =
     usePlaceSearch(location);
 
@@ -269,6 +282,7 @@ const AddStopScreen = () => {
             testID="add-stop-map"
           >
             {/* Only for reference here: tapping a pin would leave search */}
+            {route ? <RouteLine route={route} /> : null}
             <StopMarkers stops={stops ?? []} />
             <PlaceMarkers
               places={nearby.results}

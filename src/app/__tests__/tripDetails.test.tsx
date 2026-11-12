@@ -268,6 +268,34 @@ describe('TripDetailsScreen', () => {
     expect(view.queryByTestId('itinerary-more-stops')).toBeNull();
   });
 
+  it('opens the route map from Directions', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({
+      data: [
+        { ...stopRow, id: 5, name: 'Home' },
+        { ...stopRow, id: 6, position: 1, name: 'Coast', stop_type: 'end' },
+      ],
+      error: null,
+    });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+    await view.findByTestId('stop-6');
+
+    await fireEvent.press(view.getByTestId('trip-directions-button'));
+
+    expect(router.push).toHaveBeenCalledWith('/trips/1/map');
+  });
+
+  it('keeps Directions off until there are two places to drive between', async () => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({ data: [{ ...stopRow, id: 5 }], error: null });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+    await view.findByTestId('stop-5');
+
+    expect(view.getByTestId('trip-directions-button')).toBeDisabled();
+  });
+
   it('says the trip is not planned when it has no stops', async () => {
     withParams({ id: '1' });
     mockTable('trips').__setResult({ data: tripRow(), error: null });

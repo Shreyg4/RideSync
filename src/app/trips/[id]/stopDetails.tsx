@@ -8,7 +8,7 @@
 import { MarkerView } from '@rnmapbox/maps';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { MapPin, Trash2 } from 'lucide-react-native';
+import { MapPin, Navigation, Trash2 } from 'lucide-react-native';
 import React, { useState, type ReactNode } from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import Chip from '@/src/components/Chip';
@@ -52,7 +52,8 @@ import {
 } from '@/src/domain/rules';
 import type { NextStopType } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
-import { formatShortDate } from '@/src/lib/dateTime';
+import { formatShortDate, formatTime } from '@/src/lib/dateTime';
+import { openNavigation } from '@/src/lib/navigation';
 import { parsePlaceParam } from '@/src/lib/placeParam';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
 import { reportAndDescribe } from '@/src/services/errors';
@@ -83,9 +84,6 @@ type FormMode =
     };
 
 const plannerHref = (tripId: number) => `/trips/${tripId}/planner` as const;
-
-const formatTime = (date: Date) =>
-  date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
 // A saved stop has no Mapbox category list, only the category it was saved with
 const placeOfStop = (stop: TripStop): PreviewPlace => ({
@@ -243,13 +241,16 @@ const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
       {place.address ? <Text style={styles.address}>{place.address}</Text> : null}
 
       {editingInPlace ? (
-        <LargeButton
-          icon={MapPin}
-          label="Change place"
-          variant="dashed"
-          onPress={() => changePlace(editingInPlace)}
-          testID="stop-change-place"
-        />
+        <>
+          <NavigateButton place={editingInPlace} />
+          <LargeButton
+            icon={MapPin}
+            label="Change place"
+            variant="dashed"
+            onPress={() => changePlace(editingInPlace)}
+            testID="stop-change-place"
+          />
+        </>
       ) : null}
 
       <Text style={styles.label}>Category</Text>
@@ -331,6 +332,17 @@ const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
   );
 };
 
+// Driving directions to a saved stop, in the phone's maps app
+const NavigateButton = ({ place }: { place: TripStop }) => (
+  <LargeButton
+    icon={Navigation}
+    label="Navigate"
+    variant="dashed"
+    onPress={() => openNavigation(place)}
+    testID="stop-navigate"
+  />
+);
+
 // What a viewer sees: the same details, with nothing to change
 const StopSummary = ({ stop }: { stop: TripStop }) => (
   <Screen bottomOffset={spacing.lg}>
@@ -339,6 +351,7 @@ const StopSummary = ({ stop }: { stop: TripStop }) => (
       {stop.name}
     </Text>
     {stop.address ? <Text style={styles.address}>{stop.address}</Text> : null}
+    <NavigateButton place={stop} />
     <Text style={styles.summaryLine}>{stopLabel(stop)}</Text>
     {stop.stopType === 'overnight' ? (
       <Text style={styles.summaryLine} testID="stop-summary-departure">

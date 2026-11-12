@@ -39,6 +39,8 @@ jest.mock('@rnmapbox/maps', () => {
     Camera,
     __camera: { setCamera: mockSetCamera },
     MarkerView: (props: object) => React.createElement(View, { testID: 'mapbox-marker', ...props }),
+    ShapeSource: (props: object) => React.createElement(View, { testID: 'mapbox-shape', ...props }),
+    LineLayer: (props: object) => React.createElement(View, { testID: 'mapbox-line', ...props }),
     StyleURL: { Dark: 'mapbox://styles/mapbox/dark-v10' },
     setAccessToken: jest.fn(async () => null),
   };

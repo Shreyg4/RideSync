@@ -14,6 +14,22 @@ import type { TripRow } from '@/src/services/tripService';
 import type { TripStopRow } from '@/src/services/tripStopService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockChannels, mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
+import { formatTime } from '@/src/lib/dateTime';
+import { fetchRoute } from '@/src/services/mapboxDirectionsService';
+import type { Coordinates } from '@/src/types/trip';
+
+// Every drive takes an hour and a half and covers 100 miles, so times are easy to work out
+jest.mock('@/src/services/mapboxDirectionsService', () => {
+  const { routeKey } =
+    jest.requireActual<typeof import('@/src/domain/route')>('@/src/domain/route');
+  return {
+    fetchRoute: jest.fn(async (points: Coordinates[]) => ({
+      key: routeKey(points),
+      legs: points.slice(1).map(() => ({ duration: 5400, distance: 160934.4 })),
+      geometry: ['line'],
+    })),
+  };
+});
 
 // The timeline's markers are hidden from screen readers, so queries have to ask for them
 const HIDDEN = { includeHiddenElements: true };
@@ -78,6 +94,7 @@ const renderPlanner = async ({
 };
 
 beforeEach(() => {
+  (fetchRoute as jest.Mock).mockClear();
   (useLocalSearchParams as jest.Mock).mockReturnValue({ id: '1' });
   (router.push as jest.Mock).mockClear();
 });
@@ -247,7 +264,7 @@ describe('PlannerScreen', () => {
       const view = await renderRoundTrip();
 
       const finish = await view.findByTestId('back-to-start');
-      expect(finish.props.accessibilityLabel).toBe('Home, Home address, Back to start');
+      expect(finish.props.accessibilityLabel).toMatch(/^Home, Home address, Back to start(,|$)/);
     });
 
     it('opens search for a stop on the way out without a position', async () => {
@@ -591,6 +608,65 @@ describe('PlannerScreen', () => {
       await waitFor(() => expect(view.queryByText('Coast')).toBeNull());
       expect(view.queryByLabelText('Stop 2, Coast')).toBeNull();
     });
+  });
+
+  it('shows when the group reaches each stop and the trip’s driving totals', async () => {
+    const view = await renderPlanner({
+      stops: [stopRow(1, 'start', 'Home'), stopRow(2, 'stop', 'Diner'), stopRow(3, 'end', 'Coast')],
+    });
+
+    const startsAt = new Date(NOW);
+    const after = (minutes: number) => formatTime(new Date(startsAt.getTime() + minutes * 60_000));
+    expect(await view.findByTestId('planner-route-totals')).toHaveTextContent(
+      '3 h driving · 200 mi'
+    );
+    expect(view.getByTestId('detail-stop-1')).toHaveTextContent(`Leave ${formatTime(startsAt)}`);
+    expect(view.getByTestId('detail-stop-2')).toHaveTextContent(
+      `Arrive ${after(90)} · 1 h 30 min drive`
+    );
+    expect(view.getByTestId('detail-stop-3')).toHaveTextContent(
+      `Arrive ${after(180)} · 1 h 30 min drive`
+    );
+    expect(view.getByTestId('mapbox-shape')).toBeTruthy();
+  });
+
+  it('times a round trip’s drive back to the start', async () => {
+    const destination = { ...stopRow(2, 'stop', 'Coast'), is_turnaround: true };
+    const view = await renderPlanner({
+      trip: tripRow({ trip_type: 'round-trip' }),
+      stops: [stopRow(1, 'start', 'Home'), destination],
+    });
+
+    const back = formatTime(new Date(new Date(NOW).getTime() + 180 * 60_000));
+    expect(await view.findByTestId('detail-back-to-start')).toHaveTextContent(
+      `Arrive ${back} · 1 h 30 min drive`
+    );
+  });
+
+  it('asks for no route until the trip has two places', async () => {
+    const view = await renderPlanner({ stops: [stopRow(1, 'start', 'Home')] });
+
+    await view.findByText('Home');
+    expect(fetchRoute).not.toHaveBeenCalled();
+    expect(view.queryByTestId('planner-route-totals')).toBeNull();
+  });
+
+  it('still lists the stops when directions fail, with a way to try again', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    (fetchRoute as jest.Mock).mockImplementationOnce(async () => {
+      throw Object.assign(new Error('Mapbox directions failed: 500'), {
+        code: 'mapbox_directions_failed',
+      });
+    });
+    const view = await renderPlanner({
+      stops: [stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast')],
+    });
+
+    expect(await view.findByText('Coast')).toBeTruthy();
+    expect(await view.findByTestId('planner-route-error')).toHaveTextContent(
+      /Directions are not available right now/
+    );
+    expect(view.queryByTestId('planner-route-totals')).toBeNull();
   });
 
   it('reports a missing trip', async () => {

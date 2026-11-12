@@ -14,28 +14,46 @@ import SmallButton from '@/src/components/SmallButton';
 import StopsMap from '@/src/components/StopsMap';
 import { colors, spacing } from '@/src/constants/theme';
 import { useAsync } from '@/src/hooks/useAsync';
+import { useTripRoute } from '@/src/hooks/useTripRoute';
 import { useTripStopsRealtime } from '@/src/hooks/useTripStopsRealtime';
-import { toTripStop } from '@/src/lib/tripMapper';
+import { toTrip, toTripStop } from '@/src/lib/tripMapper';
+import { getTrip } from '@/src/services/tripService';
 import { listTripStops } from '@/src/services/tripStopService';
 import type { TripStop } from '@/src/types/trip';
+
+const BACK_BUTTON_SIZE = 48;
+// More room around the stops than a small map gets, since the route can bulge out past them and a
+// full screen has space to show where the trip sits
+const FIT_MARGIN = 80;
 
 const TripMapScreen = () => {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const tripId = Number(Array.isArray(id) ? id[0] : id);
 
-  const {
-    data: stops,
-    loading,
-    error,
-    reload,
-  } = useAsync(
-    async () => (Number.isInteger(tripId) ? (await listTripStops(tripId)).map(toTripStop) : []),
+  // The trip type says whether the route drives back to the start
+  const { data, loading, error, reload } = useAsync(
+    async () => {
+      if (!Number.isInteger(tripId)) return { stops: [], tripType: undefined };
+      const [trip, stops] = await Promise.all([getTrip(tripId), listTripStops(tripId)]);
+      return { stops: stops.map(toTripStop), tripType: trip ? toTrip(trip).tripType : undefined };
+    },
     [tripId],
-    'TripMapScreen.listTripStops'
+    'TripMapScreen.load'
   );
+  const stops = data?.stops;
 
   useTripStopsRealtime(tripId, reload);
+  const { route } = useTripRoute(tripId, stops, data?.tripType);
+
+  // Keeps the stops clear of the notch or Dynamic Island and the back button at the top, and the
+  // home indicator at the bottom, all of which the full-screen map runs under
+  const coveredEdges = {
+    top: insets.top + spacing.sm + BACK_BUTTON_SIZE,
+    right: insets.right,
+    bottom: insets.bottom,
+    left: insets.left,
+  };
 
   // Editors can change or remove the stop there, and everyone else sees its details
   const openStop = (stop: TripStop) =>
@@ -51,7 +69,14 @@ const TripMapScreen = () => {
 
       {/* Keeps showing the pins during a reload instead of flashing the spinner */}
       {stops ? (
-        <StopsMap stops={stops} onOpenStop={openStop} testID="trip-map" />
+        <StopsMap
+          stops={stops}
+          route={route}
+          onOpenStop={openStop}
+          coveredEdges={coveredEdges}
+          fitMargin={FIT_MARGIN}
+          testID="trip-map"
+        />
       ) : loading ? (
         <LoadingState testID="trip-map-loading" />
       ) : (
@@ -64,6 +89,7 @@ const TripMapScreen = () => {
         accessibilityLabel="Go back"
         color={colors.text}
         backgroundColor="rgba(0, 0, 0, 0.6)"
+        diameter={BACK_BUTTON_SIZE}
         style={[styles.back, { top: insets.top + spacing.sm }]}
       />
     </View>

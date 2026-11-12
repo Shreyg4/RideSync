@@ -62,6 +62,18 @@ describe('TripMapScreen', () => {
     });
   });
 
+  // The test screen has a 47 pt top inset and a 34 pt home indicator
+  it('keeps the stops clear of the notch, back button and home indicator, with room around them', async () => {
+    const view = await renderMap([stopRow(1, 'start', 'Home'), stopRow(2, 'end', 'Coast', 45.5)]);
+
+    expect(view.getByTestId('mapbox-camera').props.padding).toEqual({
+      paddingTop: 80 + 47 + 10 + 48,
+      paddingRight: 80,
+      paddingBottom: 80 + 34,
+      paddingLeft: 80,
+    });
+  });
+
   it('goes back to the planner from its back button', async () => {
     const view = await renderMap([stopRow(1, 'start', 'Home')]);
     await view.findByTestId('trip-map');
