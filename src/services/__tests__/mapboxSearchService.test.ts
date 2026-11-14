@@ -234,7 +234,7 @@ describe('searchCategory', () => {
     const { params } = requested();
     expect(params.get('bbox')).toBe('-122.5,47.5,-122.1,47.7');
     expect(params.get('proximity')).toBe('-122.3,47.6');
-    expect(params.get('limit')).toBe('10');
+    expect(params.get('limit')).toBe('25');
     expect(params.get('access_token')).toBe(TOKEN);
   });
 

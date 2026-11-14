@@ -3,7 +3,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { setErrorReporter } from '@/src/lib/logger';
-import { getUserAvatarPath, isUsernameAvailable, setUserAvatarPath } from '../userService';
+import {
+  getUserAvatarPath,
+  getUserProfile,
+  isUsernameAvailable,
+  setShowFullName,
+  setUserAvatarPath,
+} from '../userService';
 import { mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
 
 const queryError = { code: 'PGRST301', message: 'JWT expired' };
@@ -75,5 +81,54 @@ describe('setUserAvatarPath', () => {
   it('throws the update error', async () => {
     mockTable('users').__setResult({ error: queryError });
     await expect(setUserAvatarPath('user-1', 'user-1/2.png')).rejects.toBe(queryError);
+  });
+});
+
+describe('getUserProfile', () => {
+  it('returns null for a signed-out user without querying', async () => {
+    await expect(getUserProfile(undefined)).resolves.toBeNull();
+    expect(mockSupabase.from).not.toHaveBeenCalled();
+  });
+
+  it(`reads that user's names, name choice and avatar`, async () => {
+    mockTable('users').__setResult({
+      data: {
+        username: 'ana_lee',
+        first_name: 'Ana',
+        last_name: 'Lee',
+        show_full_name: true,
+        avatar_path: 'user-1/1.png',
+      },
+    });
+
+    await expect(getUserProfile('user-1')).resolves.toEqual({
+      username: 'ana_lee',
+      firstName: 'Ana',
+      lastName: 'Lee',
+      showFullName: true,
+      avatarPath: 'user-1/1.png',
+    });
+    expect(mockTable('users').eq).toHaveBeenCalledWith('id', 'user-1');
+    expect(mockTable('users').single).toHaveBeenCalled();
+  });
+
+  it('reports and rethrows a failed read', async () => {
+    mockTable('users').__setResult({ error: queryError });
+
+    await expect(getUserProfile('user-1')).rejects.toBe(queryError);
+    expect(reporter).toHaveBeenCalledWith(queryError, { scope: 'userService.getUserProfile' });
+  });
+});
+
+describe('setShowFullName', () => {
+  it(`updates that user's name choice`, async () => {
+    await expect(setShowFullName('user-1', true)).resolves.toBeUndefined();
+    expect(mockTable('users').update).toHaveBeenCalledWith({ show_full_name: true });
+    expect(mockTable('users').eq).toHaveBeenCalledWith('id', 'user-1');
+  });
+
+  it('throws the update error', async () => {
+    mockTable('users').__setResult({ error: queryError });
+    await expect(setShowFullName('user-1', true)).rejects.toBe(queryError);
   });
 });

@@ -39,6 +39,7 @@ import {
   defaultDeparture,
   earliestDepartureDay,
   itineraryRows,
+  newStopArrivalDay,
   parseNextStopType,
   parseStopId,
   parseStopPosition,
@@ -75,7 +76,13 @@ const PREVIEW_ZOOM = 15;
 type PreviewPlace = Pick<Place, 'name' | 'address' | 'lat' | 'lng'>;
 
 type FormMode =
-  | { kind: 'add'; place: Place; stopType: NextStopType; atPosition?: number }
+  | {
+      kind: 'add';
+      place: Place;
+      stopType: NextStopType;
+      atPosition?: number;
+      arrivalDay?: Date; // when the group would get there; unknown until the trip has loaded
+    }
   | {
       kind: 'edit';
       stop: TripStop;
@@ -138,7 +145,7 @@ const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
   const [formError, setFormError] = useState<string>();
   const [saving, setSaving] = useState(false);
 
-  const arrivalDay = mode.kind === 'edit' ? mode.arrivalDay : undefined;
+  const arrivalDay = mode.arrivalDay;
 
   const saveStop = async () => {
     if (mode.kind === 'add') {
@@ -153,6 +160,8 @@ const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
         stop_notes: notes.trim() || undefined,
         at_position: mode.atPosition,
         stop_is_turnaround: role === 'destination',
+        // Saved with the stop, so it can't be added without the time the group leaves it
+        stop_departs_at: overnight && departsAt ? departsAt.toISOString() : undefined,
       });
       return;
     }
@@ -285,7 +294,7 @@ const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
         </View>
       ) : null}
 
-      {/* add_trip_stop takes no departure, so it's set once the stop exists */}
+      {/* Shown as soon as the stay is switched on, for a new stop as well as a saved one */}
       {overnight && arrivalDay ? (
         <DepartureField
           value={departsAt}
@@ -363,6 +372,42 @@ const StopSummary = ({ stop }: { stop: TripStop }) => (
     {stop.notes ? <Text style={styles.summaryNotes}>{stop.notes}</Text> : null}
   </Screen>
 );
+
+type AddStopProps = {
+  tripId: number;
+  place: Place;
+  stopType: NextStopType;
+  atPosition?: number;
+};
+
+// A new stop's form, opened straight away. The trip loads behind it to work out the day the group
+// would get there, which an overnight stay's departure has to come after. Until then, or if it can't
+// load, the departure waits and the stop saves without one, leaving the next morning
+const AddStop = ({ tripId, place, stopType, atPosition }: AddStopProps) => {
+  const { data: arrivalDay } = useAsync(
+    async () => {
+      const [tripRow, stopRows] = await Promise.all([getTrip(tripId), listTripStops(tripId)]);
+      if (!tripRow) return undefined;
+      const trip = toTrip(tripRow);
+      return newStopArrivalDay(
+        stopRows.map(toTripStop),
+        trip.tripType,
+        trip.startsAt,
+        stopType,
+        atPosition
+      );
+    },
+    [tripId, stopType, atPosition],
+    'StopDetailsScreen.loadArrivalDay'
+  );
+
+  return (
+    <StopDetailsForm
+      tripId={tripId}
+      mode={{ kind: 'add', place, stopType, atPosition, arrivalDay: arrivalDay ?? undefined }}
+    />
+  );
+};
 
 type EditStopProps = {
   tripId: number;
@@ -467,9 +512,11 @@ const StopDetailsScreen = () => {
   return renderShell(
     addStopLabel(stopType),
     place ? (
-      <StopDetailsForm
+      <AddStop
         tripId={tripId}
-        mode={{ kind: 'add', place, stopType, atPosition: parseStopPosition(params.atPosition) }}
+        place={place}
+        stopType={stopType}
+        atPosition={parseStopPosition(params.atPosition)}
       />
     ) : (
       <EmptyState title="Couldn't open that place" />

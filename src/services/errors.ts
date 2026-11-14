@@ -11,6 +11,7 @@ import type { LogContext } from '@/src/lib/logger';
 const FRIENDLY_BY_CODE: Record<string, string> = {
   invalid_credentials: 'That email and password do not match an account.',
   email_not_confirmed: 'Confirm your email address before signing in.',
+  otp_expired: 'That code is wrong or has expired. Check it, or send a new one.',
   user_already_exists: 'An account with that email already exists.',
   email_exists: 'An account with that email already exists.',
   weak_password: 'Choose a longer password.',

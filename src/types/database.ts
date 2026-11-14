@@ -308,6 +308,7 @@ export type Database = {
           new_stop_type?: string;
           stop_address?: string;
           stop_category?: string;
+          stop_departs_at?: string;
           stop_is_turnaround?: boolean;
           stop_lat: number;
           stop_lng: number;
@@ -359,6 +360,10 @@ export type Database = {
       pass_trip_ownership: {
         Args: { old_owner_id: string; target_trip_id: number };
         Returns: boolean;
+      };
+      release_unconfirmed_signup: {
+        Args: { email_address: string; wanted_username: string };
+        Returns: undefined;
       };
       remove_trip_stop: { Args: { target_stop_id: number }; Returns: undefined };
       reorder_trip_stops: {

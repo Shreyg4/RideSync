@@ -2,7 +2,7 @@
  * @file TripMap.tsx
  * @description The map every trip screen builds on. Pins and routes go in as children
  */
-import { Camera, MapView, StyleURL } from '@rnmapbox/maps';
+import { Camera, MapView } from '@rnmapbox/maps';
 import type { CameraStop, MapState } from '@rnmapbox/maps';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -10,6 +10,7 @@ import { StyleSheet } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { areaFromBounds, cameraFit } from '@/src/lib/mapCamera';
 import type { CameraFit, MapArea } from '@/src/lib/mapCamera';
+import { MAP_STYLES, useMapStyle } from '@/src/lib/mapStyle';
 import type { Coordinates } from '@/src/types/trip';
 
 const DEFAULT_ZOOM = 11;
@@ -68,6 +69,8 @@ const TripMap = ({
   testID,
   children,
 }: TripMapProps) => {
+  const mapStyle = useMapStyle();
+
   // Android clears the gesture flag before the map goes idle, so a drag is noted while it happens
   const userMoved = useRef(false);
 
@@ -110,7 +113,7 @@ const TripMap = ({
   return (
     <MapView
       style={[styles.map, style]}
-      styleURL={StyleURL.Dark}
+      styleURL={MAP_STYLES[mapStyle].url}
       scaleBarEnabled={false}
       // Camera events cross to JavaScript many times a second, so only a map that uses them gets them
       onCameraChanged={onUserMoved ? noteGesture : undefined}

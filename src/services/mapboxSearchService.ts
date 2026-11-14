@@ -9,8 +9,9 @@ import type { Coordinates, Place, PlaceSuggestion } from '@/src/types/trip';
 
 const BASE_URL = 'https://api.mapbox.com/search/searchbox/v1';
 const SUGGEST_LIMIT = 5;
-// Enough to show what's around without burying the map in pins. Mapbox allows up to 25
-const CATEGORY_LIMIT = 10;
+// Mapbox's most. The search area is a square around the circle the user picked, and results in its
+// corners are dropped, so asking for fewer could leave the circle nearly empty
+const CATEGORY_LIMIT = 25;
 
 // The Mapbox category each chip searches. Food is the broad one, so fast food shows up too
 const CATEGORY_IDS: Record<SearchCategory, string> = {

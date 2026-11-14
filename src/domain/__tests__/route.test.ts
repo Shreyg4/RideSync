@@ -8,10 +8,16 @@ import {
   routeChunks,
   routeKey,
   routePoints,
+  pointAtTime,
+  routeSections,
   routeTotalsLabel,
+  sectionFor,
+  sectionStopIds,
   stopTimingLabel,
   tripTimings,
 } from '../route';
+import { distanceMeters } from '@/src/lib/geo';
+import type { Position } from '@/src/lib/mapCamera';
 
 const stop = (
   id: number,
@@ -299,5 +305,195 @@ describe('routeTotalsLabel', () => {
     );
 
     expect(timings && routeTotalsLabel(timings)).toBe('8 h 50 min driving · 512 mi');
+  });
+});
+
+describe('routeSections and pointAtTime', () => {
+  // Stops along the equator, so a degree of longitude is the same distance everywhere
+  const D = distanceMeters([0, 0], [1, 0]);
+  const place = (id: number, type: TripStop['stopType'], lng: number, turnaround = false) =>
+    stop(id, type, 0, lng, { isTurnaround: turnaround });
+  const drive = (hours: number, degrees: number) => ({
+    duration: hours * HOUR,
+    distance: degrees * D,
+  });
+  const at = (lng: number): Position => [lng, 0];
+
+  const expectAt = (point: { lat: number; lng: number }, lng: number) => {
+    expect(point.lng).toBeCloseTo(lng, 6);
+    expect(point.lat).toBeCloseTo(0, 6);
+  };
+
+  describe('a one-way trip', () => {
+    const stops = [place(1, 'start', 0), place(2, 'stop', 1), place(3, 'end', 3)];
+    const legs = [drive(1, 1), drive(1, 2)];
+    const line = [at(0), at(1), at(2), at(3)];
+
+    it('has one section covering the whole drive, and no return', () => {
+      const sections = routeSections(stops, 'one-way', legs, line);
+
+      expect(sections?.return).toBeNull();
+      expect(sections?.outbound).toMatchObject({ direction: 'outbound', firstLeg: 0 });
+      expect(sections?.outbound.duration).toBe(2 * HOUR);
+      expect(sections?.outbound.line[0]).toEqual(at(0));
+      expect(sections?.outbound.line.at(-1)).toEqual(at(3));
+    });
+
+    it('has a whole drive that is its way there, and gives that for the way back too', () => {
+      const sections = routeSections(stops, 'one-way', legs, line)!;
+
+      expect(sections.full).toMatchObject({ direction: 'full', duration: 2 * HOUR });
+      expect(sections.full.line).toBe(sections.outbound.line);
+      expect(sectionFor(sections, 'return')).toBe(sections.outbound);
+    });
+
+    it('starts at the start and finishes at the end', () => {
+      const { outbound } = routeSections(stops, 'one-way', legs, line)!;
+
+      expectAt(pointAtTime(outbound, 0), 0);
+      expectAt(pointAtTime(outbound, 2 * HOUR), 3);
+    });
+
+    it('moves at each leg’s own speed, so half of the second hour is halfway along its longer leg', () => {
+      const { outbound } = routeSections(stops, 'one-way', legs, line)!;
+
+      expectAt(pointAtTime(outbound, 0.5 * HOUR), 0.5);
+      expectAt(pointAtTime(outbound, 1.5 * HOUR), 2);
+    });
+
+    it('says which leg the point is on, so a stop found there goes between the right stops', () => {
+      const { outbound } = routeSections(stops, 'one-way', legs, line)!;
+
+      expect(pointAtTime(outbound, 0.5 * HOUR).legIndex).toBe(0);
+      expect(pointAtTime(outbound, 1.5 * HOUR).legIndex).toBe(1);
+    });
+
+    it('keeps times outside the drive on the route', () => {
+      const { outbound } = routeSections(stops, 'one-way', legs, line)!;
+
+      expect(pointAtTime(outbound, -60)).toMatchObject({ seconds: 0, legIndex: 0 });
+      expect(pointAtTime(outbound, 99 * HOUR)).toMatchObject({ seconds: 2 * HOUR, legIndex: 1 });
+      expectAt(pointAtTime(outbound, 99 * HOUR), 3);
+    });
+
+    it('places stops by their share of Mapbox’s distances, not by the line’s own length', () => {
+      // Mapbox says the second leg is three times the first, on a line with no point at the stop
+      const { outbound } = routeSections(
+        stops,
+        'one-way',
+        [
+          { duration: HOUR, distance: 100 },
+          { duration: HOUR, distance: 300 },
+        ],
+        [at(0), at(4)]
+      )!;
+
+      expectAt(pointAtTime(outbound, HOUR), 1);
+    });
+  });
+
+  describe('a round trip on a road driven both ways', () => {
+    // Nearest-point matching would put the destination on either pass of this road
+    const stops = [place(1, 'start', 0), place(2, 'stop', 2, true)];
+    const legs = [drive(2, 2), drive(1, 2)];
+    const line = [at(0), at(1), at(2), at(1), at(0)];
+
+    it('splits at the destination into the way there and the way back', () => {
+      const sections = routeSections(stops, 'round-trip', legs, line)!;
+
+      expect(sections.outbound).toMatchObject({ firstLeg: 0, duration: 2 * HOUR });
+      expect(sections.outbound.line.at(-1)?.[0]).toBeCloseTo(2, 6);
+      expect(sections.return).toMatchObject({ direction: 'return', firstLeg: 1, duration: HOUR });
+      expect(sections.return?.line[0][0]).toBeCloseTo(2, 6);
+      expect(sections.return?.line.at(-1)).toEqual(at(0));
+    });
+
+    it('places a time on the way back on the return pass, on the route’s own leg', () => {
+      const sections = routeSections(stops, 'round-trip', legs, line)!;
+
+      const point = pointAtTime(sections.return!, 0.25 * HOUR);
+
+      expectAt(point, 1.5);
+      expect(point.legIndex).toBe(1);
+    });
+
+    it('also has the whole drive as one section, there and back', () => {
+      const sections = routeSections(stops, 'round-trip', legs, line)!;
+
+      expect(sections.full).toMatchObject({ direction: 'full', firstLeg: 0, duration: 3 * HOUR });
+      expect(sections.full.line[0]).toEqual(at(0));
+      expect(sections.full.line.at(-1)).toEqual(at(0));
+      // Two and a half hours in is halfway along the drive home
+      const point = pointAtTime(sections.full, 2.5 * HOUR);
+      expectAt(point, 1);
+      expect(point.legIndex).toBe(1);
+    });
+
+    it('picks each section by its direction', () => {
+      const sections = routeSections(stops, 'round-trip', legs, line)!;
+
+      expect(sectionFor(sections, 'full')).toBe(sections.full);
+      expect(sectionFor(sections, 'outbound')).toBe(sections.outbound);
+      expect(sectionFor(sections, 'return')).toBe(sections.return);
+    });
+
+    it('counts a stop on the way home as part of the return', () => {
+      const withReturnStop = [...stops, place(3, 'stop', 1)];
+      const sections = routeSections(
+        withReturnStop,
+        'round-trip',
+        [drive(2, 2), drive(1, 1), drive(1, 1)],
+        line
+      )!;
+
+      expect(sections.return?.legs).toHaveLength(2);
+      expect(pointAtTime(sections.return!, 1.5 * HOUR).legIndex).toBe(2);
+      expectAt(pointAtTime(sections.return!, 1.5 * HOUR), 0.5);
+    });
+  });
+
+  it('puts a leg of no time at its start, instead of dividing by zero', () => {
+    const stops = [place(1, 'start', 0), place(2, 'stop', 0), place(3, 'end', 1)];
+    const { outbound } = routeSections(
+      stops,
+      'one-way',
+      [drive(0, 0), drive(1, 1)],
+      [at(0), at(1)]
+    )!;
+
+    expect(pointAtTime(outbound, 0)).toMatchObject({ legIndex: 0 });
+    expectAt(pointAtTime(outbound, 0.5 * HOUR), 0.5);
+  });
+
+  it('gives nothing when the legs or line don’t belong to these stops', () => {
+    const stops = [place(1, 'start', 0), place(2, 'end', 1)];
+
+    expect(routeSections(stops, 'one-way', [drive(1, 1), drive(1, 1)], [at(0), at(1)])).toBeNull();
+    expect(routeSections(stops, 'one-way', [drive(1, 1)], [at(0)])).toBeNull();
+    expect(routeSections([place(1, 'start', 0)], 'one-way', [], [at(0), at(1)])).toBeNull();
+  });
+});
+
+describe('sectionStopIds', () => {
+  const stops = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
+
+  it('covers every stop on a one-way trip', () => {
+    expect(sectionStopIds(stops, { firstLeg: 0, legs: [leg(1), leg(1), leg(1)] })).toEqual(
+      new Set([1, 2, 3, 4])
+    );
+  });
+
+  it('runs from the start to the destination on the way there', () => {
+    // Stop 2 is the destination: legs 0 and 1 are the way there
+    expect(sectionStopIds(stops, { firstLeg: 0, legs: [leg(1), leg(1)] })).toEqual(
+      new Set([1, 2, 3])
+    );
+  });
+
+  it('runs from the destination back to the start on the way home', () => {
+    // Legs 2 and 3: stop 3 to stop 4, then stop 4 home to the start
+    expect(sectionStopIds(stops, { firstLeg: 2, legs: [leg(1), leg(1)] })).toEqual(
+      new Set([3, 4, 1])
+    );
   });
 });

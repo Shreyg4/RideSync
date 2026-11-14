@@ -13,7 +13,9 @@ export const anonymousAuth: AuthContextType = {
   user: null,
   loading: false,
   deleteAccount: async () => {},
-  signUp: async () => null,
+  signUp: async () => ({ user: null, needsVerification: false }),
+  verifyEmail: async () => null,
+  resendVerification: async () => {},
   signIn: async () => {},
   signOut: async () => {},
 };

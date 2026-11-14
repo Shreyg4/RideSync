@@ -6,6 +6,7 @@
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import * as authService from '@/src/services/authService';
+import type { SignUpResult } from '@/src/services/authService';
 import { logger, reportError } from '@/src/lib/logger';
 
 export interface AuthContextType {
@@ -13,14 +14,17 @@ export interface AuthContextType {
   user: User | null;
   loading: boolean;
 
-  // Resolves to the new user so the caller can act on its id.
+  // Resolves to the new user so the caller can act on its id, and whether its email still needs
+  // the emailed code before there's a session
   signUp: (
     first_name: string,
     last_name: string,
     username: string,
     email: string,
     password: string
-  ) => Promise<User | null>;
+  ) => Promise<SignUpResult>;
+  verifyEmail: (email: string, code: string) => Promise<User | null>;
+  resendVerification: (email: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -69,6 +73,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading,
         signIn: authService.signIn,
         signUp: authService.signUp,
+        verifyEmail: authService.verifyEmail,
+        resendVerification: authService.resendVerification,
         signOut: authService.signOut,
         deleteAccount: authService.deleteAccount,
       }}

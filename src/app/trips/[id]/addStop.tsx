@@ -17,18 +17,17 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Chip from '@/src/components/Chip';
 import ErrorText from '@/src/components/ErrorText';
-import FromStopPicker from '@/src/components/FromStopPicker';
 import PlaceCard from '@/src/components/PlaceCard';
 import PlaceMarkers from '@/src/components/PlaceMarkers';
 import PlaceResultItem from '@/src/components/PlaceResultItem';
+import RouteSearchLayers from '@/src/components/RouteSearchLayers';
+import RouteSearchPanel from '@/src/components/RouteSearchPanel';
 import SmallButton from '@/src/components/SmallButton';
 import TextBox from '@/src/components/TextBox';
 import { RouteLine, StopMarkers } from '@/src/components/StopsMap';
 import TripMap from '@/src/components/TripMap';
 import { colors, fontSize, radii, spacing } from '@/src/constants/theme';
 import {
-  defaultFromStop,
-  fromStopOptions,
   parseNextStopType,
   parseStopId,
   parseStopPosition,
@@ -41,14 +40,17 @@ import { useAsync } from '@/src/hooks/useAsync';
 import { useCategorySearch } from '@/src/hooks/useCategorySearch';
 import { useCurrentLocation } from '@/src/hooks/useCurrentLocation';
 import { usePlaceSearch } from '@/src/hooks/usePlaceSearch';
+import { useRouteSearchPoint } from '@/src/hooks/useRouteSearchPoint';
 import { useTripRoute } from '@/src/hooks/useTripRoute';
+import { routeSections, sectionStopIds } from '@/src/domain/route';
+import { distanceMeters, METERS_PER_MILE } from '@/src/lib/geo';
 import { areaAround } from '@/src/lib/mapCamera';
-import type { MapArea } from '@/src/lib/mapCamera';
 import { toPlaceParam } from '@/src/lib/placeParam';
+import { joinPolylines } from '@/src/lib/polyline';
 import { toTrip, toTripStop } from '@/src/lib/tripMapper';
 import { getTrip } from '@/src/services/tripService';
 import { listTripStops } from '@/src/services/tripStopService';
-import type { Coordinates, Place, TripStop } from '@/src/types/trip';
+import type { Coordinates, Place } from '@/src/types/trip';
 
 const SEARCH_PLACEHOLDERS: Record<NextStopType, string> = {
   start: 'Where does the trip start?',
@@ -62,12 +64,6 @@ const CHANGE_PLACE_PLACEHOLDER = 'Search for its new place';
 
 // Room around the outermost stops when the map fits them
 const ADD_STOP_FIT_MARGIN = 100;
-
-// How far around the From stop a category search first looks. About a quarter hour's drive
-const NEARBY_RADIUS_KM = 15;
-
-// The From picker and the chips under the search bar, which fitting the map keeps its pins clear of
-const BROWSE_CONTROLS_HEIGHT = 90;
 
 const SEARCH_BAR_HEIGHT = 52;
 const SEARCH_BUTTON_SIZE = 44;
@@ -107,97 +103,146 @@ const AddStopScreen = () => {
   );
   const stops = trip?.stops;
   // Usually the route the planner already saved, so opening search costs no Directions request
-  const { route } = useTripRoute(tripId, stops, trip?.tripType);
+  const {
+    route,
+    error: routeError,
+    retry: retryRoute,
+  } = useTripRoute(tripId, stops, trip?.tripType);
+  // The route split into the way there and a round trip's way back, for searching along it
+  const sections = useMemo(
+    () =>
+      route && stops && trip?.tripType
+        ? routeSections(stops, trip.tripType, route.legs, joinPolylines(route.geometry))
+        : null,
+    [route, stops, trip?.tripType]
+  );
   const { query, setQuery, results, searching, pickingId, error, noResults, pick } =
     usePlaceSearch(location);
 
   const [searchFocused, setSearchFocused] = useState(false);
 
-  // Searching the map by kind of place, around a stop of the user's choosing. Only for adding a
-  // normal stop: the start, end and destination have no stop to search from yet, and moving a stop
-  // keeps its place in the trip
-  const fromOptions = useMemo(() => fromStopOptions(stops ?? []), [stops]);
-  const defaultFrom = useMemo(() => defaultFromStop(stops ?? [], atPosition), [stops, atPosition]);
-  const [chosenFromId, setChosenFromId] = useState<number | null>(null);
-  const from = fromOptions.find((stop) => stop.id === chosenFromId) ?? defaultFrom;
-  const canBrowse = stopType === 'stop' && stopId === undefined && from !== undefined;
+  // Searching the map by kind of place, around a point on the route. Only for adding a normal stop:
+  // the start, end and destination come before there's a route, and moving a stop keeps its place
+  // The planner's Add return stop is the only way in with a position, so it opens on the way home
+  const routeSearch = useRouteSearchPoint(
+    sections,
+    atPosition === undefined ? 'outbound' : 'return'
+  );
+  const { point, section, radiusMiles } = routeSearch;
+  const canBrowse = stopType === 'stop' && stopId === undefined && section !== null;
 
   const nearby = useCategorySearch();
   const clearNearby = nearby.clear;
+  const [category, setCategory] = useState<SearchCategory | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selectedPlace = nearby.results.find((place) => place.mapboxId === selectedId) ?? null;
-  // Where the user has moved the map to since the last search, which Search this area looks in
-  const [movedTo, setMovedTo] = useState<MapArea | null>(null);
-  // Null fits the map to the trip's stops. A category search fits it to the From stop and what was found
+  // The circle the newest search looked in. Mapbox searches a square around it, so what it finds in
+  // the square's corners is dropped, leaving only what the circle on the map shows
+  const [searchedCircle, setSearchedCircle] = useState<{
+    center: Coordinates;
+    radiusMeters: number;
+  } | null>(null);
+  const found = useMemo(
+    () =>
+      searchedCircle
+        ? nearby.results.filter(
+            (place) =>
+              distanceMeters(
+                [searchedCircle.center.lng, searchedCircle.center.lat],
+                [place.lng, place.lat]
+              ) <= searchedCircle.radiusMeters
+          )
+        : nearby.results,
+    [nearby.results, searchedCircle]
+  );
+  const selectedPlace = found.find((place) => place.mapboxId === selectedId) ?? null;
+  // While a slider moves, the point and circle follow it, but nothing searches until it's let go
+  const [dragging, setDragging] = useState(false);
+  // Where a found place goes in the trip: after the stop that starts the leg the search looked along.
+  // Kept from when the search ran, since the slider can move on after it
+  const [resultsPosition, setResultsPosition] = useState<number | undefined>(undefined);
+
+  // Only the stops on the drive being searched, so a round trip's way there and way back don't
+  // crowd the map together
+  const visibleStopIds = useMemo(
+    () => (canBrowse && section && stops ? sectionStopIds(stops, section) : undefined),
+    [canBrowse, section, stops]
+  );
+
+  // The way of the trip being searched, as places the map can fit
+  const sectionPlaces = useMemo(
+    () => section?.line.map(([lng, lat]) => ({ lat, lng })) ?? null,
+    [section]
+  );
+  // Null fits the map to what's being searched: the chosen way of the trip, or every stop without a
+  // route. A category search fits it to the point and what was found
   const [cameraPlaces, setCameraPlaces] = useState<readonly Coordinates[] | null>(null);
-  // Set while the newest search should fit the map to its results. Searching where the user moved
-  // the map leaves it there
+  // Set while the newest search should fit the map to its results
   const fitResultsAround = useRef<Coordinates | null>(null);
   const [recenterRequest, setRecenterRequest] = useState(0);
+  const defaultFit = (canBrowse ? sectionPlaces : null) ?? stops ?? [];
 
   // Back to every stop in the trip. A category search's pins stay, so its results can still be tapped
   const showAllStops = () => {
     fitResultsAround.current = null;
-    setCameraPlaces(null);
+    setCameraPlaces(stops ?? null);
     setRecenterRequest((count) => count + 1);
   };
 
+  // The panel covers the bottom of the map, so fitting it keeps places clear of it
+  const [panelHeight, setPanelHeight] = useState(0);
+
   useEffect(() => {
     const center = fitResultsAround.current;
-    if (!center || nearby.results.length === 0) return;
+    if (!center || found.length === 0) return;
     fitResultsAround.current = null;
-    setCameraPlaces([center, ...nearby.results]);
-  }, [nearby.results]);
+    setCameraPlaces([center, ...found]);
+  }, [found]);
 
-  // Only a From the user changed is sent. Otherwise add_trip_stop picks the default place itself,
-  // which stays right even if someone else adds a stop while this screen is open
-  const position =
-    from && defaultFrom && from.id !== defaultFrom.id ? from.position + 1 : atPosition;
+  // Searches the chosen category around the point whenever either one settles: a chip tapped, a
+  // slider let go, or the way of the trip changed. One search per change, never mid-drag
+  const searchedFor = useRef<string | null>(null);
+  const nearbySearch = nearby.search;
+  useEffect(() => {
+    if (!category || !point || dragging) return;
+    // The leg is part of it: on a road driven both ways, the same spot on the way back is a new
+    // search, since what it finds goes in a different place in the trip
+    const key = `${category}|${point.legIndex}|${point.lat},${point.lng}|${radiusMiles}`;
+    if (key === searchedFor.current) return;
+    searchedFor.current = key;
 
-  const searchAround = (category: SearchCategory, stop: TripStop) => {
-    fitResultsAround.current = stop;
-    setCameraPlaces([stop]);
-    nearby.search(category, areaAround(stop, NEARBY_RADIUS_KM));
-  };
+    const radiusMeters = radiusMiles * METERS_PER_MILE;
+    fitResultsAround.current = point;
+    setCameraPlaces([point]);
+    setSelectedId(null);
+    setResultsPosition(point.legIndex + 1);
+    setSearchedCircle({ center: point, radiusMeters });
+    nearbySearch(category, areaAround(point, radiusMeters / 1000));
+  }, [category, point, radiusMiles, dragging, nearbySearch]);
 
   const clearBrowse = useCallback(() => {
     fitResultsAround.current = null;
+    searchedFor.current = null;
+    setSearchedCircle(null);
+    setCategory(null);
     clearNearby();
     setSelectedId(null);
-    setMovedTo(null);
     setCameraPlaces(null);
   }, [clearNearby]);
 
-  const toggleCategory = (category: SearchCategory) => {
-    if (!from) return;
-    if (nearby.category === category) {
-      clearBrowse();
-      return;
-    }
-    setSelectedId(null);
-    setMovedTo(null);
-    searchAround(category, from);
+  const toggleCategory = (next: SearchCategory) => {
+    if (category === next) clearBrowse();
+    else setCategory(next);
   };
 
-  const chooseFrom = (stop: TripStop) => {
-    setChosenFromId(stop.id);
-    setSelectedId(null);
-    setMovedTo(null);
-    if (nearby.category) searchAround(nearby.category, stop);
-    else setCameraPlaces([stop]);
-  };
-
-  const searchThisArea = () => {
-    if (!nearby.category || !movedTo) return;
-    fitResultsAround.current = null;
-    setSelectedId(null);
-    setMovedTo(null);
-    nearby.search(nearby.category, movedTo);
+  // A new way of the trip fits the map to it, unless a search is about to fit it to its results
+  const settleSearchPoint = () => {
+    setDragging(false);
+    if (!category) setCameraPlaces(null);
   };
 
   // Typed search and the map search never show at once, so typing clears the chip and its pins
   const changeQuery = (text: string) => {
-    if (text.trim() && nearby.category) clearBrowse();
+    if (text.trim() && category) clearBrowse();
     setQuery(text);
   };
 
@@ -214,7 +259,7 @@ const AddStopScreen = () => {
 
   // Android's back button undoes one thing at a time before it leaves the screen: search, then the
   // tapped place, then the category search
-  const browsing = selectedId !== null || nearby.category !== null;
+  const browsing = selectedId !== null || category !== null;
   useEffect(() => {
     if (!searchOpen && !browsing) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -226,7 +271,9 @@ const AddStopScreen = () => {
     return () => subscription.remove();
   }, [searchOpen, browsing, selectedId, closeSearch, clearBrowse]);
 
-  const openPreview = (place: Place) =>
+  // A place found on the map goes where its search looked. A typed search's place goes where the
+  // planner opened search, or else where add_trip_stop puts a stop given no position
+  const openPreview = (place: Place, position = atPosition) =>
     router.push({
       pathname: '/trips/[id]/stopDetails',
       params: {
@@ -243,11 +290,36 @@ const AddStopScreen = () => {
     if (place) openPreview(place);
   };
 
+  // Nothing at all, or nothing inside the circle once the square's corners are dropped
+  const nothingFound =
+    nearby.noResults || (!nearby.searching && nearby.results.length > 0 && found.length === 0);
   const statusMessage = nearby.searching
     ? null
-    : nearby.noResults
-      ? 'Nothing found here. Move the map to look somewhere else.'
+    : nothingFound
+      ? 'Nothing found here. Try another time or a wider radius.'
       : null;
+
+  // Typed search covers the map, panel included
+  const showPanel = canBrowse && !searchOpen;
+
+  // Back to every stop. It always sits above a tapped place's card. With the panel showing, it drops
+  // right onto the panel when there's no card
+  const recenterButton =
+    stops && stops.length > 0 ? (
+      <SmallButton
+        // The standard small button: blue icon, full size
+        icon={Locate}
+        onPress={showAllStops}
+        accessibilityLabel="Show all stops"
+        backgroundColor={colors.background}
+        style={[
+          styles.recenter,
+          showPanel && styles.recenterOnSheet,
+          showPanel && selectedPlace && styles.recenterAboveCard,
+        ]}
+        testID="show-all-stops"
+      />
+    ) : null;
 
   return (
     <View style={styles.screen}>
@@ -265,27 +337,31 @@ const AddStopScreen = () => {
         {locating || loadingStops ? null : (
           <TripMap
             initialCenter={location ?? undefined}
-            fitTo={cameraPlaces ?? stops ?? []}
-            // Fits the pins below the search bar, and the map search's controls, instead of under them
+            fitTo={cameraPlaces ?? defaultFit}
+            // Fits the pins below the search bar and its chips, and above the panel at the bottom
             coveredEdges={{
-              top:
-                insets.top +
-                spacing.sm +
-                SEARCH_BAR_HEIGHT +
-                (canBrowse ? BROWSE_CONTROLS_HEIGHT : 0),
+              top: insets.top + spacing.sm + SEARCH_BAR_HEIGHT,
+              // The panel's height already holds the home indicator's space
+              bottom: canBrowse ? panelHeight : 0,
             }}
             // Full screen leaves room to zoom out further than the planner's small map, so the
             // stops sit well inside the screen rather than along its edges
             fitMargin={ADD_STOP_FIT_MARGIN}
-            onUserMoved={nearby.category ? setMovedTo : undefined}
             recenterRequest={recenterRequest}
             testID="add-stop-map"
           >
             {/* Only for reference here: tapping a pin would leave search */}
-            {route ? <RouteLine route={route} /> : null}
-            <StopMarkers stops={stops ?? []} />
+            {route ? <RouteLine route={route} dimmed={canBrowse} /> : null}
+            {canBrowse && section && point ? (
+              <RouteSearchLayers
+                sectionLine={section.line}
+                point={point}
+                radiusMeters={radiusMiles * METERS_PER_MILE}
+              />
+            ) : null}
+            <StopMarkers stops={stops ?? []} visibleIds={visibleStopIds} />
             <PlaceMarkers
-              places={nearby.results}
+              places={found}
               selectedId={selectedId}
               onSelect={(place) => setSelectedId(place.mapboxId)}
             />
@@ -311,7 +387,11 @@ const AddStopScreen = () => {
         pointerEvents="box-none"
         style={[
           styles.overlay,
-          { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.sm },
+          {
+            paddingTop: insets.top + spacing.sm,
+            // The panel reaches the bottom edge and keeps clear of the home indicator itself
+            paddingBottom: showPanel ? 0 : insets.bottom + spacing.sm,
+          },
         ]}
       >
         {/* One full-width bar, like a maps app: the button sits inside the box at its left end */}
@@ -350,47 +430,6 @@ const AddStopScreen = () => {
           style={styles.message}
           testID="place-search-error"
         />
-
-        {canBrowse && from && !searchOpen ? (
-          <View pointerEvents="box-none" style={styles.browseControls} testID="map-search-controls">
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chips}
-              testID="category-chips"
-            >
-              {SEARCH_CATEGORIES.map((category) => (
-                <Chip
-                  key={category}
-                  label={stopCategoryLabel(category)}
-                  selected={nearby.category === category}
-                  onPress={() => toggleCategory(category)}
-                  testID={`category-chip-${category}`}
-                />
-              ))}
-            </ScrollView>
-            <FromStopPicker stops={fromOptions} selected={from} onSelect={chooseFrom} />
-
-            {nearby.searching ? (
-              <ActivityIndicator
-                color={colors.tint}
-                style={styles.browseStatus}
-                testID="category-search-loading"
-              />
-            ) : movedTo ? (
-              <Pressable
-                onPress={searchThisArea}
-                accessibilityRole="button"
-                style={({ pressed }) => [styles.searchArea, pressed && styles.searchAreaPressed]}
-                testID="search-this-area"
-              >
-                <Text style={styles.searchAreaText}>Search this area</Text>
-              </Pressable>
-            ) : statusMessage ? (
-              <Text style={[styles.status, styles.browseStatus]}>{statusMessage}</Text>
-            ) : null}
-          </View>
-        ) : null}
 
         {searchOpen ? (
           // A tap on the empty area closes the keyboard, which a plain View doesn't do
@@ -440,28 +479,61 @@ const AddStopScreen = () => {
         ) : null}
 
         {searchOpen ? null : (
-          <View pointerEvents="box-none" style={styles.cardArea}>
-            {stops && stops.length > 0 ? (
-              <SmallButton
-                // The standard small button: blue icon, full size
-                icon={Locate}
-                onPress={showAllStops}
-                accessibilityLabel="Show all stops"
-                backgroundColor={colors.background}
-                style={styles.recenter}
-                testID="show-all-stops"
-              />
-            ) : null}
+          <View pointerEvents="box-none" style={[styles.cardArea, showPanel && styles.aboveSheet]}>
+            {recenterButton}
             {selectedPlace ? (
               <PlaceCard
                 place={selectedPlace}
-                onChoose={() => openPreview(selectedPlace)}
+                onChoose={() => openPreview(selectedPlace, resultsPosition)}
                 onClose={() => setSelectedId(null)}
                 testID="place-card"
               />
             ) : null}
+            {/* Without a route there's nowhere along it to search, so this says why the panel is
+                missing. Typed search still works */}
+            {stopType === 'stop' && stopId === undefined && !section && routeError ? (
+              <ErrorText
+                message={routeError}
+                onRetry={retryRoute}
+                style={styles.routeError}
+                testID="route-search-error"
+              />
+            ) : null}
           </View>
         )}
+
+        {showPanel ? (
+          <RouteSearchPanel
+            search={routeSearch}
+            bottomInset={insets.bottom}
+            onDragging={() => setDragging(true)}
+            onSettled={settleSearchPoint}
+            onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)}
+          >
+            {/* What to look for at the point, last, since it's what starts a search */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chips}
+              testID="category-chips"
+            >
+              {SEARCH_CATEGORIES.map((chip) => (
+                <Chip
+                  key={chip}
+                  label={stopCategoryLabel(chip)}
+                  selected={category === chip}
+                  onPress={() => toggleCategory(chip)}
+                  testID={`category-chip-${chip}`}
+                />
+              ))}
+            </ScrollView>
+            {nearby.searching ? (
+              <ActivityIndicator color={colors.tint} testID="category-search-loading" />
+            ) : statusMessage ? (
+              <Text style={styles.panelStatus}>{statusMessage}</Text>
+            ) : null}
+          </RouteSearchPanel>
+        ) : null}
       </KeyboardAvoidingView>
     </View>
   );
@@ -504,37 +576,35 @@ const styles = StyleSheet.create({
   message: {
     alignSelf: 'center',
   },
-  browseControls: {
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-    marginHorizontal: spacing.sm,
-  },
   chips: {
     gap: spacing.xs,
   },
-  browseStatus: {
-    alignSelf: 'center',
-  },
-  searchArea: {
-    alignSelf: 'center',
+  routeError: {
+    alignSelf: 'stretch',
+    padding: spacing.md,
+    borderRadius: radii.lg,
     backgroundColor: colors.card,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
   },
-  searchAreaPressed: {
-    opacity: 0.6,
-  },
-  searchAreaText: {
-    color: colors.tint,
+  panelStatus: {
+    color: colors.textMutedLight,
     fontSize: fontSize.caption,
-    fontWeight: '600',
+    textAlign: 'center',
   },
   // Sits at the bottom of the screen, below whatever the search bar and controls take up
   cardArea: {
     flex: 1,
     justifyContent: 'flex-end',
     marginHorizontal: spacing.sm,
+  },
+  recenterOnSheet: {
+    marginBottom: 0,
+  },
+  recenterAboveCard: {
+    marginBottom: spacing.sm,
+  },
+  // Keeps the place card and the recenter button off the panel's top edge
+  aboveSheet: {
+    marginBottom: spacing.sm,
   },
   // Sits nearer the corner than the card below it
   recenter: {

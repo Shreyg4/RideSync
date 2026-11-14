@@ -22,10 +22,10 @@ import {
   stopRole,
   canRemoveStop,
   stopArrivalDay,
+  insertionIndex,
+  newStopArrivalDay,
   earliestDepartureDay,
   defaultDeparture,
-  defaultFromStop,
-  fromStopOptions,
   SEARCH_CATEGORIES,
 } from '../rules';
 import type { ItineraryRow } from '../rules';
@@ -616,54 +616,6 @@ describe('SEARCH_CATEGORIES', () => {
   });
 });
 
-describe('the From stop for map search', () => {
-  const at = (id: number, stopType: StopType, isTurnaround = false): TripStop => ({
-    id,
-    tripId: 1,
-    position: id - 1,
-    name: `Stop ${id}`,
-    address: null,
-    lat: 47.6,
-    lng: -122.3,
-    mapboxId: null,
-    stopType,
-    stopCategory: 'other',
-    notes: null,
-    departsAt: null,
-    isTurnaround,
-  });
-  const ids = (stops: readonly (TripStop | undefined)[]) => stops.map((stop) => stop?.id);
-
-  const oneWay = [at(1, 'start'), at(2, 'stop'), at(3, 'stop'), at(4, 'end')];
-  const roundTrip = [at(1, 'start'), at(2, 'stop'), at(3, 'stop', true), at(4, 'stop')];
-
-  it('offers every stop but the end, since nothing is added after it', () => {
-    expect(ids(fromStopOptions(oneWay))).toEqual([1, 2, 3]);
-    expect(ids(fromStopOptions(roundTrip))).toEqual([1, 2, 3, 4]);
-  });
-
-  it('defaults to the stop before the end, where a new stop goes without a position', () => {
-    expect(defaultFromStop(oneWay)?.id).toBe(3);
-  });
-
-  it('defaults to the stop before the destination on a round trip', () => {
-    expect(defaultFromStop(roundTrip)?.id).toBe(2);
-  });
-
-  it('defaults to the stop before the position it was opened with, like a return stop', () => {
-    expect(defaultFromStop(roundTrip, 4)?.id).toBe(4);
-    expect(defaultFromStop(oneWay, 1)?.id).toBe(1);
-  });
-
-  it('falls back to the start for a position before it', () => {
-    expect(defaultFromStop(oneWay, 0)?.id).toBe(1);
-  });
-
-  it('has nothing to default to without stops', () => {
-    expect(defaultFromStop([])).toBeUndefined();
-  });
-});
-
 describe('memberRoleLabel', () => {
   it('capitalizes each role', () => {
     expect(memberRoleLabel('owner')).toBe('Owner');
@@ -699,5 +651,101 @@ describe('tripStatusLabel', () => {
   it('capitalizes statuses that have no dash', () => {
     expect(tripStatusLabel('planning')).toBe('Planning');
     expect(tripStatusLabel('completed')).toBe('Completed');
+  });
+});
+
+describe('insertionIndex and newStopArrivalDay', () => {
+  // Wed, Sep 2 2026
+  const STARTS_AT = new Date(2026, 8, 2, 9, 30);
+  const SEP = (day: number) => new Date(2026, 8, day);
+  const tripStop = (
+    id: number,
+    stopType: StopType,
+    { isTurnaround = false, departsAt = null as Date | null } = {}
+  ): TripStop => ({
+    id,
+    tripId: 1,
+    position: id - 1,
+    name: `Stop ${id}`,
+    address: null,
+    lat: 47.6,
+    lng: -122.3,
+    mapboxId: null,
+    stopType,
+    stopCategory: 'other',
+    notes: null,
+    departsAt,
+    isTurnaround,
+  });
+
+  describe('insertionIndex', () => {
+    const oneWay = [tripStop(1, 'start'), tripStop(2, 'stop'), tripStop(3, 'end')];
+    const roundTrip = [
+      tripStop(1, 'start'),
+      tripStop(2, 'stop', { isTurnaround: true }),
+      tripStop(3, 'stop'),
+    ];
+
+    it('puts the start first and the end last', () => {
+      expect(insertionIndex([], 'start')).toBe(0);
+      expect(insertionIndex(oneWay.slice(0, 2), 'end')).toBe(2);
+    });
+
+    it('puts a stop with no position just before the end, or before a round trip’s destination', () => {
+      expect(insertionIndex(oneWay, 'stop')).toBe(2);
+      expect(insertionIndex(roundTrip, 'stop')).toBe(1);
+    });
+
+    it('puts a stop at the position asked for, but never before the start or after the end', () => {
+      expect(insertionIndex(oneWay, 'stop', 1)).toBe(1);
+      expect(insertionIndex(oneWay, 'stop', 0)).toBe(1);
+      expect(insertionIndex(oneWay, 'stop', 9)).toBe(2);
+      expect(insertionIndex(roundTrip, 'stop', 3)).toBe(3);
+    });
+
+    it('puts a round trip’s destination at the end of the way out', () => {
+      expect(insertionIndex([tripStop(1, 'start')], 'destination')).toBe(1);
+    });
+  });
+
+  describe('newStopArrivalDay', () => {
+    it('is the trip’s first day before any night is spent', () => {
+      const stops = [tripStop(1, 'start'), tripStop(2, 'end')];
+
+      expect(newStopArrivalDay(stops, 'one-way', STARTS_AT, 'stop')).toEqual(SEP(2));
+    });
+
+    it('is the next day for a stop after an overnight stay', () => {
+      const stops = [tripStop(1, 'start'), tripStop(2, 'overnight'), tripStop(3, 'end')];
+
+      expect(newStopArrivalDay(stops, 'one-way', STARTS_AT, 'stop')).toEqual(SEP(3));
+    });
+
+    it('is still the first day for a stop put before that overnight stay', () => {
+      const stops = [tripStop(1, 'start'), tripStop(2, 'overnight'), tripStop(3, 'end')];
+
+      expect(newStopArrivalDay(stops, 'one-way', STARTS_AT, 'stop', 1)).toEqual(SEP(2));
+    });
+
+    it('follows an overnight stay’s own departure date', () => {
+      const stops = [
+        tripStop(1, 'start'),
+        tripStop(2, 'overnight', { departsAt: new Date(2026, 8, 5, 8) }),
+        tripStop(3, 'end'),
+      ];
+
+      expect(newStopArrivalDay(stops, 'one-way', STARTS_AT, 'stop')).toEqual(SEP(5));
+    });
+
+    it('works out a round trip’s destination and a stop on the drive home', () => {
+      const out = [tripStop(1, 'start')];
+      expect(newStopArrivalDay(out, 'round-trip', STARTS_AT, 'destination')).toEqual(SEP(2));
+
+      const withNightAway = [
+        tripStop(1, 'start'),
+        tripStop(2, 'overnight', { isTurnaround: true }),
+      ];
+      expect(newStopArrivalDay(withNightAway, 'round-trip', STARTS_AT, 'stop', 2)).toEqual(SEP(3));
+    });
   });
 });

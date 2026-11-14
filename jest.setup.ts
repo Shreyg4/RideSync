@@ -41,10 +41,27 @@ jest.mock('@rnmapbox/maps', () => {
     MarkerView: (props: object) => React.createElement(View, { testID: 'mapbox-marker', ...props }),
     ShapeSource: (props: object) => React.createElement(View, { testID: 'mapbox-shape', ...props }),
     LineLayer: (props: object) => React.createElement(View, { testID: 'mapbox-line', ...props }),
-    StyleURL: { Dark: 'mapbox://styles/mapbox/dark-v10' },
+    FillLayer: (props: object) => React.createElement(View, { testID: 'mapbox-fill', ...props }),
+    StyleURL: {
+      Street: 'mapbox://styles/mapbox/streets-v11',
+      Dark: 'mapbox://styles/mapbox/dark-v10',
+      Light: 'mapbox://styles/mapbox/light-v10',
+      Outdoors: 'mapbox://styles/mapbox/outdoors-v11',
+      Satellite: 'mapbox://styles/mapbox/satellite-v9',
+      SatelliteStreet: 'mapbox://styles/mapbox/satellite-streets-v11',
+    },
     setAccessToken: jest.fn(async () => null),
   };
   return { __esModule: true, ...mapbox, default: mapbox };
+});
+
+// The slider is a native view. This one keeps its props, so tests can read them and fire its
+// callbacks with fireEvent(slider, 'valueChange', value)
+jest.mock('@react-native-community/slider', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const Slider = (props: object) => React.createElement(View, props);
+  return { __esModule: true, default: Slider };
 });
 
 // The library's own mocks for its native module, so components using gestures can render

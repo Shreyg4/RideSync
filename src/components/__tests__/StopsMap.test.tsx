@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native';
 import { colors } from '@/src/constants/theme';
 import type { TripStop } from '@/src/types/trip';
 import { decodePolyline } from '@/src/lib/polyline';
-import StopsMap from '../StopsMap';
+import StopsMap, { StopMarkers } from '../StopsMap';
 
 const stop = (
   id: number,
@@ -117,5 +117,21 @@ describe('StopsMap', () => {
     const view = await render(<StopsMap stops={stops} />);
 
     expect(view.getByLabelText('Stop 1, Home')).toBeDisabled();
+  });
+});
+
+describe('StopMarkers', () => {
+  it('pins only the stops asked for, keeping their numbers in the whole trip', async () => {
+    const view = await render(<StopMarkers stops={stops} visibleIds={new Set([1, 3])} />);
+
+    expect(view.getByLabelText('Stop 1, Home')).toHaveTextContent('1');
+    expect(view.queryByLabelText('Stop 2, Diner')).toBeNull();
+    expect(view.getByLabelText('Stop 3, Coast')).toHaveTextContent('3');
+  });
+
+  it('pins every stop without a list', async () => {
+    const view = await render(<StopMarkers stops={stops} />);
+
+    expect(view.getAllByTestId(/^map-pin-/)).toHaveLength(3);
   });
 });

@@ -759,3 +759,103 @@ describe('StopDetailsScreen editing a stop', () => {
     });
   });
 });
+
+describe('StopDetailsScreen adding an overnight stop', () => {
+  // A one-way trip on Wed, Sep 2 2026, so a new stop before the end is reached that day
+  const withTrip = (stops: TripStopRow[] = [START, END]) => {
+    mockTable('trips').__setResult({ data: tripRow(), error: null });
+    mockTable('trip_stops').__setResult({ data: stops, error: null });
+  };
+
+  beforeEach(() => {
+    (DateTimePicker as unknown as jest.Mock).mockClear();
+  });
+
+  it('offers a departure as soon as the stay is switched on', async () => {
+    withTrip();
+    const view = await renderStopDetails();
+    expect(view.queryByTestId('stop-departure-date')).toBeNull();
+
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', true);
+
+    expect(await view.findByTestId('stop-departure-date')).toBeTruthy();
+    expect(view.getByText('Leaves the next morning')).toBeTruthy();
+  });
+
+  it('opens the pickers on the morning after the day the group gets there', async () => {
+    withTrip();
+    const view = await renderStopDetails();
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', true);
+
+    await fireEvent.press(await view.findByTestId('stop-departure-date'));
+
+    expect(pickerProps().value).toEqual(new Date(2026, 8, 3, 9, 0));
+    expect(pickerProps().minimumDate).toEqual(new Date(2026, 8, 3));
+  });
+
+  it('counts the nights before the new stop, so a stop after one opens a day later', async () => {
+    const night = stopRow({ id: 2, position: 1, stop_type: 'overnight', notes: null });
+    withTrip([START, night, { ...END, position: 2 }]);
+    const view = await renderStopDetails();
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', true);
+
+    await fireEvent.press(await view.findByTestId('stop-departure-date'));
+
+    expect(pickerProps().minimumDate).toEqual(new Date(2026, 8, 4));
+  });
+
+  it('saves the departure with the new stop, in one step', async () => {
+    withTrip();
+    const view = await renderStopDetails();
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', true);
+    await view.findByTestId('stop-departure-date');
+
+    await pickDeparture(view, 'date', new Date(2026, 8, 4));
+    await pickDeparture(view, 'time', new Date(2000, 0, 1, 7, 15));
+    await save(view);
+
+    await waitFor(() =>
+      expect(savedStop()).toMatchObject({
+        new_stop_type: 'overnight',
+        stop_departs_at: new Date(2026, 8, 4, 7, 15).toISOString(),
+      })
+    );
+    expect(mockTable('trip_stops').update).not.toHaveBeenCalled();
+  });
+
+  it('saves no departure when none is picked, so the group leaves the next morning', async () => {
+    withTrip();
+    const view = await renderStopDetails();
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', true);
+    await save(view);
+
+    await waitFor(() => expect(savedStop()).toMatchObject({ new_stop_type: 'overnight' }));
+    expect(savedStop().stop_departs_at).toBeUndefined();
+  });
+
+  it('drops a picked departure when the stay is switched back off', async () => {
+    withTrip();
+    const view = await renderStopDetails();
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', true);
+    await view.findByTestId('stop-departure-date');
+    await pickDeparture(view, 'date', new Date(2026, 8, 4));
+
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', false);
+    await save(view);
+
+    await waitFor(() => expect(savedStop()).toMatchObject({ new_stop_type: 'stop' }));
+    expect(savedStop().stop_departs_at).toBeUndefined();
+    expect(view.queryByTestId('stop-departure-date')).toBeNull();
+  });
+
+  it('still adds the stay without a departure when the trip can’t load', async () => {
+    mockTable('trips').__setResult({ data: null, error: { code: 'PGRST301' } });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const view = await renderStopDetails();
+    await fireEvent(view.getByTestId('stop-overnight-switch'), 'valueChange', true);
+
+    expect(view.queryByTestId('stop-departure-date')).toBeNull();
+    await save(view);
+    await waitFor(() => expect(savedStop()).toMatchObject({ new_stop_type: 'overnight' }));
+  });
+});

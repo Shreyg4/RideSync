@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View, Alert } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import SmallButton from '@/src/components/SmallButton';
 import { ChevronLeft } from 'lucide-react-native';
@@ -12,7 +12,7 @@ import LargeButton from '@/src/components/LargeButton';
 import { useAuth } from '@/src/context/AuthProvider';
 import * as ImagePicker from 'expo-image-picker';
 import AvatarImage from '@/src/components/AvatarImage';
-import { uploadAvatar } from '@/src/services/avatarService';
+import { completeSignUp } from '@/src/services/signUpCompletion';
 import { isUsernameAvailable } from '@/src/services/userService';
 import { reportAndDescribe } from '@/src/services/errors';
 import { USERNAME_MAX_LENGTH } from '@/src/domain/rules';
@@ -117,26 +117,29 @@ const SignUpScreen = () => {
 
     setLoading(true);
     try {
-      const user = await signUp(
+      const { user, needsVerification } = await signUp(
         clean.firstName,
         clean.lastName,
         clean.username,
         clean.email,
         password
       );
-      let avatarFailed = false;
-      if (user && avatarAsset) {
-        try {
-          await uploadAvatar(user.id, avatarAsset.uri, avatarAsset.mimeType);
-        } catch (e) {
-          avatarFailed = true;
-          reportAndDescribe(e, { scope: 'SignUp.uploadAvatar' });
-        }
+      const avatar = avatarAsset
+        ? { uri: avatarAsset.uri, mimeType: avatarAsset.mimeType ?? undefined }
+        : undefined;
+      if (needsVerification) {
+        // No session until the emailed code goes through, and the photo can't upload without one,
+        // so it travels to the verify screen
+        router.push({
+          pathname: '/verifyEmail',
+          params: {
+            email: clean.email,
+            ...(avatar ? { avatarUri: avatar.uri, avatarType: avatar.mimeType ?? '' } : {}),
+          },
+        });
+        return;
       }
-      Alert.alert(
-        'Account created successfully',
-        avatarFailed ? "We couldn't upload your photo - you can add it in Settings." : undefined
-      );
+      await completeSignUp(user?.id, avatar);
     } catch (e) {
       // Two people can claim a name in the same second, so the unique index is the real
       // enforcement. When that fires it surfaces as an opaque "Database error saving new

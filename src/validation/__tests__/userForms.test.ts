@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  cleanEmailCode,
   isUsernameCandidate,
   normalizeEmail,
   normalizeSignUpForm,
@@ -103,5 +104,16 @@ describe('isUsernameCandidate', () => {
 describe('normalizeEmail', () => {
   it('matches what the signup screen stored', () => {
     expect(normalizeEmail('  Rider@Example.COM ')).toBe('rider@example.com');
+  });
+});
+
+describe('cleanEmailCode', () => {
+  it.each([
+    ['123456', '123456'],
+    ['123 456', '123456'],
+    ['12a3-4', '1234'],
+    ['12345678', '123456'],
+  ])('%s -> %s', (typed, expected) => {
+    expect(cleanEmailCode(typed)).toBe(expected);
   });
 });

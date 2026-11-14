@@ -27,6 +27,16 @@ export const normalizeSignUpForm = (raw: SignUpForm): SignUpForm => ({
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+// Matches otp_length in supabase/config.toml and the hosted project's auth settings
+export const EMAIL_CODE_LENGTH = 6;
+
+// Codes are digits only. Pasting one from the email can bring spaces along, so anything else is
+// dropped as it's typed
+export const cleanEmailCode = (text: string) => text.replace(/\D/g, '').slice(0, EMAIL_CODE_LENGTH);
+
+// A code was just sent when the verify screen opens, and Supabase refuses another one this soon
+export const RESEND_CODE_COOLDOWN_SECONDS = 60;
+
 export const validateSignUpForm = (
   form: SignUpForm,
   password: string,

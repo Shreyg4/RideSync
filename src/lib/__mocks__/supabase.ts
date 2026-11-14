@@ -135,6 +135,8 @@ const auth = {
   signUp: jest.fn<(...args: unknown[]) => Promise<UserResult>>(),
   signInWithPassword: jest.fn<(...args: unknown[]) => Promise<UserResult>>(),
   signOut: jest.fn<(...args: unknown[]) => Promise<Result<null>>>(),
+  verifyOtp: jest.fn<(...args: unknown[]) => Promise<UserResult>>(),
+  resend: jest.fn<(...args: unknown[]) => Promise<Result<unknown>>>(),
 };
 
 // One shared unsubscribe spy per reset, so a test can assert the AuthProvider cleanup ran.
@@ -149,6 +151,8 @@ const applyAuthDefaults = () => {
     error: null,
   });
   auth.signOut.mockResolvedValue({ data: null, error: null });
+  auth.verifyOtp.mockResolvedValue({ data: { user: null, session: null }, error: null });
+  auth.resend.mockResolvedValue({ data: {}, error: null });
 };
 
 const functions = {
@@ -201,6 +205,8 @@ export const resetSupabaseMock = () => {
   auth.signUp.mockReset();
   auth.signInWithPassword.mockReset();
   auth.signOut.mockReset();
+  auth.verifyOtp.mockReset();
+  auth.resend.mockReset();
   functions.invoke.mockReset();
   applyAuthDefaults();
   applyFunctionDefaults();

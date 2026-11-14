@@ -195,25 +195,6 @@ export const parseStopId = (value: unknown): number | undefined => {
   return id !== undefined && id > 0 ? id : undefined;
 };
 
-// The stops a new stop can be added after. Nothing comes after the end of a one-way trip
-export const fromStopOptions = (stops: readonly TripStop[]) =>
-  stops.filter((stop) => stop.stopType !== 'end');
-
-// The stop a new one follows when the user doesn't pick another: the one before the position it
-// was opened with, or else the one before the end or destination, which is where add_trip_stop
-// puts a stop given no position
-export const defaultFromStop = (
-  stops: readonly TripStop[],
-  atPosition?: number
-): TripStop | undefined => {
-  const options = fromStopOptions(stops);
-  const insertAt =
-    atPosition ??
-    stops.find((stop) => stop.isTurnaround || stop.stopType === 'end')?.position ??
-    stops.length;
-  return options.findLast((stop) => stop.position < insertAt) ?? options[0];
-};
-
 // The trip's fixed points: where it starts, turns around and ends
 export const isKeyStop = ({
   stopType,
@@ -244,6 +225,52 @@ export const stopArrivalDay = (rows: readonly ItineraryRow[], stopId: number): D
     if (row.kind === 'stop' && row.stop.id === stopId) return day;
   }
   return undefined;
+};
+
+// Where add_trip_stop puts a new stop in the list, by the same rule: start first, end last, and
+// anything else at the position asked for, or else just before the destination or the end. It never
+// goes before the start or after the end
+export const insertionIndex = (
+  stops: readonly Pick<TripStop, 'stopType' | 'isTurnaround' | 'position'>[],
+  stopType: NextStopType,
+  atPosition?: number
+) => {
+  if (stopType === 'start') return 0;
+  if (stopType === 'end') return stops.length;
+  const hasStart = stops.some((stop) => stop.stopType === 'start');
+  const hasEnd = stops.some((stop) => stop.stopType === 'end');
+  const wanted = atPosition ?? stops.find((stop) => stop.isTurnaround)?.position ?? stops.length;
+  return Math.min(Math.max(wanted, hasStart ? 1 : 0), stops.length - (hasEnd ? 1 : 0));
+};
+
+// The day the group would reach a stop that isn't added yet, from where add_trip_stop will put it.
+// That's the earliest day it could be left on, if it's an overnight stay
+export const newStopArrivalDay = (
+  stops: readonly TripStop[],
+  tripType: TripType,
+  startsAt: Date,
+  stopType: NextStopType,
+  atPosition?: number
+): Date | undefined => {
+  const index = insertionIndex(stops, stopType, atPosition);
+  // Not overnight itself, so it can't move its own day
+  const placeholder: TripStop = {
+    id: -1,
+    tripId: stops[0]?.tripId ?? 0,
+    position: index,
+    name: '',
+    address: null,
+    lat: 0,
+    lng: 0,
+    mapboxId: null,
+    stopType: stopType === 'start' || stopType === 'end' ? stopType : 'stop',
+    stopCategory: 'other',
+    notes: null,
+    departsAt: null,
+    isTurnaround: stopType === 'destination',
+  };
+  const withNew = [...stops.slice(0, index), placeholder, ...stops.slice(index)];
+  return stopArrivalDay(itineraryRows(withNew, tripType, startsAt, false), placeholder.id);
 };
 
 // When the group leaves an overnight stop if nobody picks a time

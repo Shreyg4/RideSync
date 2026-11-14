@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import type { User } from '@supabase/supabase-js';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import React from 'react';
 import { Alert } from 'react-native';
 import SignUpScreen from '../(authentication)/signUp';
@@ -38,7 +39,9 @@ const FORM = {
   'Re-enter password': 'hunter2222',
 };
 
-const renderSignUp = async (signUp = jest.fn<AuthContextType['signUp']>(async () => user)) => {
+const renderSignUp = async (
+  signUp = jest.fn<AuthContextType['signUp']>(async () => ({ user, needsVerification: false }))
+) => {
   const view = await renderScreen(<SignUpScreen />, { ...anonymousAuth, signUp });
   return { view, signUp };
 };
@@ -204,6 +207,44 @@ describe('SignUpScreen', () => {
     );
     expect(signUp).toHaveBeenCalled();
     expect(uploadAvatar).toHaveBeenCalledWith('user-1', 'file://me.png', 'image/png');
+  });
+
+  it('sends a new account to verify its email, carrying the photo for after', async () => {
+    const { view } = await renderSignUp(
+      jest.fn<AuthContextType['signUp']>(async () => ({ user, needsVerification: true }))
+    );
+    await fireEvent.press(view.getByLabelText('Profile picture'));
+    await fill(view, { Email: ' Ana@Example.com ' });
+    await pauseTyping();
+
+    await submit(view);
+
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/verifyEmail',
+        params: { email: 'ana@example.com', avatarUri: 'file://me.png', avatarType: 'image/png' },
+      })
+    );
+    // There's no session to upload with or to call the account ready yet
+    expect(uploadAvatar).not.toHaveBeenCalled();
+    expect(Alert.alert).not.toHaveBeenCalled();
+  });
+
+  it('sends only the email to verify when no photo was picked', async () => {
+    const { view } = await renderSignUp(
+      jest.fn<AuthContextType['signUp']>(async () => ({ user, needsVerification: true }))
+    );
+    await fill(view);
+    await pauseTyping();
+
+    await submit(view);
+
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/verifyEmail',
+        params: { email: 'ana@example.com' },
+      })
+    );
   });
 
   it('marks the username taken when sign-up fails because someone just took it', async () => {

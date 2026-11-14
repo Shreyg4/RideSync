@@ -17,6 +17,11 @@ import {
   type LoginFieldErrors,
 } from '@/src/validation/userForms';
 
+const isUnconfirmedEmail = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { code?: unknown }).code === 'email_not_confirmed';
+
 const LoginScreen = () => {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
@@ -35,7 +40,7 @@ const LoginScreen = () => {
       setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
     };
 
-  const { signIn } = useAuth();
+  const { signIn, resendVerification } = useAuth();
   const handleSignIn = async () => {
     setFormError(undefined); // clear the previous failure, or the user can't tell old from new
     const found = validateLoginForm(cleanEmail, password);
@@ -47,6 +52,17 @@ const LoginScreen = () => {
       await signIn(cleanEmail, password);
       // No navigation here: RootLayoutNav watches the session and redirects once it lands.
     } catch (e) {
+      if (isUnconfirmedEmail(e)) {
+        // An account that never entered its sign-up code. A fresh code replaces any expired one,
+        // and if it can't be sent now the verify screen has its own resend
+        try {
+          await resendVerification(cleanEmail);
+        } catch (resendError) {
+          reportAndDescribe(resendError, { scope: 'Login.resendVerification' });
+        }
+        router.push({ pathname: '/verifyEmail', params: { email: cleanEmail } });
+        return;
+      }
       setFormError(reportAndDescribe(e, { scope: 'Login.signIn' }));
     } finally {
       setLoading(false);

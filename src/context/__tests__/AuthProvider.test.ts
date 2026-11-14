@@ -116,6 +116,8 @@ describe('AuthProvider', () => {
     expect(result.current).toMatchObject({
       signIn: authService.signIn,
       signUp: authService.signUp,
+      verifyEmail: authService.verifyEmail,
+      resendVerification: authService.resendVerification,
       signOut: authService.signOut,
       deleteAccount: authService.deleteAccount,
     });

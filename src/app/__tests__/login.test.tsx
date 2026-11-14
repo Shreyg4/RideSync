@@ -1,5 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import React from 'react';
 import LoginScreen from '../(authentication)/login';
 import { anonymousAuth, renderScreen } from '@/src/test/render';
@@ -77,6 +78,48 @@ describe('LoginScreen', () => {
       expect(view.getByText('Something went wrong. Please try again.')).toBeTruthy()
     );
     expect(view.queryByText('Database error at 10.0.0.4:5432')).toBeNull();
+  });
+
+  it('sends an account that never confirmed its email to verify it, with a fresh code', async () => {
+    const signIn = jest.fn(async () => {
+      throw Object.assign(new Error('Email not confirmed'), { code: 'email_not_confirmed' });
+    });
+    const resendVerification = jest.fn(async () => {});
+    const view = await renderScreen(<LoginScreen />, {
+      ...anonymousAuth,
+      signIn,
+      resendVerification,
+    });
+
+    await submit(view, ' Rider@Example.com ', 'hunter2222');
+
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/verifyEmail',
+        params: { email: 'rider@example.com' },
+      })
+    );
+    expect(resendVerification).toHaveBeenCalledWith('rider@example.com');
+    expect(view.queryByTestId('login-form-error')).toBeNull();
+  });
+
+  it('still opens verify when the fresh code could not be sent, since it can resend there', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const signIn = jest.fn(async () => {
+      throw Object.assign(new Error('Email not confirmed'), { code: 'email_not_confirmed' });
+    });
+    const resendVerification = jest.fn(async () => {
+      throw Object.assign(new Error('rate limited'), { code: 'over_email_send_rate_limit' });
+    });
+    const view = await renderScreen(<LoginScreen />, {
+      ...anonymousAuth,
+      signIn,
+      resendVerification,
+    });
+
+    await submit(view, 'rider@example.com', 'hunter2222');
+
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
   });
 
   it('clears a field error as soon as that field is edited', async () => {

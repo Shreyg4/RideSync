@@ -6,11 +6,13 @@ import {
   deleteAccount,
   getSession,
   onAuthStateChange,
+  resendVerification,
   signIn,
   signOut,
   signUp,
+  verifyEmail,
 } from '../authService';
-import { mockSupabase } from '@/src/test/supabase';
+import { mockRpc, mockSupabase } from '@/src/test/supabase';
 
 const { auth, functions } = mockSupabase;
 const authError = { code: 'invalid_credentials', message: 'Invalid login credentials' };
@@ -57,6 +59,28 @@ describe('onAuthStateChange', () => {
 });
 
 describe('signUp', () => {
+  it('first clears any unfinished sign-up holding the email or username, so a retry starts fresh', async () => {
+    await signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22');
+
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('release_unconfirmed_signup', {
+      email_address: 'ana@example.com',
+      wanted_username: 'ana_lee',
+    });
+    expect(mockSupabase.rpc.mock.invocationCallOrder[0]).toBeLessThan(
+      auth.signUp.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('does not sign up when the unfinished sign-up could not be cleared', async () => {
+    const releaseError = { code: 'PGRST301', message: 'JWT expired' };
+    mockRpc('release_unconfirmed_signup', { error: releaseError });
+
+    await expect(signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22')).rejects.toBe(
+      releaseError
+    );
+    expect(auth.signUp).not.toHaveBeenCalled();
+  });
+
   it('sends the names and username as user metadata, for the new-user trigger to copy', async () => {
     await signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22');
 
@@ -67,13 +91,33 @@ describe('signUp', () => {
     });
   });
 
-  it('returns the new user', async () => {
-    const user = { id: 'user-1' };
+  it('returns the new user, still needing its email confirmed when no session came back', async () => {
+    const user = { id: 'user-1', identities: [{ id: 'identity-1' }] };
     auth.signUp.mockResolvedValueOnce({ data: { user, session: null }, error: null });
 
-    await expect(signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22')).resolves.toBe(
-      user
-    );
+    await expect(signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22')).resolves.toEqual({
+      user,
+      needsVerification: true,
+    });
+  });
+
+  it('needs no verification when the project signs the user straight in', async () => {
+    const user = { id: 'user-1', identities: [{ id: 'identity-1' }] };
+    auth.signUp.mockResolvedValueOnce({ data: { user, session }, error: null });
+
+    await expect(signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22')).resolves.toEqual({
+      user,
+      needsVerification: false,
+    });
+  });
+
+  it('says the email is taken when Supabase answers with a stand-in user that gets no code', async () => {
+    const user = { id: 'fake', identities: [] };
+    auth.signUp.mockResolvedValueOnce({ data: { user, session: null }, error: null });
+
+    await expect(
+      signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22')
+    ).rejects.toMatchObject({ code: 'user_already_exists' });
   });
 
   it('throws the sign-up error', async () => {
@@ -82,6 +126,41 @@ describe('signUp', () => {
     await expect(signUp('Ana', 'Lee', 'ana_lee', 'ana@example.com', 'hunter22')).rejects.toBe(
       authError
     );
+  });
+});
+
+describe('verifyEmail', () => {
+  it('checks the emailed code for that address and returns the confirmed user', async () => {
+    const user = { id: 'user-1' };
+    auth.verifyOtp.mockResolvedValueOnce({ data: { user, session }, error: null });
+
+    await expect(verifyEmail('ana@example.com', '123456')).resolves.toBe(user);
+    expect(auth.verifyOtp).toHaveBeenCalledWith({
+      email: 'ana@example.com',
+      token: '123456',
+      type: 'email',
+    });
+  });
+
+  it('throws a wrong or expired code', async () => {
+    const codeError = { code: 'otp_expired', message: 'Token has expired or is invalid' };
+    auth.verifyOtp.mockResolvedValueOnce({ data: { user: null, session: null }, error: codeError });
+
+    await expect(verifyEmail('ana@example.com', '000000')).rejects.toBe(codeError);
+  });
+});
+
+describe('resendVerification', () => {
+  it('sends a new sign-up code to that address', async () => {
+    await expect(resendVerification('ana@example.com')).resolves.toBeUndefined();
+    expect(auth.resend).toHaveBeenCalledWith({ type: 'signup', email: 'ana@example.com' });
+  });
+
+  it('throws when the code cannot be sent', async () => {
+    const sendError = { code: 'over_email_send_rate_limit', message: 'rate limited' };
+    auth.resend.mockResolvedValueOnce({ data: null, error: sendError });
+
+    await expect(resendVerification('ana@example.com')).rejects.toBe(sendError);
   });
 });
 
