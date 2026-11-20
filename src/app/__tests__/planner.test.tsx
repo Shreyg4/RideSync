@@ -15,6 +15,7 @@ import type { TripStopRow } from '@/src/services/tripStopService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockChannels, mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
 import { formatTime } from '@/src/lib/dateTime';
+import * as Haptics from 'expo-haptics';
 import { fetchRoute } from '@/src/services/mapboxDirectionsService';
 import type { Coordinates } from '@/src/types/trip';
 
@@ -557,6 +558,164 @@ describe('PlannerScreen', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({ params: { id: 1, stopId: 2 } })
       );
+    });
+  });
+
+  describe('dragging a stop to a new place', () => {
+    // Rows: Day 1, Home, Diner, Gas, Add stop, Coast
+    const trip = [
+      stopRow(1, 'start', 'Home'),
+      stopRow(2, 'stop', 'Diner'),
+      stopRow(3, 'stop', 'Gas'),
+      stopRow(4, 'end', 'Coast'),
+    ];
+    const order = (view: Awaited<ReturnType<typeof renderPlanner>>) =>
+      view.getAllByTestId(/^stop-/).map((row) => row.props.testID);
+    const drop = (view: Awaited<ReturnType<typeof renderPlanner>>, from: number, to: number) =>
+      act(async () => {
+        fireEvent(view.getByTestId('planner-list'), 'reorder', { from, to });
+      });
+    const reorderCalls = () =>
+      mockSupabase.rpc.mock.calls.filter(([name]) => name === 'reorder_trip_stops');
+    const { __drag: drag } = jest.requireMock<{ __drag: jest.Mock }>(
+      'react-native-reorderable-list'
+    );
+
+    beforeEach(() => drag.mockClear());
+
+    it.each(['owner', 'editor'])('gives an %s a handle on each normal stop', async (role) => {
+      const view = await renderPlanner({ role, stops: trip });
+      await view.findByText('Diner');
+
+      expect(view.getByLabelText('Move Diner')).toBeTruthy();
+      expect(view.getByLabelText('Move Gas')).toBeTruthy();
+    });
+
+    it('gives the start and end no handle, since they stay first and last', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Home');
+
+      expect(view.queryByLabelText('Move Home')).toBeNull();
+      expect(view.queryByLabelText('Move Coast')).toBeNull();
+    });
+
+    it('gives a round trip’s destination no handle', async () => {
+      const destination = { ...stopRow(2, 'stop', 'Coast'), is_turnaround: true };
+      const view = await renderPlanner({
+        stops: [stopRow(1, 'start', 'Home'), destination, stopRow(3, 'stop', 'Pier')],
+        trip: tripRow({ trip_type: 'round-trip' }),
+      });
+      await view.findByText('Pier');
+
+      expect(view.queryByLabelText('Move Coast')).toBeNull();
+      expect(view.getByLabelText('Move Pier')).toBeTruthy();
+    });
+
+    it('gives a viewer nothing to drag', async () => {
+      const view = await renderPlanner({ role: 'viewer', stops: trip });
+      await view.findByText('Diner');
+
+      expect(view.queryByLabelText('Move Diner')).toBeNull();
+    });
+
+    it('picks the stop up when its handle is held, not when it is only tapped', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+      const handle = view.getByLabelText('Move Diner');
+
+      await fireEvent(handle, 'pressIn');
+      await fireEvent.press(handle);
+      expect(drag).not.toHaveBeenCalled();
+      expect(router.push).not.toHaveBeenCalled();
+
+      await fireEvent(handle, 'longPress');
+      expect(drag).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the new order at once, saves it, and keeps it once the stops reload', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+
+      let finishSave: (result: { data: null; error: null }) => void = () => {};
+      mockSupabase.rpc.mockImplementationOnce(
+        () => new Promise((resolve) => (finishSave = resolve))
+      );
+      await drop(view, 2, 3);
+
+      expect(order(view)).toEqual(['stop-1', 'stop-3', 'stop-2', 'stop-4']);
+      expect(reorderCalls()).toEqual([
+        ['reorder_trip_stops', { target_trip_id: 1, ordered_ids: [1, 3, 2, 4] }],
+      ]);
+      // One move at a time, so a second can't land before the first is saved
+      expect(view.getByLabelText('Move Gas')).toBeDisabled();
+
+      mockTable('trip_stops').__setResult({
+        data: [trip[0], trip[2], trip[1], trip[3]],
+        error: null,
+      });
+      await act(async () => finishSave({ data: null, error: null }));
+
+      await waitFor(() => expect(view.getByLabelText('Move Gas')).toBeEnabled());
+      expect(order(view)).toEqual(['stop-1', 'stop-3', 'stop-2', 'stop-4']);
+    });
+
+    it('moves the stop back and explains why when the save fails', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+
+      mockRpc('reorder_trip_stops', { data: null, error: { code: '42501' } });
+      await drop(view, 2, 3);
+
+      expect(await view.findByText('You do not have permission to do that.')).toBeTruthy();
+      expect(order(view)).toEqual(['stop-1', 'stop-2', 'stop-3', 'stop-4']);
+      expect(view.getByLabelText('Move Diner')).toBeEnabled();
+    });
+
+    it('lets a stop dropped above the start spring back, without saving', async () => {
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+
+      await drop(view, 2, 0);
+      await drop(view, 3, 5);
+
+      expect(reorderCalls()).toEqual([]);
+      expect(order(view)).toEqual(['stop-1', 'stop-2', 'stop-3', 'stop-4']);
+    });
+
+    // The list only moves its rows back when it renders again, so a refused drop has to make it
+    it('renders the list again after a refused drop, with a warning buzz', async () => {
+      const warning = jest.spyOn(Haptics, 'notificationAsync');
+      const view = await renderPlanner({ stops: trip });
+      await view.findByText('Diner');
+      const extraData = () => view.getByTestId('planner-list').props.extraData;
+      const before = extraData();
+
+      await drop(view, 2, 0);
+
+      expect(extraData()).not.toEqual(before);
+      expect(warning).toHaveBeenCalledWith(Haptics.NotificationFeedbackType.Warning);
+    });
+
+    it('lets a stop dropped below a round trip’s Back to start spring back, without saving', async () => {
+      // Rows: Day 1, Home, Diner, Add stop, Coast, Return, Pier, Add return stop, Back to start
+      const destination = { ...stopRow(3, 'stop', 'Coast'), is_turnaround: true };
+      const view = await renderPlanner({
+        stops: [
+          stopRow(1, 'start', 'Home'),
+          stopRow(2, 'stop', 'Diner'),
+          destination,
+          stopRow(4, 'stop', 'Pier'),
+        ],
+        trip: tripRow({ trip_type: 'round-trip' }),
+      });
+      await view.findByText('Pier');
+
+      await drop(view, 2, 8);
+      await drop(view, 6, 8);
+
+      expect(reorderCalls()).toEqual([]);
+      expect(order(view)).toEqual(['stop-1', 'stop-2', 'stop-3', 'stop-4']);
     });
   });
 

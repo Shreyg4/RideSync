@@ -20,6 +20,8 @@ type ItineraryRowItemProps = {
   timings?: TripTimings | null; // when the group reaches and leaves each place, once the route is in
   // Wraps a stop's card, for example to make it swipeable. The line beside it stays where it is
   wrapStop?: (stop: TripStop, card: ReactNode) => ReactNode;
+  // Something inside a stop's card, at its right edge, like the planner's drag handle
+  stopAccessory?: (stop: TripStop) => ReactNode;
 };
 
 export const itineraryRowKey = (row: ItineraryRow) => {
@@ -64,6 +66,7 @@ const rowContent = (
     compact = false,
     timings,
     wrapStop,
+    stopAccessory,
   }: ItineraryRowItemProps
 ): ReactNode => {
   const headingStyle = [styles.heading, compact && styles.compactHeading];
@@ -78,6 +81,7 @@ const rowContent = (
           compact={compact}
           detail={timing && stopTimingLabel(row.stop, timing)}
           onPress={onOpenStop && (() => onOpenStop(row.stop))}
+          accessory={stopAccessory?.(row.stop)}
           testID={`stop-${row.stop.id}`}
         />
       );

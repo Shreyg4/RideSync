@@ -217,6 +217,52 @@ export const stopRole = ({
 export const canRemoveStop = (stop: Pick<TripStop, 'stopType' | 'isTurnaround'>) =>
   !isKeyStop(stop);
 
+// The same fixed points also keep their place in the list: the other stops move around them.
+// reorder_trip_stops enforces this for start and end
+export const canMoveStop = (stop: Pick<TripStop, 'stopType' | 'isTurnaround'>) => !isKeyStop(stop);
+
+// The trip's stop ids in their new order after a row is dragged from one index to another, or
+// null when the drop changes nothing or isn't allowed. The start, destination and end never move,
+// and nothing goes above the start, below the end, or below a round trip's return to the start.
+// The rows include headings and buttons, so the stops are read back out after the move. Day
+// headings follow the overnight stops, so a stop dropped past one moves to that day
+export const reorderedStopIds = (
+  rows: readonly ItineraryRow[],
+  from: number,
+  to: number
+): number[] | null => {
+  const moving = rows[from];
+  if (from === to || to < 0 || to >= rows.length) return null;
+  if (moving?.kind !== 'stop' || !canMoveStop(moving.stop)) return null;
+
+  const next = [...rows];
+  next.splice(from, 1);
+  next.splice(to, 0, moving);
+  const backToStartAt = next.findIndex((row) => row.kind === 'backToStart');
+  if (backToStartAt !== -1 && to > backToStartAt) return null;
+  const stops = next.flatMap((row) => (row.kind === 'stop' ? [row.stop] : []));
+
+  const startAt = stops.findIndex((stop) => stop.stopType === 'start');
+  const endAt = stops.findIndex((stop) => stop.stopType === 'end');
+  if (startAt > 0 || (endAt !== -1 && endAt !== stops.length - 1)) return null;
+
+  const ids = stops.map((stop) => stop.id);
+  const before = rows.flatMap((row) => (row.kind === 'stop' ? [row.stop.id] : []));
+  return ids.some((id, i) => id !== before[i]) ? ids : null;
+};
+
+// The stops in the given order, while a reorder is saving. Falls back to their saved order when
+// the ids don't match, which means a stop was added or removed on another phone in the meantime
+export const orderStops = <T extends Pick<TripStop, 'id'>>(
+  stops: readonly T[],
+  ids: readonly number[] | undefined
+): readonly T[] => {
+  if (!ids || ids.length !== stops.length) return stops;
+  const byId = new Map(stops.map((stop) => [stop.id, stop]));
+  const ordered = ids.map((id) => byId.get(id));
+  return ordered.every((stop) => stop !== undefined) ? (ordered as T[]) : stops;
+};
+
 // The day the group reaches a stop: the date of the last day heading above it in the itinerary
 export const stopArrivalDay = (rows: readonly ItineraryRow[], stopId: number): Date | undefined => {
   let day: Date | undefined;

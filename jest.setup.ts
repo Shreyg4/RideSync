@@ -107,6 +107,25 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
   return { __esModule: true, default: Swipeable };
 });
 
+// The real list needs Reanimated's native side. This one is a plain FlatList that keeps its props,
+// so a test drops a row with fireEvent(list, 'reorder', { from, to }). A drag handle's drag()
+// is __drag, so a test can check that pressing the handle picks the row up
+const mockDrag = jest.fn();
+jest.mock('react-native-reorderable-list', () => {
+  const React = require('react');
+  const { FlatList } = require('react-native');
+  const ReorderableList = (props: object) => React.createElement(FlatList, props);
+  return {
+    __esModule: true,
+    default: ReorderableList,
+    useReorderableDrag: () => mockDrag,
+    useReorderableDragStart: () => {},
+    useReorderableDragEnd: () => {},
+    useIsActive: () => false,
+    __drag: mockDrag,
+  };
+});
+
 jest.mock('@react-navigation/bottom-tabs', () => ({
   useBottomTabBarHeight: () => 60,
 }));

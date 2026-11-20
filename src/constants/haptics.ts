@@ -5,7 +5,8 @@
 import * as Haptics from 'expo-haptics';
 
 // 'selection' is the lightest tap
-export type HapticRole = 'selection' | 'action' | 'destructive';
+// 'warning' says something wasn't allowed, like a stop dropped where it can't go
+export type HapticRole = 'selection' | 'action' | 'destructive' | 'warning';
 
 export const haptics: Record<HapticRole, () => void> = {
   selection: () => {
@@ -16,5 +17,8 @@ export const haptics: Record<HapticRole, () => void> = {
   },
   destructive: () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  },
+  warning: () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   },
 };

@@ -1,8 +1,11 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import React, { useCallback, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import ReorderableList from 'react-native-reorderable-list';
+import { scheduleOnRN } from 'react-native-worklets';
 import { Maximize2, Settings } from 'lucide-react-native';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DragHandle from '@/src/components/DragHandle';
 import EmptyState from '@/src/components/EmptyState';
 import ErrorText from '@/src/components/ErrorText';
 import ItineraryRowItem, { itineraryRowKey } from '@/src/components/ItineraryRowItem';
@@ -12,7 +15,14 @@ import ScreenHeader from '@/src/components/ScreenHeader';
 import { colors, fontSize, spacing, gradients, radii } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/src/context/AuthProvider';
-import { canRemoveStop, itineraryRows, timeline } from '@/src/domain/rules';
+import {
+  canMoveStop,
+  canRemoveStop,
+  itineraryRows,
+  orderStops,
+  reorderedStopIds,
+  timeline,
+} from '@/src/domain/rules';
 import type { AddStopRow } from '@/src/domain/rules';
 import { routeTotalsLabel, tripTimings } from '@/src/domain/route';
 import type { TripStop } from '@/src/types/trip';
@@ -28,7 +38,7 @@ import { pressFeedback } from '@/src/constants/pressFeedback';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
 import { getTrip, listTripMembers } from '@/src/services/tripService';
 import { reportAndDescribe } from '@/src/services/errors';
-import { listTripStops, removeTripStop } from '@/src/services/tripStopService';
+import { listTripStops, removeTripStop, reorderTripStops } from '@/src/services/tripStopService';
 
 const PlannerScreen = () => {
   const insets = useSafeAreaInsets();
@@ -55,10 +65,29 @@ const PlannerScreen = () => {
     'PlannerScreen.load'
   );
 
+  // A change from another phone would swap the rows under a stop being dragged, so it waits for
+  // the drop
+  const dragging = useRef(false);
+  const reloadAfterDrag = useRef(false);
+  const reloadUnlessDragging = useCallback(() => {
+    if (dragging.current) reloadAfterDrag.current = true;
+    else reload();
+  }, [reload]);
+  const setDragging = useCallback(
+    (value: boolean) => {
+      dragging.current = value;
+      if (!value && reloadAfterDrag.current) {
+        reloadAfterDrag.current = false;
+        reload();
+      }
+    },
+    [reload]
+  );
+
   // A role change on another phone changes whether this member can add stops
-  useTripMembersRealtime(tripId, reload);
+  useTripMembersRealtime(tripId, reloadUnlessDragging);
   // So do stop changes, which also move the map's pins
-  useTripStopsRealtime(tripId, reload);
+  useTripStopsRealtime(tripId, reloadUnlessDragging);
 
   // Coming back from search or a stop's details may mean a new, changed or removed stop
   const firstFocus = useRef(true);
@@ -75,16 +104,28 @@ const PlannerScreen = () => {
   const myRole = data?.members.find((member) => member.id === user?.id)?.role;
   const canEdit = myRole === 'owner' || myRole === 'editor';
 
-  const rows = data
-    ? itineraryRows(data.stops, data.trip.tripType, data.trip.startsAt, canEdit)
-    : [];
+  // A dragged stop shows in its new place at once. The order is kept until the save succeeds and
+  // the stops load again, and dropped if the save fails, which puts the stop back
+  const [pendingOrder, setPendingOrder] = useState<{ ids: number[]; saved: boolean } | null>(null);
+  const [reorderError, setReorderError] = useState<string | null>(null);
+  // The list only puts its rows back in place when it renders again, so a refused drop counts
+  // here to make it render
+  const [refusedDrops, setRefusedDrops] = useState(0);
+  useEffect(() => {
+    setPendingOrder((pending) => (pending?.saved ? null : pending));
+  }, [data]);
+  const saving = pendingOrder !== null && !pendingOrder.saved;
+  const stops = data ? orderStops(data.stops, pendingOrder?.ids) : undefined;
+
+  const rows =
+    data && stops ? itineraryRows(stops, data.trip.tripType, data.trip.startsAt, canEdit) : [];
   const segments = timeline(rows);
 
   // Follows the stops: a change from any phone reloads them, and new places fetch a new route
-  const route = useTripRoute(tripId, data?.stops, data?.trip.tripType);
+  const route = useTripRoute(tripId, stops, data?.trip.tripType);
   const timings =
-    data && route.route
-      ? tripTimings(data.stops, data.trip.tripType, data.trip.startsAt, route.route.legs)
+    data && stops && route.route
+      ? tripTimings(stops, data.trip.tripType, data.trip.startsAt, route.route.legs)
       : null;
 
   const swipe = useOpenSwipeRow();
@@ -104,6 +145,29 @@ const PlannerScreen = () => {
       swipe.closeOpenRow();
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const moveStop = async (from: number, to: number) => {
+    const ids = reorderedStopIds(rows, from, to);
+    // A drop where the stop can't go changes nothing, and the stop goes back where it came from
+    if (!ids) {
+      haptics.warning();
+      setRefusedDrops((count) => count + 1);
+      return;
+    }
+
+    setReorderError(null);
+    setPendingOrder({ ids, saved: false });
+    try {
+      await reorderTripStops(tripId, ids);
+      setPendingOrder({ ids, saved: true });
+      reload();
+    } catch (caught) {
+      setPendingOrder(null);
+      setReorderError(reportAndDescribe(caught, { scope: 'PlannerScreen.moveStop' }));
+      // The save is refused when the stops changed on another phone, so show what's there now
+      reload();
     }
   };
 
@@ -146,6 +210,12 @@ const PlannerScreen = () => {
       card
     );
 
+  // Only an owner or editor can drag, and only stops between the trip's fixed points
+  const dragHandle = (stop: TripStop) =>
+    canEdit && canMoveStop(stop) ? (
+      <DragHandle label={`Move ${stop.name}`} disabled={saving} testID={`drag-stop-${stop.id}`} />
+    ) : null;
+
   return (
     // Any touch outside the open row closes it
     <View style={{ flex: 1 }} onTouchStart={swipe.onScreenTouch}>
@@ -169,11 +239,11 @@ const PlannerScreen = () => {
             }
           />
           {/* Measured with the header, so the list's top fade sits below the map, not over it */}
-          {data && data.stops.length > 0 ? (
+          {stops && stops.length > 0 ? (
             <View style={styles.mapBox}>
               {/* The preview only shows the route; the full-screen map is where it can be moved */}
               <View pointerEvents="none" style={styles.mapPreview}>
-                <StopsMap stops={data.stops} route={route.route} testID="planner-map" />
+                <StopsMap stops={stops} route={route.route} testID="planner-map" />
               </View>
               <Pressable
                 onPress={openMap}
@@ -201,9 +271,20 @@ const PlannerScreen = () => {
           />
         )
       ) : (
-        <FlatList
+        <ReorderableList
           data={rows}
           keyExtractor={itineraryRowKey}
+          extraData={refusedDrops}
+          onReorder={({ from, to }) => moveStop(from, to)}
+          onDragStart={() => {
+            'worklet';
+            scheduleOnRN(setDragging, true);
+          }}
+          onDragEnd={() => {
+            'worklet';
+            scheduleOnRN(setDragging, false);
+          }}
+          testID="planner-list"
           renderItem={({ item, index }) => (
             <ItineraryRowItem
               row={item}
@@ -212,6 +293,7 @@ const PlannerScreen = () => {
               onAdd={openSearch}
               onOpenStop={openStop}
               wrapStop={swipeToRemove}
+              stopAccessory={dragHandle}
               highlightKeyStops
             />
           )}
@@ -228,13 +310,14 @@ const PlannerScreen = () => {
               <View style={styles.listSpacer} />
               <ErrorText message={error} onRetry={reload} />
               <ErrorText message={removeError} testID="planner-remove-error" />
+              <ErrorText message={reorderError} testID="planner-reorder-error" />
               <ErrorText message={route.error} onRetry={route.retry} testID="planner-route-error" />
               {timings ? (
                 <Text style={styles.totals} testID="planner-route-totals">
                   {routeTotalsLabel(timings)}
                 </Text>
               ) : null}
-              {data.stops.length === 0 ? (
+              {stops?.length === 0 ? (
                 <EmptyState
                   title="No stops yet"
                   subtitle={

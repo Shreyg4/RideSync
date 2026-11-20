@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { Dot } from 'lucide-react-native';
 import type { TripStop } from '@/src/types/trip';
@@ -13,6 +14,7 @@ type StopListItemProps = {
   compact?: boolean; // less space around the card, for short lists
   detail?: string | null; // one more line under the card's details, like when the group gets there
   onPress?: () => void;
+  accessory?: ReactNode; // sits at the card's right edge, like a drag handle
   testID?: string;
 };
 
@@ -23,6 +25,7 @@ const StopListItem = ({
   compact = false,
   detail,
   onPress,
+  accessory,
   testID,
 }: StopListItemProps) => {
   return (
@@ -38,25 +41,33 @@ const StopListItem = ({
       style={({ pressed }) => [pressFeedback.card(pressed)]}
     >
       <View
-        style={[styles.container, compact && styles.compact, highlighted && styles.highlighted]}
+        style={[
+          styles.container,
+          compact && styles.compact,
+          highlighted && styles.highlighted,
+          accessory != null && styles.withAccessory,
+        ]}
       >
-        <Text style={styles.name}>{stop.name}</Text>
-        <View style={styles.infoRow}>
-          {stop.address ? (
-            <>
-              <Text style={[styles.subtext, styles.address]} numberOfLines={1}>
-                {stop.address}
-              </Text>
-              <Dot {...iconProps} />
-            </>
+        <View style={styles.body}>
+          <Text style={styles.name}>{stop.name}</Text>
+          <View style={styles.infoRow}>
+            {stop.address ? (
+              <>
+                <Text style={[styles.subtext, styles.address]} numberOfLines={1}>
+                  {stop.address}
+                </Text>
+                <Dot {...iconProps} />
+              </>
+            ) : null}
+            <Text style={styles.subtext}>{label}</Text>
+          </View>
+          {detail ? (
+            <Text style={[styles.subtext, styles.detail]} testID={testID && `detail-${testID}`}>
+              {detail}
+            </Text>
           ) : null}
-          <Text style={styles.subtext}>{label}</Text>
         </View>
-        {detail ? (
-          <Text style={[styles.subtext, styles.detail]} testID={testID && `detail-${testID}`}>
-            {detail}
-          </Text>
-        ) : null}
+        {accessory}
       </View>
     </Pressable>
   );
@@ -80,6 +91,14 @@ const styles = StyleSheet.create({
   },
   highlighted: {
     borderColor: colors.tint,
+  },
+  withAccessory: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  body: {
+    flex: 1,
   },
   name: {
     color: colors.text,

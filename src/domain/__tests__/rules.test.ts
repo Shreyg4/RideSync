@@ -21,6 +21,9 @@ import {
   stopLabel,
   stopRole,
   canRemoveStop,
+  canMoveStop,
+  reorderedStopIds,
+  orderStops,
   stopArrivalDay,
   insertionIndex,
   newStopArrivalDay,
@@ -164,6 +167,144 @@ describe('canRemoveStop', () => {
     ['an overnight destination', 'overnight', true, false],
   ])('%s: %s', (_, stopType, isTurnaround, expected) => {
     expect(canRemoveStop({ stopType, isTurnaround })).toBe(expected);
+  });
+});
+
+describe('canMoveStop', () => {
+  it.each<[string, StopType, boolean, boolean]>([
+    ['a normal stop', 'stop', false, true],
+    ['an overnight stop', 'overnight', false, true],
+    ['the start', 'start', false, false],
+    ['the end', 'end', false, false],
+    ['the destination', 'stop', true, false],
+  ])('%s: %s', (_, stopType, isTurnaround, expected) => {
+    expect(canMoveStop({ stopType, isTurnaround })).toBe(expected);
+  });
+});
+
+describe('reorderedStopIds', () => {
+  const stop = (id: number, stopType: StopType, isTurnaround = false): TripStop => ({
+    id,
+    tripId: 1,
+    position: id - 1,
+    name: `Stop ${id}`,
+    address: null,
+    lat: 47.6,
+    lng: -122.3,
+    mapboxId: null,
+    stopType,
+    stopCategory: 'other',
+    notes: null,
+    departsAt: null,
+    isTurnaround,
+  });
+  const STARTS_AT = new Date(2026, 8, 2, 9, 30);
+
+  // Day 1, start, stop, overnight, Day 2, stop, Add stop, end
+  const oneWay = itineraryRows(
+    [stop(1, 'start'), stop(2, 'stop'), stop(3, 'overnight'), stop(4, 'stop'), stop(5, 'end')],
+    'one-way',
+    STARTS_AT,
+    true
+  );
+
+  it('reads the rows as laid out', () => {
+    expect(oneWay.map((row) => (row.kind === 'stop' ? row.stop.id : row.kind))).toEqual([
+      'dayHeading',
+      1,
+      2,
+      3,
+      'dayHeading',
+      4,
+      'add',
+      5,
+    ]);
+  });
+
+  it('moves a stop down past a day heading onto the next day', () => {
+    expect(reorderedStopIds(oneWay, 2, 5)).toEqual([1, 3, 4, 2, 5]);
+  });
+
+  it('moves a stop up onto the day before', () => {
+    expect(reorderedStopIds(oneWay, 5, 2)).toEqual([1, 4, 2, 3, 5]);
+  });
+
+  it('allows a drop just past the Add stop button, which still leaves the end last', () => {
+    expect(reorderedStopIds(oneWay, 2, 6)).toEqual([1, 3, 4, 2, 5]);
+  });
+
+  it('refuses a drop above the start', () => {
+    expect(reorderedStopIds(oneWay, 2, 0)).toBeNull();
+    expect(reorderedStopIds(oneWay, 2, 1)).toBeNull();
+  });
+
+  it('refuses a drop below the end', () => {
+    expect(reorderedStopIds(oneWay, 2, 7)).toBeNull();
+  });
+
+  it('returns null when the stops end up in the same order', () => {
+    expect(reorderedStopIds(oneWay, 2, 2)).toBeNull();
+    expect(reorderedStopIds(oneWay, 5, 6)).toBeNull();
+  });
+
+  it('only moves stops, not headings or buttons', () => {
+    expect(reorderedStopIds(oneWay, 0, 3)).toBeNull();
+    expect(reorderedStopIds(oneWay, 6, 2)).toBeNull();
+  });
+
+  it('ignores indexes outside the list', () => {
+    expect(reorderedStopIds(oneWay, 2, 8)).toBeNull();
+    expect(reorderedStopIds(oneWay, 9, 2)).toBeNull();
+  });
+
+  it('never moves the start or the end', () => {
+    expect(reorderedStopIds(oneWay, 1, 2)).toBeNull();
+    expect(reorderedStopIds(oneWay, 7, 5)).toBeNull();
+  });
+
+  describe('on a round trip', () => {
+    // Day 1, start, stop, Add stop, destination, Return, stop, Add return stop, Back to start
+    const roundTrip = itineraryRows(
+      [stop(1, 'start'), stop(2, 'stop'), stop(3, 'stop', true), stop(4, 'stop')],
+      'round-trip',
+      STARTS_AT,
+      true
+    );
+
+    it('moves a stop from the drive home to the way there', () => {
+      expect(reorderedStopIds(roundTrip, 6, 2)).toEqual([1, 4, 2, 3]);
+    });
+
+    it('lets a stop go last on the drive home, just above Back to start', () => {
+      expect(reorderedStopIds(roundTrip, 2, 7)).toEqual([1, 3, 4, 2]);
+    });
+
+    it('refuses a drop below Back to start, the trip’s final stop', () => {
+      expect(reorderedStopIds(roundTrip, 2, 8)).toBeNull();
+      expect(reorderedStopIds(roundTrip, 6, 8)).toBeNull();
+    });
+
+    it('never moves the destination', () => {
+      expect(reorderedStopIds(roundTrip, 4, 2)).toBeNull();
+      expect(reorderedStopIds(roundTrip, 4, 7)).toBeNull();
+    });
+  });
+});
+
+describe('orderStops', () => {
+  const stops = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+  it('puts the stops in the given order', () => {
+    expect(orderStops(stops, [1, 3, 2]).map((s) => s.id)).toEqual([1, 3, 2]);
+  });
+
+  it('keeps the saved order when there is no pending order', () => {
+    expect(orderStops(stops, undefined)).toBe(stops);
+  });
+
+  it('keeps the saved order when a stop was added or removed since', () => {
+    expect(orderStops(stops, [2, 1])).toBe(stops);
+    expect(orderStops(stops, [1, 2, 4])).toBe(stops);
   });
 });
 
