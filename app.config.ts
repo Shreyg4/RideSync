@@ -9,6 +9,12 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   scheme: 'ridesync',
   userInterfaceStyle: 'dark',
+  // Fingerprint hashes native deps/config: any native change yields a new runtime,
+  // so OTA updates never reach a build with incompatible native code.
+  runtimeVersion: { policy: 'fingerprint' },
+  updates: {
+    url: 'https://u.expo.dev/c0b94e21-464e-4987-ba61-a79982161cc3',
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.shreyg4.RideSync',
