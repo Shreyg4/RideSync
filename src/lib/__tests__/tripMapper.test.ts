@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { toTrip, toTripMember, toTripStop } from '../tripMapper';
-import type { TripRow, TripMemberRow } from '@/src/services/tripService';
+import { toSavedTrip, toTrip, toTripMember, toTripStop } from '../tripMapper';
+import type { TripRow, TripMemberRow, SavedTripRow } from '@/src/services/tripService';
 import { mockBucket } from '@/src/test/supabase';
 
 const NOW = new Date(2026, 8, 2, 9, 30, 0, 0).toISOString();
@@ -136,5 +136,70 @@ describe('toTripMember', () => {
 
     expect(member.avatar).toBeNull();
     expect(mockBucket('avatars').getPublicUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe('toSavedTrip', () => {
+  const savedRow = (overrides: Partial<SavedTripRow> = {}): SavedTripRow => ({
+    id: 4,
+    user_id: 'user-1',
+    name: 'Coast Run',
+    trip_type: 'round-trip',
+    image_url: null,
+    saved_at: NOW,
+    starts_at: '2026-09-02T16:30:00.000Z',
+    stops: [],
+    ...overrides,
+  });
+
+  it('reads the saved stops in order, numbered by their place in the list', () => {
+    const trip = toSavedTrip(
+      savedRow({
+        stops: [
+          { name: 'Home', address: '1 Main St', lat: 47.6, lng: -122.3, stop_type: 'start' },
+          {
+            name: 'Lodge',
+            lat: 46,
+            lng: -121,
+            stop_type: 'overnight',
+            category: 'lodging',
+            is_turnaround: true,
+            departs_at: '2026-09-04T16:00:00.000Z',
+          },
+        ],
+      })
+    );
+
+    expect(trip.startsAt).toEqual(new Date('2026-09-02T16:30:00.000Z'));
+    expect(trip.stops).toEqual([
+      expect.objectContaining({
+        id: 1,
+        tripId: 4,
+        position: 0,
+        name: 'Home',
+        address: '1 Main St',
+        stopType: 'start',
+        stopCategory: 'other',
+        departsAt: null,
+        isTurnaround: false,
+      }),
+      expect.objectContaining({
+        id: 2,
+        position: 1,
+        name: 'Lodge',
+        address: null,
+        stopType: 'overnight',
+        stopCategory: 'lodging',
+        departsAt: new Date('2026-09-04T16:00:00.000Z'),
+        isTurnaround: true,
+      }),
+    ]);
+  });
+
+  it('has no start or stops for a trip saved before itineraries were kept', () => {
+    const trip = toSavedTrip(savedRow({ starts_at: null, stops: {} }));
+
+    expect(trip.startsAt).toBeNull();
+    expect(trip.stops).toEqual([]);
   });
 });

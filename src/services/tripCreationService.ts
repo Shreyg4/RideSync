@@ -8,8 +8,15 @@ import {
   tripImageObjectPath,
   uploadTripImageFile,
 } from '../lib/tripImageStorage';
+import { daysBetween } from '../lib/dateTime';
 import type { TripFormValues, TripImageInput, TripType } from '../types/trip';
-import { createTrip, updateTrip, type NewTrip, type TripRow } from './tripService';
+import {
+  createTrip,
+  recreateSavedTrip,
+  updateTrip,
+  type NewTrip,
+  type TripRow,
+} from './tripService';
 
 export type CreateTripInput = {
   userId: string;
@@ -17,6 +24,8 @@ export type CreateTripInput = {
   tripType: TripType;
   startsAt: Date;
   image?: TripImageInput | null;
+  // Re-creating a saved trip brings its itinerary along
+  fromSavedTrip?: { id: number; startsAt: Date | null };
 };
 
 export const createTripWithImage = async ({
@@ -25,6 +34,7 @@ export const createTripWithImage = async ({
   tripType,
   startsAt,
   image,
+  fromSavedTrip,
 }: CreateTripInput): Promise<TripRow> => {
   let uploaded: string | null = null;
   if (image?.kind === 'local') {
@@ -34,13 +44,19 @@ export const createTripWithImage = async ({
   // A stored image is reused from a saved trip, which still needs it, so it's never removed here
   const imagePath = uploaded ?? (image?.kind === 'stored' ? image.path : null);
 
+  const trip: NewTrip = {
+    name,
+    trip_type: tripType,
+    starts_at: startsAt.toISOString(),
+    image_url: imagePath,
+  };
+
   try {
-    return await createTrip({
-      name,
-      trip_type: tripType,
-      starts_at: startsAt.toISOString(),
-      image_url: imagePath,
-    });
+    if (!fromSavedTrip) return await createTrip(trip);
+    // Overnight departures keep their place in the trip: the same number of days after the start.
+    // Counted in the phone's time zone, which is the one the itinerary's days are in
+    const dayShift = fromSavedTrip.startsAt ? daysBetween(fromSavedTrip.startsAt, startsAt) : 0;
+    return await recreateSavedTrip(fromSavedTrip.id, trip, dayShift);
   } catch (error) {
     if (uploaded) {
       removeTripImageFile(uploaded).catch((cleanupError) =>

@@ -159,3 +159,28 @@ describe('useTripRoute', () => {
     await waitFor(() => expect(result.current.route).not.toBeNull());
   });
 });
+
+describe('useTripRoute without a trip', () => {
+  const renderWithoutTrip = (stops: TripStop[]) =>
+    renderHook(() => useTripRoute(null, stops, 'one-way'));
+
+  it('fetches the route without reading or saving a trip route', async () => {
+    const stops = [stop(1, 'start', 40.1), stop(2, 'end', 41.1)];
+    const { result } = await renderWithoutTrip(stops);
+
+    await waitFor(() => expect(result.current.route?.geometry).toEqual(['fresh']));
+    expect(getMock).not.toHaveBeenCalled();
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it('asks Mapbox once for the same stops', async () => {
+    const stops = [stop(1, 'start', 42.1), stop(2, 'end', 43.1)];
+    const first = await renderWithoutTrip(stops);
+    await waitFor(() => expect(first.result.current.route).not.toBeNull());
+
+    const second = await renderWithoutTrip(stops);
+    await waitFor(() => expect(second.result.current.route).not.toBeNull());
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

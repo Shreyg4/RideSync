@@ -1,7 +1,8 @@
 /**
  * @file useTripRoute.ts
  * @description A trip's driving route, kept in step with its stops. Uses the saved route when it was
- * made for these stops, and otherwise asks Mapbox and saves the answer for the group's other phones
+ * made for these stops, and otherwise asks Mapbox and saves the answer for the group's other phones.
+ * A saved trip has no trip to keep its route on, so its route is only kept on this phone
  */
 import { routeKey, routePoints } from '@/src/domain/route';
 import type { TripRoute } from '@/src/domain/route';
@@ -17,9 +18,21 @@ export type TripRouteState = {
   retry: () => void;
 };
 
-// stops must be in trip order. Pass undefined for either while they're still loading
+// A saved trip's stops never change, so this phone asks Mapbox once per set of stops while it runs
+const routesWithoutTrip = new Map<string, TripRoute>();
+
+const fetchWithoutTrip = async (key: string, points: Parameters<typeof fetchRoute>[0]) => {
+  const cached = routesWithoutTrip.get(key);
+  if (cached) return cached;
+  const fresh = await fetchRoute(points);
+  routesWithoutTrip.set(key, fresh);
+  return fresh;
+};
+
+// stops must be in trip order. Pass undefined for either while they're still loading. A null
+// tripId is for stops that aren't on a trip, like a saved trip's, so the route isn't saved anywhere
 export const useTripRoute = (
-  tripId: number,
+  tripId: number | null,
   stops: readonly TripStop[] | undefined,
   tripType: TripType | undefined
 ): TripRouteState => {
@@ -30,6 +43,7 @@ export const useTripRoute = (
   const { data, error, reload } = useAsync(
     async () => {
       if (!key) return null;
+      if (tripId === null) return fetchWithoutTrip(key, points);
       const saved = await getTripRoute(tripId);
       if (saved?.key === key) return saved;
 

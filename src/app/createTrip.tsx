@@ -38,7 +38,16 @@ const CreateTripScreen = () => {
   const handleCreateTrip = async ({ name, tripType, startsAt, image }: TripFormValues) => {
     if (!user) return 'You need to be signed in to create a trip.';
 
-    await createTripWithImage({ userId: user.id, name, tripType, startsAt, image });
+    await createTripWithImage({
+      userId: user.id,
+      name,
+      tripType,
+      startsAt,
+      image,
+      fromSavedTrip: saved
+        ? { id: saved.id, startsAt: saved.starts_at ? new Date(saved.starts_at) : null }
+        : undefined,
+    });
     router.replace('/(tabs)/trips');
   };
 

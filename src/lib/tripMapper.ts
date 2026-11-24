@@ -17,6 +17,7 @@ import { avatarUrl } from './avatarStorage';
 import { formatShortDate } from './dateTime';
 import { tripImageUrl } from './tripImageStorage';
 import type { TripStopRow } from '../services/tripStopService';
+import type { Json } from '../types/database';
 
 export const toTrip = (row: TripRow): Trip => {
   const startsAt = new Date(row.starts_at);
@@ -32,6 +33,37 @@ export const toTrip = (row: TripRow): Trip => {
   };
 };
 
+type SavedStopJson = { [key: string]: Json | undefined };
+
+const stringOrNull = (value: Json | undefined) => (typeof value === 'string' ? value : null);
+
+// A saved trip's stops are a json copy of its trip_stops rows, without ids. They're numbered by
+// their place in the list so the itinerary can key and look them up like a trip's stops
+export const toSavedTripStops = (stops: Json, savedTripId: number): TripStop[] =>
+  (Array.isArray(stops) ? stops : [])
+    .filter(
+      (stop): stop is SavedStopJson =>
+        typeof stop === 'object' && stop !== null && !Array.isArray(stop)
+    )
+    .map((stop, index) => {
+      const departsAt = stringOrNull(stop.departs_at);
+      return {
+        id: index + 1,
+        tripId: savedTripId,
+        position: index,
+        name: stringOrNull(stop.name) ?? '',
+        address: stringOrNull(stop.address),
+        lat: Number(stop.lat),
+        lng: Number(stop.lng),
+        mapboxId: stringOrNull(stop.mapbox_id),
+        stopType: (stringOrNull(stop.stop_type) ?? 'stop') as StopType,
+        stopCategory: (stringOrNull(stop.category) ?? 'other') as StopCategory,
+        notes: stringOrNull(stop.notes),
+        departsAt: departsAt ? new Date(departsAt) : null,
+        isTurnaround: stop.is_turnaround === true,
+      };
+    });
+
 export const toSavedTrip = (row: SavedTripRow): SavedTrip => {
   return {
     id: row.id,
@@ -39,6 +71,8 @@ export const toSavedTrip = (row: SavedTripRow): SavedTrip => {
     imagePath: row.image_url,
     name: row.name,
     tripType: row.trip_type as TripType,
+    startsAt: row.starts_at ? new Date(row.starts_at) : null,
+    stops: toSavedTripStops(row.stops, row.id),
   };
 };
 

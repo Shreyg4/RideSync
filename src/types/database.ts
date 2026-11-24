@@ -34,6 +34,7 @@ export type Database = {
           image_url: string | null;
           name: string;
           saved_at: string;
+          starts_at: string | null;
           stops: Json;
           trip_type: string;
           user_id: string;
@@ -43,6 +44,7 @@ export type Database = {
           image_url?: string | null;
           name: string;
           saved_at?: string;
+          starts_at?: string | null;
           stops?: Json;
           trip_type: string;
           user_id: string;
@@ -52,6 +54,7 @@ export type Database = {
           image_url?: string | null;
           name?: string;
           saved_at?: string;
+          starts_at?: string | null;
           stops?: Json;
           trip_type?: string;
           user_id?: string;
@@ -344,6 +347,14 @@ export type Database = {
       archive_stale_trips: { Args: never; Returns: undefined };
       archive_trip: { Args: { target_trip_id: number }; Returns: undefined };
       cancel_trip: { Args: { target_trip_id: number }; Returns: undefined };
+      copy_saved_trip_stops: {
+        Args: {
+          departure_day_shift?: number;
+          source_saved_trip_id: number;
+          target_trip_id: number;
+        };
+        Returns: undefined;
+      };
       generate_join_code: { Args: never; Returns: string };
       join_trip: { Args: { code: string }; Returns: number };
       leave_trip: { Args: { target_trip_id: number }; Returns: undefined };
@@ -365,6 +376,23 @@ export type Database = {
         Args: { email_address: string; wanted_username: string };
         Returns: undefined;
       };
+      recreate_saved_trip: {
+        Args: {
+          departure_day_shift?: number;
+          new_image_url?: string;
+          new_starts_at: string;
+          new_trip_type: string;
+          source_saved_trip_id: number;
+          trip_name: string;
+        };
+        Returns: Database['public']['Tables']['trips']['Row'];
+        SetofOptions: {
+          from: '*';
+          to: 'trips';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       remove_trip_stop: { Args: { target_stop_id: number }; Returns: undefined };
       reorder_trip_stops: {
         Args: { ordered_ids: number[]; target_trip_id: number };
@@ -378,10 +406,6 @@ export type Database = {
           target_trip_id: number;
         };
         Returns: undefined;
-      };
-      start_saved_trip: {
-        Args: { new_starts_at: string; saved_trip_id: number };
-        Returns: number;
       };
       transfer_trip_ownership: {
         Args: { new_owner_id: string; target_trip_id: number };

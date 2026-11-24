@@ -50,6 +50,27 @@ export const createTrip = async (trip: NewTrip): Promise<TripRow> => {
   return data;
 };
 
+// Creates a trip from a saved one with the saved itinerary's stops, in one step. Overnight
+// departures move by departureDayShift days to follow the new start date
+export const recreateSavedTrip = async (
+  savedTripId: number,
+  trip: NewTrip,
+  departureDayShift: number
+): Promise<TripRow> => {
+  const { data, error } = await supabase
+    .rpc('recreate_saved_trip', {
+      source_saved_trip_id: savedTripId,
+      trip_name: trip.name,
+      new_trip_type: trip.trip_type,
+      new_starts_at: trip.starts_at,
+      new_image_url: trip.image_url ?? undefined,
+      departure_day_shift: departureDayShift,
+    })
+    .single();
+  if (error) throw error;
+  return data;
+};
+
 export const joinTrip = async (code: string): Promise<number | null> => {
   const { data, error } = await supabase.rpc('join_trip', { code });
   if (error?.code === 'P0002') return null;

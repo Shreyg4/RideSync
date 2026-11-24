@@ -221,7 +221,7 @@ const TripDetailsScreen = () => {
             onPress={() => router.push(`/trips/${tripId}/planner`)}
           />
         </View>
-        {/* The route on a full map. Each stop's details can hand it to the phone's maps app */}
+        {/* The route on a full map */}
         <LargeButton
           label="Directions"
           disabled={!stops || stops.length < 2}

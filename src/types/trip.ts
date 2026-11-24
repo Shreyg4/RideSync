@@ -24,6 +24,8 @@ export type SavedTrip = {
   imagePath: string | null;
   name: string;
   tripType: TripType;
+  startsAt: Date | null; // the trip's start when it was saved; older saved trips don't have one
+  stops: TripStop[]; // the itinerary as it was last planned, read-only
 };
 
 export type TripMember = {

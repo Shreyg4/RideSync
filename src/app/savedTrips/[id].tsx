@@ -5,14 +5,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import SmallButton from '@/src/components/SmallButton';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Eye } from 'lucide-react-native';
 import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
+import ItineraryRowItem, { itineraryRowKey } from '@/src/components/ItineraryRowItem';
 import { useAsync } from '@/src/hooks/useAsync';
 import { deleteSavedTrip, getSavedTrip } from '@/src/services/tripService';
 import { toSavedTrip } from '@/src/lib/tripMapper';
-import { tripTypeLabel } from '@/src/domain/rules';
+import { itineraryRows, previewRows, timeline, tripTypeLabel } from '@/src/domain/rules';
 import { reportAndDescribe } from '@/src/services/errors';
 import { useState } from 'react';
 import ErrorText from '@/src/components/ErrorText';
@@ -103,6 +104,12 @@ const SavedTripDetailsScreen = () => {
   }
 
   const trip = toSavedTrip(row);
+  // The itinerary as it was last planned. It can't be changed here: re-creating the trip brings it
+  // back as a trip of its own to edit. Older saved trips have no start, so their days count from today
+  const itinerary = trip.stops.length
+    ? previewRows(itineraryRows(trip.stops, trip.tripType, trip.startsAt ?? new Date(), false))
+    : null;
+  const itinerarySegments = itinerary ? timeline(itinerary.rows) : [];
 
   return (
     <View style={{ flex: 1 }}>
@@ -133,10 +140,35 @@ const SavedTripDetailsScreen = () => {
           </Text>
         </View>
 
-        {/* Where itinerary will be listed */}
+        {/* The saved stops, in order. Read-only until the trip is re-created */}
         <View style={styles.subContainer}>
           <Text style={styles.subHeading}>Itinerary</Text>
-          <Text style={[styles.text, { paddingBottom: spacing.lg }]}>Not planned</Text>
+          {itinerary ? (
+            <>
+              {itinerary.rows.map((itineraryRow, index) => (
+                <ItineraryRowItem
+                  key={itineraryRowKey(itineraryRow)}
+                  row={itineraryRow}
+                  segment={itinerarySegments[index]}
+                  compact
+                />
+              ))}
+              {itinerary.hiddenStops > 0 ? (
+                <Text style={styles.moreStops} testID="itinerary-more-stops">
+                  {`${itinerary.hiddenStops} more ${itinerary.hiddenStops === 1 ? 'stop' : 'stops'} in the itinerary`}
+                </Text>
+              ) : null}
+              <LargeButton
+                icon={Eye}
+                label="View itinerary"
+                variant="dashed"
+                onPress={() => router.push(`/savedTrips/${tripId}/itinerary`)}
+                testID="view-saved-itinerary"
+              />
+            </>
+          ) : (
+            <Text style={[styles.text, { paddingBottom: spacing.lg }]}>Not planned</Text>
+          )}
         </View>
 
         <ErrorText message={actionError} style={styles.error} testID="saved-trip-error" />
@@ -207,6 +239,13 @@ const styles = StyleSheet.create({
     color: colors.tint,
     fontSize: fontSize.sheetTitle,
     fontWeight: fontWeight.heavy,
+  },
+  moreStops: {
+    color: colors.textMutedLight,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.regular,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   text: {
     color: colors.tintSubtle,

@@ -9,7 +9,7 @@ import {
   uploadTripImageFile,
 } from '@/src/lib/tripImageStorage';
 import { createTripWithImage, type CreateTripInput } from '../tripCreationService';
-import { createTrip, type TripRow } from '../tripService';
+import { createTrip, recreateSavedTrip, type TripRow } from '../tripService';
 
 jest.mock('@/src/lib/tripImageStorage', () => ({
   tripImageObjectPath: jest.fn(() => 'user-1/1767225600000.png'),
@@ -17,7 +17,7 @@ jest.mock('@/src/lib/tripImageStorage', () => ({
   removeTripImageFile: jest.fn(async () => {}),
 }));
 
-jest.mock('../tripService', () => ({ createTrip: jest.fn() }));
+jest.mock('../tripService', () => ({ createTrip: jest.fn(), recreateSavedTrip: jest.fn() }));
 
 const IMAGE_PATH = 'user-1/1767225600000.png';
 const STARTS_AT = new Date('2026-11-01T17:30:00.000Z');
@@ -39,6 +39,7 @@ let reporter: jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(createTrip).mockResolvedValue(created);
+  jest.mocked(recreateSavedTrip).mockResolvedValue(created);
   reporter = jest.fn();
   setErrorReporter(reporter);
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -116,5 +117,50 @@ describe('createTripWithImage', () => {
       scope: 'tripCreationService.createTripWithImage.cleanup',
       imagePath: IMAGE_PATH,
     });
+  });
+});
+
+describe('createTripWithImage from a saved trip', () => {
+  it('brings the saved itinerary along, moving departures by the days the start moved', async () => {
+    const savedStart = new Date(2026, 9, 10, 8, 0);
+    const newStart = new Date(2026, 9, 13, 20, 0);
+
+    await expect(
+      createTripWithImage({
+        ...input,
+        startsAt: newStart,
+        image: { kind: 'stored', path: IMAGE_PATH },
+        fromSavedTrip: { id: 4, startsAt: savedStart },
+      })
+    ).resolves.toBe(created);
+
+    expect(createTrip).not.toHaveBeenCalled();
+    expect(recreateSavedTrip).toHaveBeenCalledWith(
+      4,
+      {
+        name: 'Coast Run',
+        trip_type: 'one-way',
+        starts_at: newStart.toISOString(),
+        image_url: IMAGE_PATH,
+      },
+      3
+    );
+  });
+
+  it('keeps departures where they are when the saved trip has no start', async () => {
+    await createTripWithImage({ ...input, fromSavedTrip: { id: 4, startsAt: null } });
+
+    expect(recreateSavedTrip).toHaveBeenCalledWith(4, expect.anything(), 0);
+  });
+
+  it('removes a newly uploaded image when re-creating fails', async () => {
+    jest.mocked(recreateSavedTrip).mockRejectedValueOnce(new Error('insert failed'));
+
+    await expect(
+      createTripWithImage({ ...input, image, fromSavedTrip: { id: 4, startsAt: null } })
+    ).rejects.toThrow('insert failed');
+    await flushPromises();
+
+    expect(removeTripImageFile).toHaveBeenCalledWith(IMAGE_PATH);
   });
 });
