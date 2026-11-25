@@ -39,6 +39,7 @@ import type { NextStopType, SearchCategory } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useCategorySearch } from '@/src/hooks/useCategorySearch';
 import { useCurrentLocation } from '@/src/hooks/useCurrentLocation';
+import { useKeyStopTaken } from '@/src/hooks/useKeyStopTaken';
 import { usePlaceSearch } from '@/src/hooks/usePlaceSearch';
 import { useRouteSearchPoint } from '@/src/hooks/useRouteSearchPoint';
 import { useTripRoute } from '@/src/hooks/useTripRoute';
@@ -86,6 +87,9 @@ const AddStopScreen = () => {
   const stopId = parseStopId(params.stopId);
 
   const { location, loading: locating } = useCurrentLocation();
+  // Another member can set the start, end or destination while this one searches for it. Moving a
+  // stop keeps its role, so only adding one can lose the race
+  useKeyStopTaken(tripId, stopId === undefined ? stopType : null, true);
   // Shows where the trip already goes while picking the next place. Search works without them,
   // so a failed load only leaves the pins and route off. The trip type says whether the route
   // drives back to the start

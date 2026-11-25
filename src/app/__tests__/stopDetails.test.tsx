@@ -8,13 +8,14 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
+import { Alert } from 'react-native';
 import StopDetailsScreen from '../trips/[id]/stopDetails';
 import { toPlaceParam } from '@/src/lib/placeParam';
 import type { TripRow } from '@/src/services/tripService';
 import type { TripStopRow } from '@/src/services/tripStopService';
 import { lastAlert, mockAlert, pressAlertButton } from '@/src/test/alert';
 import { renderScreen, signedInAuth } from '@/src/test/render';
-import { mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
+import { mockChannels, mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
 import type { Place } from '@/src/types/trip';
 
 // A component that renders nothing, so a test can read the props the screen gave it
@@ -837,5 +838,62 @@ describe('StopDetailsScreen adding an overnight stop', () => {
     expect(view.queryByTestId('stop-departure-date')).toBeNull();
     await save(view);
     await waitFor(() => expect(savedStop()).toMatchObject({ new_stop_type: 'overnight' }));
+  });
+});
+
+describe('StopDetailsScreen when another member sets the same key stop', () => {
+  const DESTINATION = stopRow({ id: 5, name: 'Seattle', is_turnaround: true });
+
+  beforeEach(() => {
+    mockAlert().mockClear();
+  });
+
+  it('tells a member picking the destination as soon as someone else sets it', async () => {
+    mockTable('trip_stops').__setResult({ data: [START], error: null });
+    await renderStopDetails({ stopType: 'destination' });
+    expect(Alert.alert).not.toHaveBeenCalled();
+
+    mockTable('trip_stops').__setResult({ data: [START, DESTINATION], error: null });
+    await act(async () => mockChannels()[0].__emit({}));
+
+    await waitFor(() => expect(lastAlert().title).toBe('Destination already set'));
+    expect(lastAlert().message).toContain('Another member just set the destination to Seattle.');
+    await pressAlertButton('View Itinerary');
+    expect(router.dismissTo).toHaveBeenCalledWith('/trips/1/planner');
+  });
+
+  it('explains a save that lost the race instead of a vague error', async () => {
+    mockTable('trip_stops').__setResult({ data: [START], error: null });
+    const view = await renderStopDetails({ stopType: 'destination' });
+    mockRpc('add_trip_stop', { data: null, error: { code: '23505', message: 'duplicate key' } });
+    mockTable('trip_stops').__setResult({ data: [START, DESTINATION], error: null });
+
+    await save(view);
+
+    await waitFor(() => expect(lastAlert().title).toBe('Destination already set'));
+    expect(lastAlert().message).toContain("just before you, so yours wasn't saved.");
+    expect(view.queryByText('That is already taken.')).toBeNull();
+    expect(router.dismissTo).not.toHaveBeenCalled();
+  });
+
+  it("doesn't mistake the member's own saved destination for someone else's", async () => {
+    mockTable('trip_stops').__setResult({ data: [START], error: null });
+    const view = await renderStopDetails({ stopType: 'destination' });
+
+    await save(view);
+    await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/trips/1/planner'));
+    mockTable('trip_stops').__setResult({ data: [START, DESTINATION], error: null });
+    await act(async () => {
+      mockChannels()[0]?.__emit({});
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    expect(Alert.alert).not.toHaveBeenCalled();
+  });
+
+  it("doesn't watch while adding a normal stop", async () => {
+    await renderStopDetails({ stopType: 'stop' });
+
+    expect(mockChannels()).toHaveLength(0);
   });
 });

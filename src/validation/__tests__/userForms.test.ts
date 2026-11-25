@@ -5,6 +5,8 @@ import {
   normalizeEmail,
   normalizeSignUpForm,
   validateLoginForm,
+  validateNewPassword,
+  validateResetCode,
   validateSignUpForm,
 } from '../userForms';
 
@@ -115,5 +117,28 @@ describe('cleanEmailCode', () => {
     ['12345678', '123456'],
   ])('%s -> %s', (typed, expected) => {
     expect(cleanEmailCode(typed)).toBe(expected);
+  });
+});
+
+describe('validateResetCode', () => {
+  it('passes a full code', () => {
+    expect(validateResetCode('123456')).toBeUndefined();
+  });
+
+  it('flags a short code', () => {
+    expect(validateResetCode('123')).toBe('Enter the 6-digit code from the email');
+  });
+});
+
+describe('validateNewPassword', () => {
+  it('passes a long enough, matching password', () => {
+    expect(validateNewPassword('password1', 'password1')).toEqual({});
+  });
+
+  it('flags a short password and a mismatch', () => {
+    expect(validateNewPassword('short', 'other')).toEqual({
+      password: 'Password is not long enough',
+      confirmPassword: 'Passwords do not match',
+    });
   });
 });

@@ -6,6 +6,8 @@ import {
   formatJoinCode,
   tripTypeLabel,
   tripStatusLabel,
+  canStartTrip,
+  toTripStatus,
   toStopCategory,
   nextStopType,
   addStopLabel,
@@ -20,6 +22,8 @@ import {
   stopCategoryLabel,
   stopLabel,
   stopRole,
+  stopInRole,
+  keyStopTakenAlert,
   canRemoveStop,
   canMoveStop,
   reorderedStopIds,
@@ -154,6 +158,39 @@ describe('stopRole', () => {
     ['overnight', true, 'destination'],
   ])('calls a %s stop (turnaround: %s) a %s', (stopType, isTurnaround, expected) => {
     expect(stopRole({ stopType, isTurnaround })).toBe(expected);
+  });
+});
+
+describe('stopInRole', () => {
+  const stops = [
+    { id: 1, stopType: 'start' as const, isTurnaround: false },
+    { id: 2, stopType: 'overnight' as const, isTurnaround: true },
+    { id: 3, stopType: 'stop' as const, isTurnaround: false },
+  ];
+
+  it('finds the stop holding a role', () => {
+    expect(stopInRole(stops, 'start')?.id).toBe(1);
+    expect(stopInRole(stops, 'destination')?.id).toBe(2);
+  });
+
+  it('finds nothing while the role is free', () => {
+    expect(stopInRole(stops, 'end')).toBeUndefined();
+  });
+});
+
+describe('keyStopTakenAlert', () => {
+  it('says who set it as it happens, and how to use their own place instead', () => {
+    expect(keyStopTakenAlert('destination', 'Seattle', false)).toEqual({
+      title: 'Destination already set',
+      message:
+        'Another member just set the destination to Seattle. To use your place instead, open the destination in the itinerary and tap Change place.',
+    });
+  });
+
+  it("says a save that lost the race wasn't saved", () => {
+    const { title, message } = keyStopTakenAlert('start', 'Home', true);
+    expect(title).toBe('Start already set');
+    expect(message).toContain("set the start to Home just before you, so yours wasn't saved.");
   });
 });
 
@@ -888,5 +925,28 @@ describe('insertionIndex and newStopArrivalDay', () => {
       ];
       expect(newStopArrivalDay(withNightAway, 'round-trip', STARTS_AT, 'stop', 2)).toEqual(SEP(3));
     });
+  });
+});
+
+describe('canStartTrip', () => {
+  const key = (stopType: StopType, isTurnaround = false) => ({ stopType, isTurnaround });
+
+  it('needs a start and an end on a one-way trip', () => {
+    expect(canStartTrip([], 'one-way')).toBe(false);
+    expect(canStartTrip([key('start')], 'one-way')).toBe(false);
+    expect(canStartTrip([key('start'), key('end')], 'one-way')).toBe(true);
+  });
+
+  it('needs a start and a destination on a round trip', () => {
+    expect(canStartTrip([key('start')], 'round-trip')).toBe(false);
+    expect(canStartTrip([key('start'), key('overnight', true)], 'round-trip')).toBe(true);
+  });
+});
+
+describe('toTripStatus', () => {
+  it('reads every known status, and treats anything else as planning', () => {
+    expect(toTripStatus('in-trip')).toBe('in-trip');
+    expect(toTripStatus('paused')).toBe('paused');
+    expect(toTripStatus('archived')).toBe('planning');
   });
 });

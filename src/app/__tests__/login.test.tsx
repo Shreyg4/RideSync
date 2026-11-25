@@ -133,3 +133,17 @@ describe('LoginScreen', () => {
     expect(view.queryByText('Enter valid email')).toBeNull();
   });
 });
+
+describe('LoginScreen forgot password', () => {
+  it('opens the reset screen with the email typed so far', async () => {
+    const view = await renderScreen(<LoginScreen />);
+    await fireEvent.changeText(view.getByTestId('email-input'), ' Rider@Example.com ');
+
+    await fireEvent.press(view.getByTestId('forgot-password-link'));
+
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/forgotPassword',
+      params: { email: 'rider@example.com' },
+    });
+  });
+});

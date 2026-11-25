@@ -129,8 +129,8 @@ describe('TripSettingsScreen', () => {
     const view = await renderAs('user-1');
 
     await fireEvent.press(view.getByTestId('cancel-trip-button'));
-    expect(lastAlert().buttons.map((button) => button.text)).toEqual(['Keep Trip', 'Cancel Trip']);
-    await pressAlertButton('Cancel Trip');
+    expect(lastAlert().buttons.map((button) => button.text)).toEqual(['Go Back', 'Call Off Trip']);
+    await pressAlertButton('Call Off Trip');
 
     await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/trips'));
     expect(rpcCalls('cancel_trip')).toEqual([['cancel_trip', { target_trip_id: 7 }]]);

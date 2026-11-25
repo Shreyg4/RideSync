@@ -64,5 +64,24 @@ export const validateLoginForm = (email: string, password: string): LoginFieldEr
   return next;
 };
 
+// The code is checked on its own before the new password is asked for
+export const validateResetCode = (code: string): string | undefined =>
+  code.length === EMAIL_CODE_LENGTH
+    ? undefined
+    : `Enter the ${EMAIL_CODE_LENGTH}-digit code from the email`;
+
+export type NewPasswordFieldErrors = Partial<Record<'password' | 'confirmPassword', string>>;
+
+// The new password follows the same rules as signing up
+export const validateNewPassword = (
+  password: string,
+  confirmPassword: string
+): NewPasswordFieldErrors => {
+  const next: NewPasswordFieldErrors = {};
+  if (password.length < PASSWORD_MIN_LENGTH) next.password = 'Password is not long enough';
+  if (password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
+  return next;
+};
+
 export const isUsernameCandidate = (candidate: string) =>
   candidate.length >= USERNAME_MIN_LENGTH && USERNAME_PATTERN.test(candidate);

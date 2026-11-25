@@ -85,6 +85,21 @@ describe('reportAndDescribe', () => {
     expect(reporter).toHaveBeenCalledWith(error, {});
   });
 
+  it.each(['invalid_credentials', 'otp_expired', 'same_password', 'over_email_send_rate_limit'])(
+    'only logs %s quietly, since the user can fix it',
+    (code) => {
+      const info = jest.spyOn(console, 'info').mockImplementation(() => {});
+      const error = jest.spyOn(console, 'error').mockClear();
+
+      const result = reportAndDescribe({ code }, { scope: 'test' });
+
+      expect(reporter).not.toHaveBeenCalled();
+      expect(error).not.toHaveBeenCalled();
+      expect(info).toHaveBeenCalled();
+      expect(result).not.toBe(GENERIC);
+    }
+  );
+
   it('still returns the friendly message when the reporter throws', () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     reporter.mockImplementation(() => {

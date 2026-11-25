@@ -17,6 +17,10 @@ export const anonymousAuth: AuthContextType = {
   verifyEmail: async () => null,
   resendVerification: async () => {},
   signIn: async () => {},
+  requestPasswordReset: async () => {},
+  sendPasswordReset: async () => {},
+  verifyPasswordReset: async () => {},
+  updatePassword: async () => {},
   signOut: async () => {},
 };
 

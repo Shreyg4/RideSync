@@ -255,6 +255,11 @@ otp_expiry = 3600
 subject = "Your RideSync verification code"
 content_path = "./supabase/templates/confirmation.html"
 
+# The reset email also carries a code instead of a link. Set the same template on the hosted project
+[auth.email.template.recovery]
+subject = "Your RideSync password reset code"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

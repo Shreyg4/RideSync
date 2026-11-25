@@ -3,6 +3,7 @@
  * @description The boundary layer between the app and Supabase's auth API
  * and is the only file that touches supabase.auth
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -68,6 +69,71 @@ export const verifyEmail = async (email: string, code: string): Promise<User | n
 // Sends a fresh sign-up code, which replaces the last one
 export const resendVerification = async (email: string): Promise<void> => {
   const { error } = await supabase.auth.resend({ type: 'signup', email });
+  if (error) throw error;
+};
+
+// Supabase makes a new reset code on every send and the old one stops working, so the app remembers
+// the last code it sent and doesn't ask for another until the user wants one. Kept in storage so
+// it holds across restarts
+const LAST_RESET_KEY = 'passwordReset.lastSent';
+// Codes last an hour (otp_expiry). An older code is replaced so the user isn't handed one about to die
+const RESET_CODE_REUSE_MS = 50 * 60 * 1000;
+
+const forgetResetCode = async () => {
+  try {
+    await AsyncStorage.removeItem(LAST_RESET_KEY);
+  } catch {
+    // Nothing to undo: the next request just sends a fresh code
+  }
+};
+
+const hasLiveResetCode = async (email: string): Promise<boolean> => {
+  try {
+    const raw = await AsyncStorage.getItem(LAST_RESET_KEY);
+    if (!raw) return false;
+    const last = JSON.parse(raw) as { email?: unknown; sentAt?: unknown };
+    return (
+      last.email === email &&
+      typeof last.sentAt === 'number' &&
+      Date.now() - last.sentAt < RESET_CODE_REUSE_MS
+    );
+  } catch {
+    return false;
+  }
+};
+
+// Always emails a new reset code, replacing any earlier one. Used when the user asks for a new code.
+// Supabase answers the same whether or not the email has an account, so this can't be used to find
+// out who's signed up
+export const sendPasswordReset = async (email: string): Promise<void> => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) throw error;
+  try {
+    await AsyncStorage.setItem(LAST_RESET_KEY, JSON.stringify({ email, sentAt: Date.now() }));
+  } catch {
+    // Not remembering it only means the next request sends another code
+  }
+};
+
+// Starts a reset from the forgot-password screen. If a code already went to this email and is still
+// good, it's left alone so the one in the inbox keeps working; otherwise a code is sent
+export const requestPasswordReset = async (email: string): Promise<void> => {
+  if (await hasLiveResetCode(email)) return;
+  await sendPasswordReset(email);
+};
+
+// Checks the code from the reset email. Supabase signs the user in so the password can be changed,
+// announcing it as PASSWORD_RECOVERY, which AuthProvider holds back until the new password is saved.
+// A code works once, so it's forgotten after going through
+export const verifyPasswordReset = async (email: string, code: string): Promise<void> => {
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'recovery' });
+  if (error) throw error;
+  await forgetResetCode();
+};
+
+// Changes the signed-in user's password. After a reset, this is what lets the user into the app
+export const updatePassword = async (password: string): Promise<void> => {
+  const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
 };
 

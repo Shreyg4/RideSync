@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React, { useEffect, type EffectCallback } from 'react';
-import { act } from '@testing-library/react-native';
+import { act, waitFor } from '@testing-library/react-native';
 import TripsScreen from '../(tabs)/trips';
 import type { TripRow } from '@/src/services/tripService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
-import { mockSupabase, mockTable } from '@/src/test/supabase';
+import { mockChannels, mockSupabase, mockTable } from '@/src/test/supabase';
 
 const NOW = new Date(2026, 8, 2, 9, 30, 0, 0).toISOString();
 
@@ -64,5 +64,26 @@ describe('TripsScreen', () => {
     await act(async () => focusAgain());
 
     expect(tripLoads()).toHaveLength(2);
+  });
+});
+
+describe('TripsScreen member counts', () => {
+  it("shows each trip's member count", async () => {
+    mockTable('trips').__setResult({ data: [{ ...tripRow, trip_members: [{ count: 3 }] }] });
+
+    const view = await renderScreen(<TripsScreen />, signedInAuth());
+
+    expect(await view.findByText('3 members')).toBeTruthy();
+  });
+
+  it('updates the count when someone joins while the list is open', async () => {
+    mockTable('trips').__setResult({ data: [{ ...tripRow, trip_members: [{ count: 1 }] }] });
+    const view = await renderScreen(<TripsScreen />, signedInAuth());
+    expect(await view.findByText('1 member')).toBeTruthy();
+
+    mockTable('trips').__setResult({ data: [{ ...tripRow, trip_members: [{ count: 2 }] }] });
+    await act(async () => mockChannels()[0].__emit({ eventType: 'INSERT' }));
+
+    await waitFor(() => expect(view.getByText('2 members')).toBeTruthy());
   });
 });

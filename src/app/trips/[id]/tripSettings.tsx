@@ -102,11 +102,11 @@ const TripSettingsScreen = () => {
 
   const confirmCancel = () =>
     confirmAction(
-      'Cancel trip?',
-      'The trip ends for everyone. Each member keeps a copy in Saved Trips to reuse later.',
-      'Cancel Trip',
+      'Call off this trip?',
+      "It's removed from everyone's trips. Each member gets a copy in Saved Trips to plan it again later.",
+      'Call Off Trip',
       () => run('cancelTrip', () => cancelTrip(tripId)),
-      'Keep Trip'
+      'Go Back'
     );
 
   return (
@@ -170,7 +170,7 @@ const TripSettingsScreen = () => {
             />
             {isOwner ? (
               <LargeButton
-                label="Cancel Trip"
+                label="Call Off Trip"
                 variant="danger"
                 onPress={confirmCancel}
                 disabled={busy}

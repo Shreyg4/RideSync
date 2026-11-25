@@ -6,13 +6,15 @@ import { act, fireEvent, waitFor } from '@testing-library/react-native';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { BackHandler, StyleSheet } from 'react-native';
+import { Alert, BackHandler, StyleSheet } from 'react-native';
 import { spacing } from '@/src/constants/theme';
 import * as Mapbox from '@rnmapbox/maps';
 import AddStopScreen from '../trips/[id]/addStop';
 import { parsePlaceParam } from '@/src/lib/placeParam';
 import { renderScreen, signedInAuth } from '@/src/test/render';
-import { mockTable } from '@/src/test/supabase';
+import { lastAlert, mockAlert, pressAlertButton } from '@/src/test/alert';
+import { STOP_CHANGES_SETTLE_MS } from '@/src/hooks/useTripStopsRealtime';
+import { mockChannels, mockTable } from '@/src/test/supabase';
 import { savedRouteRow } from '@/src/test/route';
 
 jest.mock('expo-location', () => ({
@@ -1184,5 +1186,54 @@ describe('AddStopScreen', () => {
 
       expect(view.queryByLabelText('Show all stops')).toBeNull();
     });
+  });
+});
+
+describe('AddStopScreen when another member sets the same key stop', () => {
+  const START = {
+    id: 1,
+    trip_id: 1,
+    position: 0,
+    name: 'Home',
+    stop_type: 'start',
+    is_turnaround: false,
+    lat: 47.6,
+    lng: -122.3,
+  };
+  const DESTINATION = {
+    ...START,
+    id: 2,
+    position: 1,
+    name: 'Seattle',
+    stop_type: 'stop',
+    is_turnaround: true,
+  };
+
+  const emitStopChange = async () => {
+    const channel = mockChannels().find(({ topic }) => topic.startsWith('trip-stops:'));
+    await act(async () => {
+      channel?.__emit({});
+      await jest.advanceTimersByTimeAsync(STOP_CHANGES_SETTLE_MS);
+    });
+  };
+
+  it('tells a member searching for the destination as soon as someone else sets it', async () => {
+    mockAlert();
+    mockTable('trip_stops').__setResult({ data: [START], error: null });
+    await renderAddStop('destination');
+    expect(Alert.alert).not.toHaveBeenCalled();
+
+    mockTable('trip_stops').__setResult({ data: [START, DESTINATION], error: null });
+    await emitStopChange();
+
+    await waitFor(() => expect(lastAlert().title).toBe('Destination already set'));
+    await pressAlertButton('View Itinerary');
+    expect(router.dismissTo).toHaveBeenCalledWith('/trips/1/planner');
+  });
+
+  it("doesn't watch while moving a stop to a new place", async () => {
+    await renderAddStop('destination', { stopId: '2' });
+
+    expect(mockChannels().some(({ topic }) => topic.startsWith('trip-stops:'))).toBe(false);
   });
 });

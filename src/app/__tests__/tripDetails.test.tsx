@@ -9,7 +9,8 @@ import type { AuthContextType } from '@/src/context/AuthProvider';
 import type { TripMemberRow, TripRow } from '@/src/services/tripService';
 import type { TripStopRow } from '@/src/services/tripStopService';
 import { renderScreen, signedInAuth } from '@/src/test/render';
-import { mockChannels, mockRpc, mockTable } from '@/src/test/supabase';
+import { mockChannels, mockRpc, mockSupabase, mockTable } from '@/src/test/supabase';
+import { mockAlert, pressAlertButton } from '@/src/test/alert';
 
 // The timeline's markers are hidden from screen readers, so queries have to ask for them
 const HIDDEN = { includeHiddenElements: true };
@@ -115,7 +116,7 @@ describe('TripDetailsScreen', () => {
     expect(view.getByText('We could not find that.')).toBeTruthy();
   });
 
-  it('shares the formatted join code and the invite link', async () => {
+  it('shares the join code on its own line without a link', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
     withParams({ id: '1' });
     mockTable('trips').__setResult({ data: tripRow(), error: null });
@@ -124,8 +125,7 @@ describe('TripDetailsScreen', () => {
     await fireEvent.press(await view.findByLabelText('Invite friends'));
 
     expect(share).toHaveBeenCalledWith({
-      message:
-        'Join my trip "Coast Run" on RideSync with code ABCD-2345\nridesync://invite/ABCD2345',
+      message: 'Join my trip "Coast Run" on RideSync with this code:\nABCD2345',
     });
   });
 
@@ -354,5 +354,105 @@ describe('TripDetailsScreen', () => {
     );
 
     expect(router.dismissTo).toHaveBeenCalledWith('/trips');
+  });
+});
+
+describe('TripDetailsScreen running the trip', () => {
+  const END_STOP: TripStopRow = {
+    ...stopRow,
+    id: 2,
+    position: 1,
+    name: 'Coast',
+    stop_type: 'end',
+  };
+
+  const renderTrip = async ({
+    status = 'planning',
+    role = 'owner',
+    stops = [stopRow, END_STOP],
+  }: { status?: string; role?: string; stops?: TripStopRow[] } = {}) => {
+    withParams({ id: '1' });
+    mockTable('trips').__setResult({ data: tripRow({ trip_status: status }), error: null });
+    mockTable('trip_stops').__setResult({ data: stops, error: null });
+    mockRpc('list_trip_members', { data: [memberRow({ role })] });
+    const view = await renderScreen(<TripDetailsScreen />, signedInAuth());
+    await view.findByTestId('stop-1');
+    return view;
+  };
+
+  const rpcCalled = (fn: string) =>
+    expect(mockSupabase.rpc).toHaveBeenCalledWith(fn, { target_trip_id: 1 });
+
+  it('starts a trip that has its start and end', async () => {
+    const view = await renderTrip();
+
+    await waitFor(() => expect(view.getByTestId('trip-start-button')).toBeEnabled());
+    await fireEvent.press(view.getByTestId('trip-start-button'));
+
+    await waitFor(() => rpcCalled('start_trip'));
+  });
+
+  it('keeps Start Trip off until the trip has somewhere to go', async () => {
+    const view = await renderTrip({ stops: [stopRow] });
+
+    await waitFor(() => expect(view.getByTestId('trip-start-hint')).toBeTruthy());
+    expect(view.getByTestId('trip-start-button')).toBeDisabled();
+  });
+
+  it('keeps Start Trip off for a viewer', async () => {
+    const view = await renderTrip({ role: 'viewer' });
+
+    await waitFor(() =>
+      expect(view.getByText('The owner or an editor can start the trip')).toBeTruthy()
+    );
+    expect(view.getByTestId('trip-start-button')).toBeDisabled();
+  });
+
+  it('pauses a trip in progress', async () => {
+    const view = await renderTrip({ status: 'in-trip' });
+
+    expect(view.getByTestId('trip-status')).toHaveTextContent('Trip in progress');
+    await fireEvent.press(await view.findByTestId('trip-pause-button'));
+
+    await waitFor(() => rpcCalled('pause_trip'));
+    expect(view.queryByTestId('trip-start-button')).toBeNull();
+  });
+
+  it('resumes a paused trip', async () => {
+    const view = await renderTrip({ status: 'paused' });
+
+    expect(view.getByTestId('trip-status')).toHaveTextContent('Trip paused');
+    await fireEvent.press(await view.findByTestId('trip-resume-button'));
+
+    await waitFor(() => rpcCalled('resume_trip'));
+  });
+
+  it('ends the trip after asking, then opens Saved Trips', async () => {
+    mockAlert();
+    const view = await renderTrip({ status: 'in-trip' });
+
+    await fireEvent.press(await view.findByTestId('trip-end-button'));
+    await pressAlertButton('End Trip');
+
+    await waitFor(() => rpcCalled('end_trip'));
+    await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/savedTrips'));
+  });
+
+  it('shows the status but no controls to a viewer once the trip is underway', async () => {
+    const view = await renderTrip({ status: 'in-trip', role: 'viewer' });
+
+    await waitFor(() => expect(view.getByTestId('trip-status')).toBeTruthy());
+    expect(view.queryByTestId('trip-pause-button')).toBeNull();
+    expect(view.queryByTestId('trip-end-button')).toBeNull();
+  });
+
+  it('shows why a status change failed', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockRpc('pause_trip', { error: { code: '22023', message: 'trip is paused, not in-trip' } });
+    const view = await renderTrip({ status: 'in-trip' });
+
+    await fireEvent.press(await view.findByTestId('trip-pause-button'));
+
+    expect(await view.findByTestId('trip-status-error')).toBeTruthy();
   });
 });

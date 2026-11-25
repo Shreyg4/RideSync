@@ -4,7 +4,7 @@
  * Every screen level failure is funneled through this file.
  */
 
-import { reportError } from '@/src/lib/logger';
+import { logger, reportError } from '@/src/lib/logger';
 import type { LogContext } from '@/src/lib/logger';
 
 // A lookup table from error code -> sentence
@@ -15,6 +15,7 @@ const FRIENDLY_BY_CODE: Record<string, string> = {
   user_already_exists: 'An account with that email already exists.',
   email_exists: 'An account with that email already exists.',
   weak_password: 'Choose a longer password.',
+  same_password: 'Choose a password different from your old one.',
   over_request_rate_limit: 'Too many attempts. Wait a moment and try again.',
   over_email_send_rate_limit: 'Too many emails sent. Wait a moment and try again.',
   mapbox_search_failed: 'Search is not available right now. Try again in a moment.',
@@ -28,6 +29,21 @@ const FRIENDLY_BY_CODE: Record<string, string> = {
 };
 
 const GENERIC = 'Something went wrong. Please try again.';
+
+// Failures the user caused and can fix themselves (a wrong password or code, sending too fast).
+// Nothing is broken, so they're logged quietly instead of raised as errors: no red screen in
+// development and no noise in the error reporter
+const USER_MISTAKE_CODES = new Set([
+  'invalid_credentials',
+  'email_not_confirmed',
+  'otp_expired',
+  'user_already_exists',
+  'email_exists',
+  'weak_password',
+  'same_password',
+  'over_request_rate_limit',
+  'over_email_send_rate_limit',
+]);
 
 // Only provides error code if it is a string
 const codeOf = (error: unknown): string | undefined => {
@@ -43,8 +59,11 @@ export const toUserMessage = (error: unknown): string => {
   return code && Object.hasOwn(FRIENDLY_BY_CODE, code) ? FRIENDLY_BY_CODE[code] : GENERIC;
 };
 
-// Sends raw error to installed reporter and translate error into something the user can read
+// Sends raw error to installed reporter and translate error into something the user can read.
+// A user's own mistake is only logged, since the message shown already tells them what to fix
 export const reportAndDescribe = (error: unknown, context: LogContext = {}): string => {
-  reportError(error, context);
+  const code = codeOf(error);
+  if (code && USER_MISTAKE_CODES.has(code)) logger.info('user error', { ...context, code });
+  else reportError(error, context);
   return toUserMessage(error);
 };

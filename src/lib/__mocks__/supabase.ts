@@ -137,6 +137,8 @@ const auth = {
   signOut: jest.fn<(...args: unknown[]) => Promise<Result<null>>>(),
   verifyOtp: jest.fn<(...args: unknown[]) => Promise<UserResult>>(),
   resend: jest.fn<(...args: unknown[]) => Promise<Result<unknown>>>(),
+  resetPasswordForEmail: jest.fn<(...args: unknown[]) => Promise<Result<unknown>>>(),
+  updateUser: jest.fn<(...args: unknown[]) => Promise<UserResult>>(),
 };
 
 // One shared unsubscribe spy per reset, so a test can assert the AuthProvider cleanup ran.
@@ -153,6 +155,8 @@ const applyAuthDefaults = () => {
   auth.signOut.mockResolvedValue({ data: null, error: null });
   auth.verifyOtp.mockResolvedValue({ data: { user: null, session: null }, error: null });
   auth.resend.mockResolvedValue({ data: {}, error: null });
+  auth.resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+  auth.updateUser.mockResolvedValue({ data: { user: null, session: null }, error: null });
 };
 
 const functions = {

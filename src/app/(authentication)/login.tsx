@@ -1,4 +1,4 @@
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import React, { useState } from 'react';
 import SmallButton from '@/src/components/SmallButton';
 import TextBox from '@/src/components/TextBox';
@@ -99,6 +99,17 @@ const LoginScreen = () => {
           testID="password-input"
         />
         <ErrorText message={errors.password} style={styles.fieldError} />
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: '/forgotPassword', params: { email: cleanEmail } })
+          }
+          accessibilityRole="button"
+          hitSlop={8}
+          style={styles.forgot}
+          testID="forgot-password-link"
+        >
+          <Text style={styles.forgotText}>Forgot password?</Text>
+        </Pressable>
         <ErrorText message={formError} style={styles.formError} testID="login-form-error" />
 
         <LargeButton
@@ -132,5 +143,15 @@ const styles = StyleSheet.create({
   },
   formError: {
     alignSelf: 'center',
+  },
+  forgot: {
+    alignSelf: 'flex-end',
+    marginRight: spacing.md,
+    marginBottom: spacing.md,
+  },
+  forgotText: {
+    color: colors.tint,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.semibold,
   },
 });

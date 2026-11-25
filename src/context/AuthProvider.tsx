@@ -26,6 +26,12 @@ export interface AuthContextType {
   verifyEmail: (email: string, code: string) => Promise<User | null>;
   resendVerification: (email: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  // Forgot password: email a code, check it, then save the new password. requestPasswordReset keeps
+  // a code that's still good; sendPasswordReset always replaces it
+  requestPasswordReset: (email: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  verifyPasswordReset: (email: string, code: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
@@ -56,6 +62,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const unsubscribe = authService.onAuthStateChange((event, next) => {
       logger.info('auth state changed', { event, hasSession: !!next });
+      // A reset code signs the user in, but the app waits for the new password before letting them
+      // in. Saving it fires USER_UPDATED with the same session, which is taken up then
+      if (event === 'PASSWORD_RECOVERY') return;
       setSession(next);
       setUser(next?.user ?? null);
       setLoading(false);
@@ -72,6 +81,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         loading,
         signIn: authService.signIn,
+        requestPasswordReset: authService.requestPasswordReset,
+        sendPasswordReset: authService.sendPasswordReset,
+        verifyPasswordReset: authService.verifyPasswordReset,
+        updatePassword: authService.updatePassword,
         signUp: authService.signUp,
         verifyEmail: authService.verifyEmail,
         resendVerification: authService.resendVerification,

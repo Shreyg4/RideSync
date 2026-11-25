@@ -19,11 +19,13 @@ import { tripImageUrl } from './tripImageStorage';
 import type { TripStopRow } from '../services/tripStopService';
 import type { Json } from '../types/database';
 
-export const toTrip = (row: TripRow): Trip => {
+// The trip list's rows carry a member count. A single trip fetched on its own doesn't, and its
+// screens read members from list_trip_members instead
+export const toTrip = (row: TripRow & { trip_members?: { count: number }[] }): Trip => {
   const startsAt = new Date(row.starts_at);
   return {
     id: row.id,
-    numMembers: 1,
+    numMembers: row.trip_members?.[0]?.count ?? 1,
     image: tripImageUrl(row.image_url),
     name: row.name,
     startsAt,

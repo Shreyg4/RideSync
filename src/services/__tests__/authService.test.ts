@@ -1,12 +1,17 @@
 // authService is the only file that touches supabase.auth, so these pin the exact calls it makes
 // and that every failure reaches the caller instead of passing for success.
 
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   deleteAccount,
   getSession,
   onAuthStateChange,
+  requestPasswordReset,
   resendVerification,
+  sendPasswordReset,
+  updatePassword,
+  verifyPasswordReset,
   signIn,
   signOut,
   signUp,
@@ -217,5 +222,86 @@ describe('deleteAccount', () => {
   it('throws when the local sign-out fails', async () => {
     auth.signOut.mockResolvedValueOnce({ data: null, error: authError });
     await expect(deleteAccount()).rejects.toBe(authError);
+  });
+});
+
+describe('password reset', () => {
+  beforeEach(async () => {
+    auth.resetPasswordForEmail.mockClear();
+    await AsyncStorage.clear();
+  });
+
+  it('emails a reset code to that address', async () => {
+    await sendPasswordReset('rider@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledWith('rider@example.com');
+  });
+
+  it('keeps a code that is still good instead of replacing it', async () => {
+    await requestPasswordReset('rider@example.com');
+    await requestPasswordReset('rider@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends a code to a different email', async () => {
+    await requestPasswordReset('rider@example.com');
+    await requestPasswordReset('other@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends a fresh code once the last one is too old', async () => {
+    const now = jest.spyOn(Date, 'now').mockReturnValue(0);
+    await requestPasswordReset('rider@example.com');
+    now.mockReturnValue(50 * 60 * 1000);
+    await requestPasswordReset('rider@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledTimes(2);
+    now.mockRestore();
+  });
+
+  it('still sends a new code when the user asks for one', async () => {
+    await requestPasswordReset('rider@example.com');
+    await sendPasswordReset('rider@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not remember a code that failed to send', async () => {
+    auth.resetPasswordForEmail.mockResolvedValueOnce({ data: null, error: authError });
+    await expect(requestPasswordReset('rider@example.com')).rejects.toBe(authError);
+    await requestPasswordReset('rider@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('checks the reset code as a recovery code', async () => {
+    await verifyPasswordReset('rider@example.com', '123456');
+    expect(auth.verifyOtp).toHaveBeenCalledWith({
+      email: 'rider@example.com',
+      token: '123456',
+      type: 'recovery',
+    });
+  });
+
+  it('sends a fresh code after the last one was used', async () => {
+    await requestPasswordReset('rider@example.com');
+    await verifyPasswordReset('rider@example.com', '123456');
+    await requestPasswordReset('rider@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('saves the new password', async () => {
+    await updatePassword('new-password');
+    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'new-password' });
+  });
+
+  it('throws each failure', async () => {
+    const otpError = { code: 'otp_expired', message: 'Token has expired' };
+    auth.resetPasswordForEmail.mockResolvedValueOnce({ data: null, error: authError });
+    auth.verifyOtp.mockResolvedValueOnce({ data: { user: null, session: null }, error: otpError });
+    auth.updateUser.mockResolvedValueOnce({
+      data: { user: null, session: null },
+      error: authError,
+    });
+
+    await expect(sendPasswordReset('rider@example.com')).rejects.toBe(authError);
+    await expect(verifyPasswordReset('rider@example.com', '123456')).rejects.toBe(otpError);
+    await expect(updatePassword('new-password')).rejects.toBe(authError);
   });
 });

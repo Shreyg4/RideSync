@@ -6,7 +6,7 @@ import SettingsScreen from '../(tabs)/settings';
 import { lastAlert, mockAlert, pressAlertButton } from '@/src/test/alert';
 import { renderScreen, signedInAuth } from '@/src/test/render';
 import { mockTable } from '@/src/test/supabase';
-import { resetMapStyleForTests } from '@/src/lib/mapStyle';
+import { MAP_STYLES, resetMapStyleForTests } from '@/src/lib/mapStyle';
 
 const profileRow = (overrides: Record<string, unknown> = {}) => ({
   username: 'ana_lee',
@@ -31,6 +31,18 @@ describe('SettingsScreen', () => {
     expect(view.getByTestId('map-style-satellite')).not.toBeSelected();
     expect(view.queryByTestId('map-style-light')).toBeNull();
     expect(view.queryByTestId('map-style-outdoors')).toBeNull();
+  });
+
+  it('previews the picked style on a map', async () => {
+    mockTable('users').__setResult({ data: { avatar_path: null }, error: null });
+    const view = await renderScreen(<SettingsScreen />, signedInAuth());
+    const preview = () => view.getByTestId('map-style-preview', { includeHiddenElements: true });
+
+    expect(preview().props.styleURL).toBe(MAP_STYLES.streets.url);
+
+    await fireEvent.press(view.getByTestId('map-style-satellite'));
+
+    expect(preview().props.styleURL).toBe(MAP_STYLES.satellite.url);
   });
 
   it('picks a new map style and remembers it', async () => {

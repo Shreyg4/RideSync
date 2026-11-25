@@ -34,6 +34,10 @@ describe('toTrip', () => {
     expect(toTrip(tripRow())).toEqual(expect.objectContaining({ id: 1, name: 'Coast Run' }));
   });
 
+  it("counts the members a listed trip's row carries", () => {
+    expect(toTrip({ ...tripRow(), trip_members: [{ count: 3 }] }).numMembers).toBe(3);
+  });
+
   it('turns the image path into a public URL', () => {
     const trip = toTrip(tripRow({ image_url: 'user-1/abc.jpg' }));
 

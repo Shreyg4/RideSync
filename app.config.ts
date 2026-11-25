@@ -6,7 +6,7 @@ const config: ExpoConfig = {
   slug: 'RideSync',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/icon.png',
+  icon: './assets/images/app-icon.png',
   scheme: 'ridesync',
   userInterfaceStyle: 'dark',
   // Fingerprint hashes native deps/config: any native change yields a new runtime,
@@ -24,8 +24,8 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/images/adaptive-icon.png',
-      backgroundColor: '#ffffff',
+      foregroundImage: './assets/images/app-icon-foreground.png',
+      backgroundColor: '#000000',
     },
     predictiveBackGestureEnabled: false,
     package: 'com.shreyg4.RideSync',

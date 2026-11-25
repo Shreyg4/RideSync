@@ -14,10 +14,14 @@ export type NewTrip = Pick<
 >;
 export type SavedTripRow = Database['public']['Tables']['saved_trips']['Row'];
 
-export const listTrips = async (): Promise<TripRow[]> => {
+// A listed trip carries how many people are on it. PostgREST counts the member rows in the same
+// request, and trip_members RLS lets a member see everyone on their own trips
+export type TripListRow = TripRow & { trip_members: { count: number }[] };
+
+export const listTrips = async (): Promise<TripListRow[]> => {
   const { data, error } = await supabase
     .from('trips')
-    .select('*')
+    .select('*, trip_members(count)')
     .order('starts_at', { ascending: true });
   if (error) throw error;
   return data;
@@ -120,6 +124,34 @@ export const subscribeToTripMembers = (
   };
 };
 
+// Calls onChange whenever anyone joins or leaves one of these trips, or changes role. One channel
+// for the whole list, rather than one per trip. Returns the unsubscribe
+export const subscribeToMembersOfTrips = (
+  tripIds: readonly number[],
+  onChange: () => void
+): (() => void) => {
+  if (tripIds.length === 0) return () => {};
+
+  channelCount += 1;
+  const channel = supabase
+    .channel(`trip-members:list:${channelCount}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'trip_members',
+        filter: `trip_id=in.(${tripIds.join(',')})`,
+      },
+      () => onChange()
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
 export const setMemberRole = async (
   tripId: number,
   userId: string,
@@ -164,6 +196,28 @@ export const leaveTrip = async (tripId: number): Promise<void> => {
 // Ends the trip for everyone, leaving each member a copy in Saved Trips
 export const cancelTrip = async (tripId: number): Promise<void> => {
   const { error } = await supabase.rpc('cancel_trip', { target_trip_id: tripId });
+  if (error) throw error;
+};
+
+// The trip is underway. Needs a start, and an end or destination
+export const startTrip = async (tripId: number): Promise<void> => {
+  const { error } = await supabase.rpc('start_trip', { target_trip_id: tripId });
+  if (error) throw error;
+};
+
+export const pauseTrip = async (tripId: number): Promise<void> => {
+  const { error } = await supabase.rpc('pause_trip', { target_trip_id: tripId });
+  if (error) throw error;
+};
+
+export const resumeTrip = async (tripId: number): Promise<void> => {
+  const { error } = await supabase.rpc('resume_trip', { target_trip_id: tripId });
+  if (error) throw error;
+};
+
+// Finishes a started trip for everyone, leaving each member a copy in Saved Trips
+export const endTrip = async (tripId: number): Promise<void> => {
+  const { error } = await supabase.rpc('end_trip', { target_trip_id: tripId });
   if (error) throw error;
 };
 

@@ -1,9 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useFocusEffect, useLocalSearchParams, router } from 'expo-router';
-import * as Linking from 'expo-linking';
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import TripMemberList from '@/src/components/TripMemberList';
-import { ImageBackground, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, ImageBackground, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tripImageSource } from '@/src/constants/tripImage';
 import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
@@ -13,19 +12,31 @@ import LargeButton from '@/src/components/LargeButton';
 import LoadingState from '@/src/components/LoadingState';
 import EmptyState from '@/src/components/EmptyState';
 import ItineraryRowItem, { itineraryRowKey } from '@/src/components/ItineraryRowItem';
+import ErrorText from '@/src/components/ErrorText';
+import TripProgressControls from '@/src/components/TripProgressControls';
 import { useAuth } from '@/src/context/AuthProvider';
 import { useAsync } from '@/src/hooks/useAsync';
 import { useTripMembersRealtime } from '@/src/hooks/useTripMembersRealtime';
 import { useTripStopsRealtime } from '@/src/hooks/useTripStopsRealtime';
-import { getTrip, listTripMembers } from '@/src/services/tripService';
+import {
+  endTrip,
+  getTrip,
+  listTripMembers,
+  pauseTrip,
+  resumeTrip,
+  startTrip,
+} from '@/src/services/tripService';
+import { reportAndDescribe } from '@/src/services/errors';
 import { listTripStops } from '@/src/services/tripStopService';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
 import { reportError } from '@/src/lib/logger';
 import {
+  canStartTrip,
   formatJoinCode,
   itineraryRows,
   previewRows,
   timeline,
+  toTripStatus,
   tripTypeLabel,
 } from '@/src/domain/rules';
 
@@ -64,8 +75,15 @@ const TripDetailsScreen = () => {
     'TripDetailsScreen.listTripStops'
   );
 
+  // Ending the trip deletes it, which removes this member too. That screen change is handled by
+  // endThisTrip, so the removal doesn't also send them to the Trips tab
+  const ending = useRef(false);
+  const onRemoved = useCallback(() => {
+    if (!ending.current) backToTrips();
+  }, []);
+
   // This screen sits under every trip screen in the stack, so it alone sends a removed member home
-  useTripMembersRealtime(tripId, reloadMembers, backToTrips);
+  useTripMembersRealtime(tripId, reloadMembers, onRemoved);
   // The itinerary preview follows stop changes made on other phones
   useTripStopsRealtime(tripId, reloadStops);
 
@@ -83,7 +101,45 @@ const TripDetailsScreen = () => {
     }, [reloadTrip, reloadMembers, reloadStops])
   );
 
-  const isViewer = members?.find((member) => member.id === user?.id)?.role === 'viewer';
+  const myRole = members?.find((member) => member.id === user?.id)?.role;
+  const isViewer = myRole === 'viewer';
+  const canControl = myRole === 'owner' || myRole === 'editor';
+
+  const [changingStatus, setChangingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string>();
+
+  const changeStatus = async (scope: string, action: () => Promise<void>, onDone = reloadTrip) => {
+    setStatusError(undefined);
+    setChangingStatus(true);
+    try {
+      await action();
+      onDone();
+    } catch (caught) {
+      ending.current = false;
+      setStatusError(reportAndDescribe(caught, { scope: `TripDetailsScreen.${scope}` }));
+      // The trip may have been started, paused or ended on another phone, so show what it is now
+      reloadTrip();
+    } finally {
+      setChangingStatus(false);
+    }
+  };
+
+  const endThisTrip = () =>
+    Alert.alert('End trip?', 'The trip ends for everyone and moves to Saved Trips.', [
+      { text: 'Keep going', style: 'cancel' },
+      {
+        text: 'End Trip',
+        style: 'destructive',
+        onPress: () => {
+          ending.current = true;
+          changeStatus(
+            'endTrip',
+            () => endTrip(tripId),
+            () => router.dismissTo('/savedTrips')
+          );
+        },
+      },
+    ]);
 
   const backButton = (
     <SmallButton
@@ -114,16 +170,17 @@ const TripDetailsScreen = () => {
 
   const trip = toTrip(row);
   const joinCode = formatJoinCode(row.invite_link);
-  const inviteUrl = Linking.createURL(`invite/${row.invite_link}`);
   // Trip details shows the start of the itinerary; the planner has all of it
   const itinerary = stops?.length
     ? previewRows(itineraryRows(stops, trip.tripType, trip.startsAt, false))
     : null;
   const itinerarySegments = itinerary ? timeline(itinerary.rows) : [];
 
+  // The raw code sits alone on the last line so a double-tap or long-press selects all of it
+  // (a hyphen would split the selection). Join Trip accepts it with or without the hyphen
   const shareInvite = () => {
     Share.share({
-      message: `Join my trip "${trip.name}" on RideSync with code ${joinCode}\n${inviteUrl}`,
+      message: `Join my trip "${trip.name}" on RideSync with this code:\n${row.invite_link}`,
     }).catch((shareError) => reportError(shareError, { scope: 'TripDetailsScreen.shareInvite' }));
   };
 
@@ -228,8 +285,18 @@ const TripDetailsScreen = () => {
           onPress={() => router.push(`/trips/${tripId}/map`)}
           testID="trip-directions-button"
         />
-        {/* The start trip Button */}
-        <LargeButton label="Start Trip" disabled onPress={() => router.back()} />
+        {/* Starts the trip once it has a start and somewhere to go, then pauses, resumes or ends it */}
+        <ErrorText message={statusError} style={styles.error} testID="trip-status-error" />
+        <TripProgressControls
+          status={toTripStatus(row.trip_status)}
+          canControl={canControl}
+          canStart={!!stops && canStartTrip(stops, trip.tripType)}
+          busy={changingStatus}
+          onStart={() => changeStatus('startTrip', () => startTrip(tripId))}
+          onPause={() => changeStatus('pauseTrip', () => pauseTrip(tripId))}
+          onResume={() => changeStatus('resumeTrip', () => resumeTrip(tripId))}
+          onEnd={endThisTrip}
+        />
       </ScrollView>
 
       {/* Fixed top gradient so that status bar is always easy to see */}
@@ -309,6 +376,9 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.regular,
     textAlign: 'center',
     marginTop: spacing.xs,
+  },
+  error: {
+    marginHorizontal: spacing.md,
   },
   text: {
     color: colors.tintSubtle,

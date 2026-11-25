@@ -23,7 +23,7 @@ export const TRIP_TYPES = ['one-way', 'round-trip'] as const satisfies readonly 
 export const TRIP_NAME_MIN_LENGTH = 3;
 export const TRIP_NAME_MAX_LENGTH = 40;
 
-export const TRIP_STATUSES = ['planning', 'in-trip', 'completed'] as const;
+export const TRIP_STATUSES = ['planning', 'in-trip', 'paused', 'completed'] as const;
 export type TripStatus = (typeof TRIP_STATUSES)[number];
 
 export const tripTypeLabel = (value: TripType) => value.charAt(0).toUpperCase() + value.slice(1);
@@ -183,6 +183,17 @@ export const itineraryRows = (
   return rows;
 };
 
+// A trip can start once it has a start and somewhere to go: the end on a one-way trip, the
+// destination on a round trip. start_trip checks the same thing
+export const canStartTrip = (
+  stops: readonly Pick<TripStop, 'stopType' | 'isTurnaround'>[],
+  tripType: TripType
+) => nextStopType(stops, tripType) === 'stop';
+
+// Reads trip_status, which is plain text in the database. Anything unknown counts as planning
+export const toTripStatus = (value: string): TripStatus =>
+  (TRIP_STATUSES as readonly string[]).includes(value) ? (value as TripStatus) : 'planning';
+
 // Also a route param. Without a usable position, add_trip_stop puts the stop at the end of the list
 export const parseStopPosition = (value: unknown): number | undefined => {
   const position = typeof value === 'string' && value !== '' ? Number(value) : NaN;
@@ -210,6 +221,32 @@ export const stopRole = ({
 }: Pick<TripStop, 'stopType' | 'isTurnaround'>): NextStopType => {
   if (isTurnaround) return 'destination';
   return stopType === 'overnight' ? 'stop' : stopType;
+};
+
+// A trip has only one start, end and destination
+export type KeyStopRole = Exclude<NextStopType, 'stop'>;
+
+// The stop already filling a role only one stop can have. Normal stops have no such limit
+export const stopInRole = <S extends Pick<TripStop, 'stopType' | 'isTurnaround'>>(
+  stops: readonly S[],
+  role: KeyStopRole
+): S | undefined => stops.find((stop) => stopRole(stop) === role);
+
+// What a member picking the start, end or destination is told when another member set it first:
+// as it happens, or when their own save lost the race
+export const keyStopTakenAlert = (
+  role: KeyStopRole,
+  stopName: string,
+  afterFailedSave: boolean
+) => {
+  const title = `${role[0].toUpperCase()}${role.slice(1)} already set`;
+  const what = afterFailedSave
+    ? `Another member set the ${role} to ${stopName} just before you, so yours wasn't saved.`
+    : `Another member just set the ${role} to ${stopName}.`;
+  return {
+    title,
+    message: `${what} To use your place instead, open the ${role} in the itinerary and tap Change place.`,
+  };
 };
 
 // The start, end and destination split the trip into its way there and way home, so they can be

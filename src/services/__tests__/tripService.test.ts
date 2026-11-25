@@ -13,6 +13,7 @@ import {
   listTrips,
   removeTripMember,
   setMemberRole,
+  subscribeToMembersOfTrips,
   subscribeToTripMembers,
   transferTripOwnership,
   type NewTrip,
@@ -27,13 +28,43 @@ describe('listTrips', () => {
     mockTable('trips').__setResult({ data: [trip] });
 
     await expect(listTrips()).resolves.toEqual([trip]);
-    expect(mockTable('trips').select).toHaveBeenCalledWith('*');
+    expect(mockTable('trips').select).toHaveBeenCalledWith('*, trip_members(count)');
     expect(mockTable('trips').order).toHaveBeenCalledWith('starts_at', { ascending: true });
   });
 
   it('throws the query error', async () => {
     mockTable('trips').__setResult({ error: queryError });
     await expect(listTrips()).rejects.toBe(queryError);
+  });
+});
+
+describe('subscribeToMembersOfTrips', () => {
+  it('listens to member changes on just the listed trips, on one channel', () => {
+    subscribeToMembersOfTrips([7, 9], () => {});
+
+    expect(mockChannels()).toHaveLength(1);
+    expect(mockChannels()[0].on).toHaveBeenCalledWith(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'trip_members', filter: 'trip_id=in.(7,9)' },
+      expect.any(Function)
+    );
+  });
+
+  it('tells the caller about each change, and stops when unsubscribed', () => {
+    const onChange = jest.fn();
+    const unsubscribe = subscribeToMembersOfTrips([7], onChange);
+
+    mockChannels()[0].__emit({ eventType: 'INSERT', new: { user_id: 'user-2' } });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    expect(mockChannels()).toHaveLength(0);
+  });
+
+  it('opens nothing without trips', () => {
+    subscribeToMembersOfTrips([], () => {});
+
+    expect(mockChannels()).toHaveLength(0);
   });
 });
 

@@ -53,6 +53,7 @@ import {
 } from '@/src/domain/rules';
 import type { NextStopType } from '@/src/domain/rules';
 import { useAsync } from '@/src/hooks/useAsync';
+import { useKeyStopTaken } from '@/src/hooks/useKeyStopTaken';
 import { formatShortDate, formatTime } from '@/src/lib/dateTime';
 import { parsePlaceParam } from '@/src/lib/placeParam';
 import { toTrip, toTripMember, toTripStop } from '@/src/lib/tripMapper';
@@ -143,6 +144,14 @@ const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
   const [errors, setErrors] = useState<StopFieldErrors>({});
   const [formError, setFormError] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Another member can set the start, end or destination while this one is picking it
+  const checkKeyStopTaken = useKeyStopTaken(
+    tripId,
+    mode.kind === 'add' ? mode.stopType : null,
+    !saving && !saved
+  );
 
   const arrivalDay = mode.arrivalDay;
 
@@ -194,9 +203,12 @@ const StopDetailsForm = ({ tripId, mode }: StopDetailsFormProps) => {
     setSaving(true);
     try {
       await saveStop();
+      setSaved(true);
       // Closes this screen, and search under it if there is one. The planner reloads on focus
       router.dismissTo(plannerHref(tripId));
     } catch (error) {
+      // Losing the race for the start, end or destination gets its own alert, not a vague error
+      if (mode.kind === 'add' && (await checkKeyStopTaken().catch(() => false))) return;
       setFormError(reportAndDescribe(error, { scope: 'StopDetailsScreen.handleSave' }));
     } finally {
       setSaving(false);

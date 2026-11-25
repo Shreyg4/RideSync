@@ -7,7 +7,7 @@ import LargeButton from '@/src/components/LargeButton';
 import ErrorText from '@/src/components/ErrorText';
 import Screen from '@/src/components/Screen';
 import TopFade from '@/src/components/TopFade';
-import { colors, spacing, fontSize, fontWeight } from '@/src/constants/theme';
+import { colors, spacing, fontSize, fontWeight, radii } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthProvider';
 import AvatarImage from '@/src/components/AvatarImage';
 import { avatarUrl } from '@/src/services/avatarService';
@@ -18,6 +18,12 @@ import { useAsync } from '@/src/hooks/useAsync';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import Chip from '@/src/components/Chip';
 import { MAP_STYLES, MAP_STYLE_KEYS, setMapStyle, useMapStyle } from '@/src/lib/mapStyle';
+import TripMap from '@/src/components/TripMap';
+
+// Somewhere with streets, water and parks, so each style shows what it looks like. A fixed place
+// keeps Settings from asking for location permission
+const PREVIEW_CENTER = { lat: 47.6062, lng: -122.3321 };
+const PREVIEW_ZOOM = 12;
 
 export default function SettingsScreen() {
   const { user, signOut, deleteAccount } = useAuth();
@@ -145,6 +151,20 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
+        {/* Follows the picked style, like every other map. Only a picture: it can't be moved, so a
+            drag over it still scrolls the screen */}
+        <View
+          pointerEvents="none"
+          style={styles.mapPreview}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <TripMap
+            initialCenter={PREVIEW_CENTER}
+            initialZoom={PREVIEW_ZOOM}
+            testID="map-style-preview"
+          />
+        </View>
 
         <View style={styles.spacer} />
 
@@ -218,6 +238,14 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
+  },
+  // The planner's map preview size
+  mapPreview: {
+    height: 220,
+    marginHorizontal: spacing.sm,
+    marginTop: spacing.sm,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
   },
   spacer: {
     flex: 1,

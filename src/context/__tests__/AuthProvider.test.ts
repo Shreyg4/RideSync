@@ -71,6 +71,17 @@ describe('AuthProvider', () => {
     expect(reporter).toHaveBeenCalledWith(readError, { scope: 'AuthProvider.initializeSession' });
   });
 
+  it('holds back a password reset sign-in until the new password is saved', async () => {
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => authListener()('PASSWORD_RECOVERY', session));
+    expect(result.current).toMatchObject({ session: null, user: null });
+
+    await act(async () => authListener()('USER_UPDATED', session));
+    expect(result.current).toMatchObject({ session, user: session.user });
+  });
+
   it('follows sign-in and sign-out events', async () => {
     const { result } = await renderAuth();
     await waitFor(() => expect(result.current.loading).toBe(false));

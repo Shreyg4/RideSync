@@ -355,6 +355,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      end_trip: { Args: { target_trip_id: number }; Returns: undefined };
       generate_join_code: { Args: never; Returns: string };
       join_trip: { Args: { code: string }; Returns: number };
       leave_trip: { Args: { target_trip_id: number }; Returns: undefined };
@@ -368,6 +369,7 @@ export type Database = {
           user_id: string;
         }[];
       };
+      pause_trip: { Args: { target_trip_id: number }; Returns: undefined };
       pass_trip_ownership: {
         Args: { old_owner_id: string; target_trip_id: number };
         Returns: boolean;
@@ -398,6 +400,7 @@ export type Database = {
         Args: { ordered_ids: number[]; target_trip_id: number };
         Returns: undefined;
       };
+      resume_trip: { Args: { target_trip_id: number }; Returns: undefined };
       save_trip_route: {
         Args: {
           new_geometry: string[];
@@ -407,6 +410,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      start_trip: { Args: { target_trip_id: number }; Returns: undefined };
       transfer_trip_ownership: {
         Args: { new_owner_id: string; target_trip_id: number };
         Returns: undefined;
